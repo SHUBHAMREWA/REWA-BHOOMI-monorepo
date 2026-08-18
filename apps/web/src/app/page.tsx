@@ -7,6 +7,8 @@ import WhyChooseUs from '@/features/home/WhyChooseUs';
 import StatsBar from '@/features/home/StatsBar';
 import { APP_NAME, APP_DESCRIPTION, APP_URL } from '@rewa-bhoomi/config';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: `${APP_NAME} — Buy, Sell & Rent Properties in Rewa, MP`,
   description: APP_DESCRIPTION,
