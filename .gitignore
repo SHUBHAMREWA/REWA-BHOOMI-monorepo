@@ -1,0 +1,33 @@
+# Generated files
+dist/
+build/
+.next/
+.turbo/
+
+# Dependencies
+node_modules/
+
+# Env files (NEVER commit)
+.env
+.env.local
+.env.staging
+.env.production
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Coverage
+coverage/
+
+# pnpm
+.pnpm-store/
