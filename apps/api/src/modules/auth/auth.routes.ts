@@ -21,6 +21,8 @@ import {
   updateProfileHandler,
   googleAuth,
   checkUsernameHandler,
+  sendLoginOtpHandler,
+  verifyLoginOtpHandler,
 } from './auth.controller';
 
 const router = Router();
@@ -51,6 +53,8 @@ const forgotPasswordLimiter = rateLimit({
 
 router.post('/register', registerLimiter, validate(RegisterSchema), register);
 router.post('/login', loginLimiter, validate(LoginSchema), login);
+router.post('/otp/send-login', loginLimiter, sendLoginOtpHandler);
+router.post('/otp/verify-login', loginLimiter, verifyLoginOtpHandler);
 router.post('/google', googleAuth);
 router.post('/refresh', refresh);
 router.post('/logout', logout);

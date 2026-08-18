@@ -16,6 +16,8 @@ interface AuthContextValue extends AuthState {
   loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
+  sendLoginOtp: (email: string) => Promise<void>;
+  loginWithOtp: (email: string, otp: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -102,8 +104,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const sendLoginOtp = useCallback(async (email: string) => {
+    await apiPost('/auth/otp/send-login', { email });
+  }, []);
+
+  const loginWithOtp = useCallback(async (email: string, otp: string) => {
+    const data = await apiPost<{
+      userId: string; name: string; email: string;
+      roles: UserRole[]; accessToken: string;
+    }>('/auth/otp/verify-login', { email, otp });
+
+    setAccessToken(data.data.accessToken);
+    setState({
+      user: {
+        id: data.data.userId,
+        name: data.data.name,
+        email: data.data.email,
+        status: 'ACTIVE',
+        roles: data.data.roles,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      accessToken: data.data.accessToken,
+      isLoading: false,
+      isAuthenticated: true,
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, loginWithGoogle, logout, refreshAuth }}>
+    <AuthContext.Provider value={{ ...state, login, loginWithGoogle, logout, refreshAuth, sendLoginOtp, loginWithOtp }}>
       {children}
     </AuthContext.Provider>
   );

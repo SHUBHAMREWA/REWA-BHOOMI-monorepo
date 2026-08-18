@@ -74,6 +74,30 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// ─── OTP Login ────────────────────────────────────────────────────────────────
+
+export const sendLoginOtpHandler = asyncHandler(async (req: Request, res: Response) => {
+  const { sendLoginOtp } = await import('./auth.service');
+  await sendLoginOtp(req.body.email);
+  return successResponse(res, null, 'If your email is registered, an OTP has been sent.');
+});
+
+export const verifyLoginOtpHandler = asyncHandler(async (req: Request, res: Response) => {
+  const { verifyLoginOtp } = await import('./auth.service');
+  const ip = req.ip ?? req.headers['x-forwarded-for']?.toString();
+  const result = await verifyLoginOtp(req.body, ip);
+
+  res.cookie(COOKIE_NAME, result.refreshToken, COOKIE_OPTIONS);
+
+  return successResponse(res, {
+    userId:  result.userId,
+    name:    result.name,
+    email:   result.email,
+    roles:   result.roles,
+    accessToken: result.accessToken,
+  });
+});
+
 // ─── Refresh Token ────────────────────────────────────────────────────────────
 
 export const refresh = asyncHandler(async (req: Request, res: Response) => {

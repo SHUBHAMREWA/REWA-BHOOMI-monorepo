@@ -18,9 +18,15 @@ import { GoogleLogin } from '@react-oauth/google';
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, loginWithGoogle, user } = useAuth();
+  const { login, loginWithGoogle, user, sendLoginOtp, loginWithOtp } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // OTP state
+  const [isOtpMode, setIsOtpMode] = useState(false);
+  const [otpStep, setOtpStep] = useState<'email' | 'verify'>('email');
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -45,6 +51,39 @@ export default function LoginPage() {
       const message =
         (err as { response?: { data?: { error?: { message?: string } } } })
           ?.response?.data?.error?.message ?? 'Login failed. Please try again.';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpEmail) return toast.error('Please enter your email');
+    setIsLoading(true);
+    try {
+      await sendLoginOtp(otpEmail);
+      setOtpStep('verify');
+      toast.success('OTP sent to your email');
+    } catch (err: any) {
+      const message = err?.response?.data?.error?.message ?? 'Failed to send OTP';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode) return toast.error('Please enter the OTP');
+    setIsLoading(true);
+    try {
+      await loginWithOtp(otpEmail, otpCode);
+      toast.success('Welcome back!');
+      const redirect = searchParams.get('redirect') ?? '/dashboard';
+      router.push(redirect);
+    } catch (err: any) {
+      const message = err?.response?.data?.error?.message ?? 'Invalid OTP';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -138,65 +177,127 @@ export default function LoginPage() {
             </Typography>
           </Divider>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <TextField
-              id="login-email"
-              label="Email address"
-              type="email"
-              fullWidth
-              autoComplete="email"
-              autoFocus
-              {...register('email')}
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              sx={{ mb: 2.5 }}
-            />
+          {!isOtpMode ? (
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+              <TextField
+                id="login-email"
+                label="Email address"
+                type="email"
+                fullWidth
+                autoComplete="email"
+                autoFocus
+                {...register('email')}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                sx={{ mb: 2.5 }}
+              />
 
-            <TextField
-              id="login-password"
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              fullWidth
-              autoComplete="current-password"
-              {...register('password')}
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword((p) => !p)} edge="end" size="small">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 1 }}
-            />
+              <TextField
+                id="login-password"
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                fullWidth
+                autoComplete="current-password"
+                {...register('password')}
+                error={!!errors.password}
+                helperText={errors.password?.message}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword((p) => !p)} edge="end" size="small">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 1 }}
+              />
 
-            <Box sx={{ textAlign: 'right', mb: 3 }}>
-              <Typography
-                component={Link}
-                href="/auth/forgot-password"
-                variant="body2"
-                color="primary"
-                sx={{ fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+              <Box sx={{ textAlign: 'right', mb: 3 }}>
+                <Typography
+                  component={Link}
+                  href="/auth/forgot-password"
+                  variant="body2"
+                  color="primary"
+                  sx={{ fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  Forgot password?
+                </Typography>
+              </Box>
+
+              <Button
+                id="login-submit"
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={isLoading}
+                sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5, mb: 2 }}
               >
-                Forgot password?
-              </Typography>
-            </Box>
+                {isLoading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+              </Button>
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={() => setIsOtpMode(true)}
+                sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5 }}
+              >
+                Login with OTP
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={otpStep === 'email' ? handleSendOtp : handleVerifyOtp} noValidate>
+              <TextField
+                id="otp-email"
+                label="Email address"
+                type="email"
+                fullWidth
+                autoFocus
+                value={otpEmail}
+                onChange={(e) => setOtpEmail(e.target.value)}
+                disabled={otpStep === 'verify'}
+                sx={{ mb: 2.5 }}
+              />
 
-            <Button
-              id="login-submit"
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={isLoading}
-              sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5 }}
-            >
-              {isLoading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
-            </Button>
-          </form>
+              {otpStep === 'verify' && (
+                <TextField
+                  id="otp-code"
+                  label="6-digit OTP"
+                  type="text"
+                  fullWidth
+                  autoFocus
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\\D/g, '').slice(0, 6))}
+                  sx={{ mb: 3 }}
+                />
+              )}
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={isLoading || (otpStep === 'verify' && otpCode.length !== 6)}
+                sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5, mb: 2 }}
+              >
+                {isLoading ? <CircularProgress size={22} color="inherit" /> : otpStep === 'email' ? 'Send OTP' : 'Verify & Sign In'}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="text"
+                onClick={() => {
+                  setIsOtpMode(false);
+                  setOtpStep('email');
+                }}
+                sx={{ py: 1.5 }}
+              >
+                Back to Password Login
+              </Button>
+            </form>
+          )}
 
           <Typography variant="body2" textAlign="center" sx={{ mt: 3 }} color="text.secondary">
             Don&apos;t have an account?{' '}

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { query, queryOne, withTransaction } from '../../database/connection';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
+import { sendWelcomeEmail, sendLoginAlertEmail } from '../../services/email.service';
 import {
   ConflictError,
   UnauthorizedError,
@@ -108,6 +109,12 @@ export async function registerUser(input: RegisterInput) {
     );
 
     logger.info({ userId, email }, 'New user registered');
+    
+    // Send welcome email asynchronously
+    sendWelcomeEmail(email.toLowerCase(), name.trim()).catch((err) => {
+      logger.error({ err, email }, 'Failed to send welcome email');
+    });
+
     return { userId, accessToken, refreshToken, roles };
   });
 }
@@ -173,6 +180,21 @@ export async function authWithGoogle(credential: string, ip?: string) {
       [userId, tokenHash, ip ?? null]
     );
 
+    const userName = name ?? user?.rows[0]?.name ?? 'User';
+
+    if (user.rows.length === 0) {
+      // New user signup via Google
+      sendWelcomeEmail(email.toLowerCase(), userName).catch(err => {
+        logger.error({ err, email }, 'Failed to send welcome email (Google Auth)');
+      });
+    } else {
+      // Existing user login via Google
+      const loginTime = new Date().toLocaleString();
+      sendLoginAlertEmail(email.toLowerCase(), userName, ip || 'Unknown', loginTime, 'Web Browser').catch(err => {
+        logger.error({ err, email }, 'Failed to send login alert email (Google Auth)');
+      });
+    }
+
     return {
       userId,
       name: name ?? user?.rows[0]?.name,
@@ -224,6 +246,111 @@ export async function loginUser(input: LoginInput, ip?: string) {
   );
 
   logger.info({ userId: user.id, email: user.email }, 'User logged in');
+
+  const loginTime = new Date().toLocaleString();
+  sendLoginAlertEmail(user.email, user.name, ip || 'Unknown', loginTime, 'Web Browser').catch(err => {
+    logger.error({ err, email: user.email }, 'Failed to send login alert email');
+  });
+
+  return {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    roles,
+    accessToken,
+    refreshToken,
+  };
+}
+
+// ─── OTP Login ────────────────────────────────────────────────────────────────
+
+export async function sendLoginOtp(email: string) {
+  const user = await queryOne<{ id: string; name: string; status: string }>(
+    'SELECT id, name, status FROM users WHERE email = $1 AND deleted_at IS NULL',
+    [email.toLowerCase()]
+  );
+
+  if (!user) {
+    // Return silently to prevent email enumeration
+    logger.info({ email }, 'OTP login attempt for non-existent user');
+    return;
+  }
+
+  checkUserStatus(user.status);
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Invalidate previous OTPs for this email
+  await query(
+    'UPDATE user_otps SET used_at = NOW() WHERE email = $1 AND used_at IS NULL',
+    [email.toLowerCase()]
+  );
+
+  await query(
+    'INSERT INTO user_otps (email, otp, expires_at) VALUES ($1, $2, $3)',
+    [email.toLowerCase(), otp, expiresAt]
+  );
+
+  const { sendOTP } = await import('../../services/email.service');
+  await sendOTP(email.toLowerCase(), otp);
+  logger.info({ userId: user.id }, 'Login OTP sent');
+}
+
+export async function verifyLoginOtp(input: { email: string; otp: string }, ip?: string) {
+  const { email, otp } = input;
+
+  const record = await queryOne<{ id: string; email: string; used_at: string | null }>(
+    `SELECT id, email, used_at FROM user_otps
+     WHERE email = $1 AND otp = $2 AND expires_at > NOW()`,
+    [email.toLowerCase(), otp]
+  );
+
+  if (!record || record.used_at) {
+    throw new UnauthorizedError('Invalid or expired OTP');
+  }
+
+  const user = await queryOne<{
+    id: string;
+    email: string;
+    status: string;
+    name: string;
+  }>(
+    `SELECT id, email, status, name
+     FROM users WHERE email = $1 AND deleted_at IS NULL`,
+    [email.toLowerCase()]
+  );
+
+  if (!user) {
+    throw new UnauthorizedError('User not found');
+  }
+
+  checkUserStatus(user.status);
+
+  await withTransaction(async (client) => {
+    // Mark OTP as used
+    await client.query('UPDATE user_otps SET used_at = NOW() WHERE id = $1', [record.id]);
+  });
+
+  const roles = await getUserRoles(user.id);
+  const accessToken = generateAccessToken({ userId: user.id, email: user.email, roles });
+  const refreshToken = generateRefreshToken({ userId: user.id });
+  const tokenHash = hashToken(refreshToken);
+
+  await query(
+    `INSERT INTO refresh_tokens (user_id, token_hash, ip_address, expires_at)
+     VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')`,
+    [user.id, tokenHash, ip ?? null]
+  );
+
+  logger.info({ userId: user.id, email: user.email }, 'User logged in via OTP');
+
+  const loginTime = new Date().toLocaleString();
+  sendLoginAlertEmail(user.email, user.name, ip || 'Unknown', loginTime, 'Web Browser').catch(err => {
+    logger.error({ err, email: user.email }, 'Failed to send login alert email');
+  });
+
   return {
     userId: user.id,
     name: user.name,

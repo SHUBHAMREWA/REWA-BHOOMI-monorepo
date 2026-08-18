@@ -55,3 +55,35 @@ export const sendPasswordReset = async (to: string, resetLink: string) => {
   `;
   return sendEmail(to, subject, html);
 };
+
+export const sendWelcomeEmail = async (to: string, name: string) => {
+  const subject = 'Welcome to Rewa Bhoomi!';
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Welcome, ${name}!</h2>
+      <p>Thank you for joining Rewa Bhoomi, your trusted real estate platform in Rewa.</p>
+      <p>We are excited to have you on board. You can now explore properties, post your own listings, and connect with buyers and sellers.</p>
+      <a href="${env.APP_URL}" style="display: inline-block; padding: 12px 24px; background-color: #1B4FD8; color: white; text-decoration: none; border-radius: 6px; margin-top: 20px;">Explore Rewa Bhoomi</a>
+      <p style="margin-top: 30px; font-size: 14px; color: #666;">If you have any questions, feel free to reach out to our support team.</p>
+    </div>
+  `;
+  return sendEmail(to, subject, html);
+};
+
+export const sendLoginAlertEmail = async (to: string, name: string, ip: string, time: string, deviceRegion: string = 'Unknown') => {
+  const subject = 'New Login Alert - Rewa Bhoomi';
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Hello ${name},</h2>
+      <p>We detected a new login to your Rewa Bhoomi account.</p>
+      <ul>
+        <li><strong>Time:</strong> ${time}</li>
+        <li><strong>IP Address:</strong> ${ip}</li>
+        <li><strong>Region/Device:</strong> ${deviceRegion}</li>
+      </ul>
+      <p>If this was you, you can safely ignore this email.</p>
+      <p>If you didn't log in, please reset your password immediately and contact support to secure your account.</p>
+    </div>
+  `;
+  return sendEmail(to, subject, html);
+};

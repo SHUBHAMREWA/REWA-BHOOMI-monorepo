@@ -899,6 +899,20 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
     `,
   },
+  {
+    name: '018_add_user_otps',
+    sql: `
+      CREATE TABLE IF NOT EXISTS user_otps (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        email VARCHAR(255) NOT NULL,
+        otp VARCHAR(6) NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_otps_email ON user_otps(email);
+    `,
+  },
 ];
 
 // ─── Migration runner ────────────────────────────────────────────────────────────
