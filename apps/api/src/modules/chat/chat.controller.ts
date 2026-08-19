@@ -221,7 +221,7 @@ export const toggleReaction = async (req: Request, res: Response) => {
 
   try {
     const io = getIO();
-    io.to(`conversation:${conversationId}`).emit('reaction_toggled', { messageId, userId, emoji, added: !existing, user_name: user.name || 'User' });
+    io.to(`conversation:${conversationId}`).emit('reaction_toggled', { messageId, userId, emoji, added: !existing, user_name: 'User' });
   } catch (e) {}
 
   res.json({ success: true, data: { toggled: true } });
