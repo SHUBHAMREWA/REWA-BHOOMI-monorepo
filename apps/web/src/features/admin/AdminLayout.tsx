@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton } from '@mui/material';
@@ -12,7 +12,12 @@ import MenuIcon from '@mui/icons-material/Menu';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ArticleIcon from '@mui/icons-material/Article';
+import ChatIcon from '@mui/icons-material/Chat';
+import Badge from '@mui/material/Badge';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useConversations } from '@/features/chat/chat-api';
+import { useSocket } from '@/lib/SocketProvider';
+import { useQueryClient } from '@tanstack/react-query';
 
 const DRAWER_WIDTH = 280;
 
@@ -22,6 +27,7 @@ const menuItems = [
   { text: 'Properties', icon: <HomeWorkIcon />, path: '/admin/properties' },
   { text: 'Projects', icon: <BusinessIcon />, path: '/admin/projects' },
   { text: 'Blogs', icon: <ArticleIcon />, path: '/admin/blogs' },
+  { text: 'Chat Support', icon: <ChatIcon />, path: '/admin/chat' },
   { text: 'Audit Logs', icon: <HistoryIcon />, path: '/admin/logs' },
 ];
 
@@ -29,6 +35,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { logout } = useAuth();
+  const { data: conversations = [] } = useConversations();
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleAdminNewMessage = () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    };
+    socket.on('admin_new_message', handleAdminNewMessage);
+    return () => {
+      socket.off('admin_new_message', handleAdminNewMessage);
+    };
+  }, [socket, queryClient]);
+  
+  const unreadCount = conversations.reduce((acc, conv) => acc + parseInt(conv.unread_count || '0', 10), 0);
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -58,7 +80,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', '&:hover': { bgcolor: 'primary.dark' } },
                 }}
               >
-                <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
+                  {item.text === 'Chat Support' ? (
+                    <Badge badgeContent={unreadCount} color="error">
+                      {item.icon}
+                    </Badge>
+                  ) : (
+                    item.icon
+                  )}
+                </ListItemIcon>
                 <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: isActive ? 700 : 500 }} />
               </ListItemButton>
             </ListItem>

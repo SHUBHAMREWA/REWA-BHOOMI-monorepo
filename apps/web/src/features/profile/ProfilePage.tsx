@@ -8,7 +8,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip,
   useTheme, useMediaQuery
 } from '@mui/material';
-import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert } from '@mui/icons-material';
+import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -34,7 +34,7 @@ function CustomTabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ py: { xs: 1.5, md: 4 } }}>
+        <Box sx={{ py: { xs: 0, md: 4 } }}>
           {children}
         </Box>
       )}
@@ -45,7 +45,7 @@ function CustomTabPanel(props: TabPanelProps) {
 export default function ProfilePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user, refreshAuth } = useAuth();
+  const { user, refreshAuth, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -255,23 +255,37 @@ export default function ProfilePage() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pt: { xs: 3.5, md: 8 }, pb: { xs: 8, md: 12 } }}>
       <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 3 } }}>
-        <Box sx={{ mb: { xs: 2, md: 6 } }}>
-          <Typography variant="h4" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.3rem', md: '2.1rem' } }}>
-            Account Dashboard
-          </Typography>
-          <Typography color="#64748B" sx={{ mt: { xs: 0.3, md: 1 }, fontSize: { xs: '0.8rem', md: '1rem' } }}>
-            Manage your saved properties, active listings, and personal profile.
-          </Typography>
+        <Box sx={{ mb: { xs: 2, md: 6 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.4rem', md: '2.1rem' } }}>
+              Account Dashboard
+            </Typography>
+            <Typography color="#64748B" sx={{ mt: { xs: 0.3, md: 1 }, fontSize: { xs: '0.8rem', md: '1rem' }, display: { xs: 'none', sm: 'block' } }}>
+              Manage your saved properties, active listings, and personal profile.
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            color="error"
+            size={isMobile ? "small" : "medium"}
+            startIcon={<Logout />}
+            onClick={() => {
+              logout().then(() => router.push('/'));
+            }}
+            sx={{ fontWeight: 600, borderRadius: 2 }}
+          >
+            {isMobile ? 'Logout' : 'Sign Out'}
+          </Button>
         </Box>
 
         <Grid container spacing={{ xs: 2, md: 4 }}>
           <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0', mb: { xs: 1.5, md: 0 } }}>
+            <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, pb: { xs: 0, md: 4 }, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0', mb: { xs: 1.5, md: 0 } }}>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'row', md: 'column' }, alignItems: 'center', textAlign: { xs: 'left', md: 'center' }, gap: { xs: 2, md: 0 } }}>
                 <Box sx={{ position: 'relative', mb: { xs: 0, md: 3 }, flexShrink: 0 }}>
                   <Avatar
                     src={currentAvatarUrl || undefined}
-                    sx={{ width: { xs: 72, md: 140 }, height: { xs: 72, md: 140 }, border: '3px solid white', boxShadow: '0 6px 18px rgba(0,0,0,0.1)' }}
+                    sx={{ width: { xs: 64, md: 140 }, height: { xs: 64, md: 140 }, border: '3px solid white', boxShadow: '0 6px 18px rgba(0,0,0,0.1)' }}
                   >
                     {!currentAvatarUrl && user.name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -304,50 +318,57 @@ export default function ProfilePage() {
                 </Box>
                 
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                  <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
                     {user.name}
                   </Typography>
                   <Typography variant="body2" color="#64748B" sx={{ fontSize: { xs: '0.78rem', md: '0.88rem' }, mb: 0.5 }}>
                     {user.email}
                   </Typography>
-                  <Box sx={{ display: 'inline-flex', px: 1.5, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, mt: 0.5 }}>
+                  <Box sx={{ display: 'inline-flex', px: 1.5, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.65rem', fontWeight: 700, mt: 0.5 }}>
                     {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
                   </Box>
                 </Box>
               </Box>
 
-              <Divider sx={{ my: { xs: 1.5, md: 4 } }} />
+              <Divider sx={{ my: { xs: 1.5, md: 4 }, display: { xs: 'none', md: 'block' } }} />
               
               <Tabs
                 orientation={isMobile ? 'horizontal' : 'vertical'}
-                variant="scrollable"
-                scrollButtons="auto"
-                allowScrollButtonsMobile
+                variant={isMobile ? 'fullWidth' : 'scrollable'}
+                scrollButtons={isMobile ? false : 'auto'}
+                allowScrollButtonsMobile={!isMobile}
                 value={tabValue}
                 onChange={handleTabChange}
                 sx={{
                   borderRight: isMobile ? 0 : 1,
-                  borderBottom: isMobile ? 1 : 0,
+                  borderBottom: 0,
                   borderColor: 'divider',
                   '& .MuiTab-root': {
                     alignItems: 'center',
-                    justify: isMobile ? 'center' : 'flex-start',
+                    justifyContent: 'center',
                     py: { xs: 1, md: 2 },
-                    px: { xs: 1.5, md: 3 },
-                    borderRadius: 2,
+                    px: { xs: 0, md: 3 },
+                    borderRadius: { xs: 0, md: 2 },
                     mb: { xs: 0, md: 1 },
-                    mr: { xs: 1, md: 0 },
-                    fontSize: { xs: '0.78rem', md: '0.88rem' },
-                    minHeight: { xs: 38, md: 48 },
+                    mr: { xs: 0, md: 0 },
+                    fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.88rem' },
+                    minHeight: { xs: 48, md: 48 },
+                    minWidth: { xs: 0, md: 'auto' },
                     whiteSpace: 'nowrap',
+                    borderBottom: { xs: '2px solid transparent', md: 'none' },
                   },
-                  '& .Mui-selected': { bgcolor: 'rgba(27, 79, 216, 0.08)', color: '#1B4FD8 !important', fontWeight: 700 }
+                  '& .Mui-selected': { 
+                    bgcolor: { xs: 'transparent', md: 'rgba(27, 79, 216, 0.08)' }, 
+                    color: '#1B4FD8 !important', 
+                    fontWeight: 700,
+                    borderBottomColor: { xs: '#1B4FD8', md: 'transparent' }
+                  }
                 }}
               >
-                <Tab icon={<Person sx={{ mr: 0.8, fontSize: { xs: 18, md: 22 } }} />} iconPosition="start" label="Profile Details" />
-                <Tab icon={<Security sx={{ mr: 0.8, fontSize: { xs: 18, md: 22 } }} />} iconPosition="start" label="Security" />
-                <Tab icon={<MapsHomeWork sx={{ mr: 0.8, fontSize: { xs: 18, md: 22 } }} />} iconPosition="start" label="My Properties" />
-                <Tab icon={<Favorite sx={{ mr: 0.8, color: '#EF4444', fontSize: { xs: 18, md: 22 } }} />} iconPosition="start" label="Saved Properties" />
+                <Tab icon={<Person sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label={isMobile ? "Profile" : "Profile Details"} />
+                <Tab icon={<Security sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label="Security" />
+                <Tab icon={<MapsHomeWork sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label={isMobile ? "Listings" : "My Properties"} />
+                <Tab icon={<Favorite sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, color: '#EF4444', fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label={isMobile ? "Saved" : "Saved Properties"} />
               </Tabs>
             </Paper>
           </Grid>
@@ -357,7 +378,7 @@ export default function ProfilePage() {
               
               {/* PROFILE TAB */}
               <CustomTabPanel value={tabValue} index={0}>
-                <Box sx={{ px: { xs: 2, sm: 4 } }}>
+                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
                   <Typography variant="h6" fontWeight={700} mb={4}>Personal Information</Typography>
                   <form onSubmit={handleSubmit(onSubmit)}>
                     <Grid container spacing={3}>
@@ -442,7 +463,7 @@ export default function ProfilePage() {
 
               {/* SECURITY TAB */}
               <CustomTabPanel value={tabValue} index={1}>
-                <Box sx={{ px: { xs: 2, sm: 4 } }}>
+                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
                   <Typography variant="h6" fontWeight={700} mb={4}>Security Settings</Typography>
                   <Typography color="text.secondary" mb={3}>
                     To change your password, please request a password reset email to your registered email address.
@@ -459,7 +480,7 @@ export default function ProfilePage() {
 
               {/* MY PROPERTIES TAB */}
               <CustomTabPanel value={tabValue} index={2}>
-                <Box sx={{ px: { xs: 2, sm: 4 }, py: 1 }}>
+                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
                   <Typography variant="h6" fontWeight={700} mb={4}>My Listings</Typography>
                   
                   {isLoadingProperties ? (
@@ -481,7 +502,11 @@ export default function ProfilePage() {
                     <Grid container spacing={3}>
                       {myProperties.map((property: any) => (
                         <Grid item xs={12} sm={6} key={property.id}>
-                          <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+                          <Paper 
+                            elevation={0} 
+                            sx={{ borderRadius: 3, border: '1px solid #E2E8F0', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', '&:hover': { borderColor: '#1B4FD8', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}
+                            onClick={() => router.push(`/property/${property.slug}`)}
+                          >
                             <Box sx={{ height: 160, bgcolor: '#F1F5F9', position: 'relative' }}>
                               {property.thumbnail ? (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -491,21 +516,23 @@ export default function ProfilePage() {
                                   <MapsHomeWork sx={{ fontSize: 40, color: '#94A3B8' }} />
                                 </Box>
                               )}
-                              <Box sx={{ position: 'absolute', top: 12, right: 12, bgcolor: property.status === 'PUBLISHED' ? '#22C55E' : '#EAB308', color: 'white', px: 1.5, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 600 }}>
+                              <Box sx={{ position: 'absolute', top: 12, right: 12, bgcolor: property.status === 'PUBLISHED' ? '#22C55E' : property.status === 'REJECTED' ? '#EF4444' : '#EAB308', color: 'white', px: 1.5, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 600 }}>
                                 {property.status}
                               </Box>
-                              <IconButton
-                                onClick={(e) => handleMenuOpen(e, property.id, property.slug)}
-                                sx={{ position: 'absolute', top: 12, left: 12, bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: 'white' } }}
-                                size="small"
-                              >
-                                <MoreVert fontSize="small" />
-                              </IconButton>
                             </Box>
-                            <Box sx={{ p: 2 }}>
-                              <Typography variant="subtitle1" fontWeight={700} noWrap>{property.title}</Typography>
-                              <Typography variant="body2" color="text.secondary" noWrap mb={1}>{property.city}, {property.state}</Typography>
-                              <Typography variant="h6" color="#1B4FD8" fontWeight={700}>₹{property.price.toLocaleString()}</Typography>
+                            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <Box sx={{ overflow: 'hidden', flex: 1 }}>
+                                <Typography variant="subtitle1" fontWeight={700} noWrap>{property.title}</Typography>
+                                <Typography variant="body2" color="text.secondary" noWrap mb={1}>{property.city}, {property.state}</Typography>
+                                <Typography variant="h6" color="#1B4FD8" fontWeight={700}>₹{property.price.toLocaleString()}</Typography>
+                              </Box>
+                              <IconButton
+                                onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, property.id, property.slug); }}
+                                size="small"
+                                sx={{ ml: 1, color: 'text.secondary' }}
+                              >
+                                <MoreVert />
+                              </IconButton>
                             </Box>
                           </Paper>
                         </Grid>
@@ -517,7 +544,7 @@ export default function ProfilePage() {
 
               {/* SAVED / FAVORITES TAB */}
               <CustomTabPanel value={tabValue} index={3}>
-                <Box sx={{ px: { xs: 2, sm: 4 }, py: 1 }}>
+                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h6" fontWeight={700} color="#0F172A">
                       Saved Properties
@@ -543,7 +570,7 @@ export default function ProfilePage() {
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                       {favoriteProperties.map((property: any) => (
-                        <PropertyCard key={property.id} property={property} viewMode="list" />
+                        <PropertyCard key={property.id} property={property} viewMode="list" showStatusBadge={true} />
                       ))}
                     </Box>
                   )}

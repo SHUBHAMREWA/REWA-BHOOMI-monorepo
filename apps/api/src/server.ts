@@ -30,6 +30,10 @@ import usersRoutes from './modules/users/users.routes';
 const app = express();
 const httpServer = createServer(app);
 
+// Initialize Socket.io
+import { initSocketServer } from './socket';
+initSocketServer(httpServer);
+
 // ─── Security middleware ──────────────────────────────────────────────────────
 
 app.set('trust proxy', 1);

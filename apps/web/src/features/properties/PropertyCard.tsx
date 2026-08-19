@@ -13,6 +13,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ShareIcon from '@mui/icons-material/Share';
+import EditIcon from '@mui/icons-material/Edit';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import SquareFootIcon from '@mui/icons-material/SquareFoot';
 import StraightenIcon from '@mui/icons-material/Straighten';
@@ -58,6 +59,7 @@ export interface PropertyCardData {
   image_count?: number;
   is_favorited?: boolean;
   dimensions?: string;
+  status?: string;
   ownership?: string;
   listing_purpose?: string;
   category_type?: string;
@@ -67,6 +69,8 @@ export interface PropertyCardData {
 interface PropertyCardProps {
   property: PropertyCardData;
   viewMode?: 'list' | 'grid';
+  showStatusBadge?: boolean;
+  onEdit?: (propertyId: string) => void;
 }
 
 // Helper to format Indian price currency
@@ -97,20 +101,21 @@ export function formatAreaUnit(unit?: string | null): string {
 
 // Helper to format relative time
 function formatDaysAgo(dateString?: string): string {
-  if (!dateString) return 'Updated recently';
-  const diffTime = Math.abs(new Date().getTime() - new Date(dateString).getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Updated today';
-  if (diffDays === 1) return 'Updated 1 day ago';
-  if (diffDays >= 30) {
-    const months = Math.floor(diffDays / 30);
-    return `Updated ${months} ${months === 1 ? 'month' : 'months'} ago`;
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) return 'Updated recently';
+  if (diffDays > 30) {
+    return `Updated ${Math.floor(diffDays / 30)} months ago`;
   }
   return `Updated ${diffDays} days ago`;
 }
 
-export default function PropertyCard({ property, viewMode = 'list' }: PropertyCardProps) {
-  const { isAuthenticated } = useAuth();
+export default function PropertyCard({ property, viewMode = 'list', showStatusBadge = false, onEdit }: PropertyCardProps) {
+  const { isAuthenticated, user: authUser } = useAuth();
   const [isFavorited, setIsFavorited] = useState(!!property.is_favorited);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
@@ -290,6 +295,11 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
               <PhotoCameraIcon sx={{ fontSize: 13 }} />
               {photoCount}+ Photos
             </Box>
+            {showStatusBadge && property.status && (
+              <Box sx={{ bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                {property.status === 'PUBLISHED' ? 'APPROVED' : property.status.replace('_', ' ')}
+              </Box>
+            )}
           </Box>
 
           {/* Left & Right Navigation Arrows */}
@@ -339,10 +349,15 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
             <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', lineHeight: 1.35, mb: 0.5, color: '#0F172A' }}>
               {property.title}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5, fontSize: '0.82rem' }}>
-              <LocationOnIcon sx={{ fontSize: 16, color: '#EF4444' }} />
-              {property.city}, {property.state}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.82rem' }}>
+                <LocationOnIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+                {property.city}, {property.state}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.72rem', fontWeight: 600 }}>
+                {formatDaysAgo(property.created_at)}
+              </Typography>
+            </Box>
 
             {/* Spec Box */}
             <Box sx={{ bgcolor: '#F4F5F7', borderRadius: '8px', p: 1, mb: 1.5, display: 'flex', justifyContent: 'space-between' }}>
@@ -361,9 +376,21 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
             <Typography variant="h6" color="primary" fontWeight={800} sx={{ fontSize: '1.15rem' }}>
               {formattedPrice}
             </Typography>
-            <Typography variant="caption" color="primary" fontWeight={700} sx={{ textDecoration: 'underline' }}>
-              View Details →
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {onEdit && (
+                <IconButton 
+                  size="small" 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(property.id); }} 
+                  color="primary" 
+                  sx={{ border: '1px solid', borderColor: 'primary.main', p: 0.5 }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              )}
+              <Typography variant="caption" color="primary" fontWeight={700} sx={{ textDecoration: 'underline' }}>
+                View Details →
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -428,25 +455,29 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
             )}
 
             {/* Photo count top left */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 6,
-                left: 6,
-                bgcolor: 'rgba(15, 23, 42, 0.75)',
-                color: 'white',
-                px: 0.8,
-                py: 0.2,
-                borderRadius: '4px',
-                fontSize: '0.68rem',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.4,
-              }}
-            >
-              <PhotoCameraIcon sx={{ fontSize: 12 }} />
-              {photoCount}+
+            <Box sx={{ position: 'absolute', top: 6, left: 6, display: 'flex', gap: 1 }}>
+              <Box
+                sx={{
+                  bgcolor: 'rgba(15, 23, 42, 0.75)',
+                  color: 'white',
+                  px: 0.8,
+                  py: 0.2,
+                  borderRadius: '4px',
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.4,
+                }}
+              >
+                <PhotoCameraIcon sx={{ fontSize: 12 }} />
+                {photoCount}+
+              </Box>
+              {showStatusBadge && property.status && (
+                <Box sx={{ bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main', color: 'white', px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                  {property.status === 'PUBLISHED' ? 'APPROVED' : property.status.replace('_', ' ')}
+                </Box>
+              )}
             </Box>
 
             {/* Bottom Dots Indicator (Dynamic according to image count) */}
@@ -565,15 +596,20 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
             </Typography>
 
             {/* Plot Area & Dimensions Specs */}
-            <Box sx={{ display: 'flex', gap: 2, mt: 0.3 }}>
-              <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', fontWeight: 600 }}>Plot Area</Typography>
-                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{areaDisplay}</Typography>
+            <Box sx={{ display: 'flex', gap: 2, mt: 0.3, justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box>
+                  <Typography sx={{ fontSize: '0.65rem', color: '#64748B', fontWeight: 600 }}>Plot Area</Typography>
+                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{areaDisplay}</Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: '0.65rem', color: '#64748B', fontWeight: 600 }}>Dimensions (L X B)</Typography>
+                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{dimensionsDisplay}</Typography>
+                </Box>
               </Box>
-              <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', fontWeight: 600 }}>Dimensions (L X B)</Typography>
-                <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{dimensionsDisplay}</Typography>
-              </Box>
+              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.65rem', fontWeight: 600 }}>
+                {formatDaysAgo(property.created_at)}
+              </Typography>
             </Box>
           </Box>
         </Box>
@@ -666,26 +702,42 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
             )}
 
             {/* Top Left Badge: Photos count */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 10,
-                left: 10,
-                bgcolor: 'rgba(15, 23, 42, 0.75)',
-                backdropFilter: 'blur(4px)',
-                color: '#FFFFFF',
-                px: 1.2,
-                py: 0.4,
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              <PhotoCameraIcon sx={{ fontSize: 14 }} />
-              {photoCount}+ Photos
+            <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1 }}>
+              <Box
+                sx={{
+                  bgcolor: 'rgba(15, 23, 42, 0.75)',
+                  backdropFilter: 'blur(4px)',
+                  color: '#FFFFFF',
+                  px: 1.2,
+                  py: 0.4,
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <PhotoCameraIcon sx={{ fontSize: 14 }} />
+                {photoCount}+ Photos
+              </Box>
+              {showStatusBadge && property.status && (
+                <Box
+                  sx={{
+                    bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main',
+                    color: '#FFFFFF',
+                    px: 1.2,
+                    py: 0.4,
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {property.status === 'PUBLISHED' ? 'APPROVED' : property.status.replace('_', ' ')}
+                </Box>
+              )}
             </Box>
 
             {/* Bottom Center Dots Carousel Indicator (Dynamic according to image count) */}
@@ -810,22 +862,27 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
             </Box>
 
             {/* Location Row with Red Pin */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-              <LocationOnIcon sx={{ color: '#EF4444', fontSize: 18 }} />
-              <Typography
-                component={Link}
-                href={`/property/${property.slug}`}
-                variant="body2"
-                sx={{
-                  color: '#334155',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                  '&:hover': { color: '#1B4FD8' },
-                }}
-              >
-                See on map
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <LocationOnIcon sx={{ color: '#EF4444', fontSize: 18 }} />
+                <Typography
+                  component={Link}
+                  href={`/property/${property.slug}`}
+                  variant="body2"
+                  sx={{
+                    color: '#334155',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    '&:hover': { color: '#1B4FD8' },
+                  }}
+                >
+                  See on map
+                </Typography>
+              </Box>
+              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600, mr: 2 }}>
+                {formatDaysAgo(property.created_at)}
               </Typography>
             </Box>
 
@@ -943,21 +1000,33 @@ export default function PropertyCard({ property, viewMode = 'list' }: PropertyCa
               )}
             </Box>
 
-            <Typography
-              component={Link}
-              href={`/property/${property.slug}`}
-              variant="body2"
-              sx={{
-                color: '#334155',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                '&:hover': { color: '#1B4FD8' },
-              }}
-            >
-              Legal & Civic Infra Status
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {onEdit && (
+                <IconButton 
+                  size="small" 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(property.id); }} 
+                  color="primary" 
+                  sx={{ border: '1px solid', borderColor: 'primary.main', p: 0.5 }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              )}
+              <Typography
+                component={Link}
+                href={`/property/${property.slug}`}
+                variant="body2"
+                sx={{
+                  color: '#334155',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  '&:hover': { color: '#1B4FD8' },
+                }}
+              >
+                Legal & Civic Infra Status
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </Box>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TextField, InputAdornment, Button, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Tooltip } from '@mui/material';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TextField, InputAdornment, Button, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Tooltip, Avatar } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -22,6 +22,7 @@ interface PropertyAdmin {
   created_at: string;
   owner_name: string;
   owner_email: string;
+  owner_avatar: string | null;
 }
 
 export default function AdminProperties() {
@@ -29,6 +30,7 @@ export default function AdminProperties() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [purposeFilter, setPurposeFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   
@@ -55,6 +57,7 @@ export default function AdminProperties() {
     try {
       setLoading(true);
       let queryStr = `search=${search}${purposeFilter !== 'ALL' ? `&listingPurpose=${purposeFilter}` : ''}`;
+      if (statusFilter !== 'ALL') queryStr += `&status=${statusFilter}`;
       if (startDate) queryStr += `&startDate=${startDate}`;
       if (endDate) queryStr += `&endDate=${endDate}`;
       const data = await apiGet<PropertyAdmin[]>(`/admin/properties?${queryStr}`);
@@ -69,7 +72,7 @@ export default function AdminProperties() {
   useEffect(() => {
     const timeoutId = setTimeout(fetchProperties, 500);
     return () => clearTimeout(timeoutId);
-  }, [search, purposeFilter, startDate, endDate]);
+  }, [search, purposeFilter, statusFilter, startDate, endDate]);
 
   const handleModerateClick = (property: PropertyAdmin, action: 'PUBLISHED' | 'REJECTED') => {
     setSelectedProperty(property);
@@ -128,14 +131,28 @@ export default function AdminProperties() {
 
       {/* Filters and Date Range */}
       <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-        {['ALL', 'SALE', 'RENT', 'LEASE', 'PG', 'COMMERCIAL_LEASE'].map(p => (
+        {['ALL', 'SELL', 'RENT', 'LEASE'].map(p => (
           <Chip
             key={p}
-            label={p.replace('_', ' ')}
+            label={p === 'SELL' ? 'SALE' : p}
             size="small"
             onClick={() => setPurposeFilter(p)}
             color={purposeFilter === p ? 'primary' : 'default'}
             variant={purposeFilter === p ? 'filled' : 'outlined'}
+            sx={{ fontWeight: 600, cursor: 'pointer' }}
+          />
+        ))}
+
+        <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', mx: 1, display: { xs: 'none', md: 'block' } }} />
+
+        {['ALL', 'PUBLISHED', 'PENDING_REVIEW', 'REJECTED', 'DRAFT'].map(s => (
+          <Chip
+            key={s}
+            label={s.replace('_', ' ')}
+            size="small"
+            onClick={() => setStatusFilter(s)}
+            color={statusFilter === s ? 'secondary' : 'default'}
+            variant={statusFilter === s ? 'filled' : 'outlined'}
             sx={{ fontWeight: 600, cursor: 'pointer' }}
           />
         ))}
@@ -196,8 +213,18 @@ export default function AdminProperties() {
                     <Typography variant="caption" color="text.secondary">{new Date(property.created_at).toLocaleDateString()}</Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">{property.owner_name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{property.owner_email}</Typography>
+                    <Box 
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', '&:hover .owner-name': { color: '#2563EB', textDecoration: 'underline' } }} 
+                      onClick={() => window.open(`/profile/${property.owner_email}`, '_blank')}
+                    >
+                      <Avatar src={property.owner_avatar || undefined} sx={{ width: 32, height: 32 }}>
+                        {property.owner_name?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" className="owner-name" sx={{ fontWeight: 600, transition: 'color 0.2s' }}>{property.owner_name}</Typography>
+                        <Typography variant="caption" color="text.secondary">{property.owner_email}</Typography>
+                      </Box>
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>{property.listing_type}</Typography>
@@ -217,7 +244,7 @@ export default function AdminProperties() {
                           size="small" 
                           variant="outlined"
                           component={Link}
-                          href={`/properties/${property.slug}`}
+                          href={`/property/${property.slug}`}
                           target="_blank"
                           startIcon={<VisibilityIcon sx={{ fontSize: '1rem !important' }} />}
                           sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem', textTransform: 'none', borderColor: '#6366F1', color: '#6366F1', '&:hover': { bgcolor: 'rgba(99,102,241,0.08)', borderColor: '#4F46E5' } }}
@@ -260,6 +287,7 @@ export default function AdminProperties() {
                         size="small" 
                         variant={property.is_popular ? 'contained' : 'outlined'} 
                         color="warning"
+                        disabled={property.status !== 'PUBLISHED'}
                         onClick={() => togglePopular(property)}
                         startIcon={property.is_popular ? <StarIcon sx={{ fontSize: '1rem !important' }} /> : <StarBorderIcon sx={{ fontSize: '1rem !important' }} />}
                         sx={{ 

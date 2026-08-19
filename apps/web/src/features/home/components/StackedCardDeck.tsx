@@ -18,17 +18,18 @@ export default function StackedCardDeck() {
   const [isDragging, setIsDragging] = useState(false);
   const [swipedCardId, setSwipedCardId] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   
   const startDragPos = useRef({ x: 0, y: 0 });
 
   // Auto rotate deck every 4.5 seconds
   useEffect(() => {
-    if (isDragging || swipedCardId !== null) return;
+    if (isDragging || swipedCardId !== null || isHovered) return;
     const interval = setInterval(() => {
       triggerSwipe('right');
     }, 4500);
     return () => clearInterval(interval);
-  }, [isDragging, swipedCardId, deck]);
+  }, [isDragging, swipedCardId, deck, isHovered]);
 
   const triggerSwipe = (direction: 'left' | 'right') => {
     if (swipedCardId !== null) return; // Prevent double trigger
@@ -151,6 +152,8 @@ export default function StackedCardDeck() {
             key={card.id}
             onMouseDown={isTop ? onMouseDown : undefined}
             onTouchStart={isTop ? onTouchStart : undefined}
+            onMouseEnter={isTop ? () => setIsHovered(true) : undefined}
+            onMouseLeave={isTop ? () => setIsHovered(false) : undefined}
             sx={{
               position: 'absolute',
               width: '100%',
@@ -159,7 +162,9 @@ export default function StackedCardDeck() {
               boxShadow: isTop ? 12 : 4,
               background: `linear-gradient(135deg, ${card.color}, ${card.color}DD)`,
               color: 'white',
-              transform,
+              transform: (isTop && isHovered && !isDragging) 
+                ? `translate3d(${dragOffset.x}px, ${dragOffset.y - 10}px, 0) scale(1.02) rotate(${dragOffset.x * 0.06}deg)`
+                : transform,
               opacity,
               zIndex,
               transition: isDragging && isTop && !isSwiping
@@ -169,6 +174,9 @@ export default function StackedCardDeck() {
               flexDirection: 'column',
               justifyContent: 'space-between',
               overflow: 'hidden',
+              '&:hover': isTop && !isDragging ? {
+                boxShadow: 20,
+              } : {},
             }}
           >
             <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 3, '&:last-child': { pb: 3 } }}>

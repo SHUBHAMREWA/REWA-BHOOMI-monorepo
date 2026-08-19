@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Chip, CircularProgress, TextField, InputAdornment, Select, MenuItem,
-  FormControl, Snackbar, Alert
+  FormControl, Snackbar, Alert, Avatar, IconButton
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import ChatIcon from '@mui/icons-material/Chat';
+import Link from 'next/link';
 import { apiGet, apiPatch } from '@/lib/api';
 
 type UserStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'BLOCKED' | 'DEACTIVATED';
@@ -22,6 +24,9 @@ interface User {
   total_properties: number;
   published_properties: number;
   pending_properties: number;
+  avatar_url: string | null;
+  username: string | null;
+  last_login_at?: string | null;
 }
 
 const STATUS_CONFIG: Record<UserStatus, { label: string; icon: string; bg: string; color: string }> = {
@@ -119,6 +124,8 @@ export default function AdminUsers() {
               <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Email Verified</TableCell>
               <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Account Status (Action)</TableCell>
               <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Joined Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Last Login</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Chat</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -141,7 +148,27 @@ export default function AdminUsers() {
 
                 return (
                   <TableRow key={user.id} hover>
-                    <TableCell sx={{ fontWeight: 600 }}>{user.name}</TableCell>
+                    <TableCell>
+                      <Box 
+                        component={user.email ? Link : 'div'} 
+                        href={user.email ? `/profile/${user.email}` : '#'}
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1.5,
+                          textDecoration: 'none',
+                          ...(user.email ? { '&:hover': { opacity: 0.8 } } : {})
+                        }}
+                      >
+                        <Avatar src={user.avatar_url || undefined} alt={user.name} sx={{ width: 40, height: 40, bgcolor: '#1B4FD8' }} />
+                        <Box>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: '#1E293B' }}>{user.name}</Typography>
+                          <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>
+                            {user.username ? `@${user.username}` : 'No username'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phone || '-'}</TableCell>
                     <TableCell>
@@ -188,6 +215,14 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
                       {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
+                      {user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never'}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton component={Link} href={`/admin/chat?userId=${user.id}`} color="primary">
+                        <ChatIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 );

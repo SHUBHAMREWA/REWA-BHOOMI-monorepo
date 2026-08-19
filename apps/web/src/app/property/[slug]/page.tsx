@@ -9,10 +9,19 @@ interface Props {
   params: { slug: string };
 }
 
+import { cookies } from 'next/headers';
+
 async function getProperty(slug: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  
+  const cookieStore = cookies();
+  const cookieStr = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
+
   const res = await fetch(`${apiUrl}/api/v1/properties/${slug}`, {
-    next: { revalidate: 60 },
+    headers: {
+      Cookie: cookieStr
+    },
+    cache: 'no-store'
   });
 
   if (!res.ok) {
@@ -56,36 +65,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PropertyRoute({ params }: Props) {
   const property = await getProperty(params.slug);
 
-  if (!property) {
-    notFound();
-  }
-
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'RealEstateListing',
-            name: property.title,
-            description: property.description,
-            image: property.images?.map((img: any) => img.url) || [],
-            offers: {
-              '@type': 'Offer',
-              price: property.price,
-              priceCurrency: 'INR',
-            },
-            address: {
-              '@type': 'PostalAddress',
-              addressLocality: property.city,
-              addressRegion: property.state,
-              addressCountry: 'IN',
-            },
-          }),
-        }}
-      />
-      <PropertyDetailPage property={property} />
+      {property && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'RealEstateListing',
+              name: property.title,
+              description: property.description,
+              image: property.images?.map((img: any) => img.url) || [],
+              offers: {
+                '@type': 'Offer',
+                price: property.price,
+                priceCurrency: 'INR',
+              },
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: property.city,
+                addressRegion: property.state,
+                addressCountry: 'IN',
+              },
+            }),
+          }}
+        />
+      )}
+      <PropertyDetailPage initialProperty={property} slug={params.slug} />
     </>
   );
 }

@@ -1,7 +1,8 @@
 import { query, queryOne } from '../../database/connection';
 import { NotFoundError } from '../../errors/AppError';
 
-export async function getUserByUsername(username: string) {
+export async function getUserByUsername(identifier: string) {
+  const isEmail = identifier.includes('@');
   const user = await queryOne<{
     id: string;
     name: string;
@@ -12,8 +13,8 @@ export async function getUserByUsername(username: string) {
   }>(
     `SELECT id, name, username, bio, avatar_url, created_at
      FROM users 
-     WHERE username = $1 AND deleted_at IS NULL AND status = 'ACTIVE'`,
-    [username]
+     WHERE ${isEmail ? 'email' : 'username'} = $1 AND deleted_at IS NULL AND status = 'ACTIVE'`,
+    [isEmail ? identifier.toLowerCase() : identifier]
   );
 
   if (!user) {
@@ -23,7 +24,8 @@ export async function getUserByUsername(username: string) {
   return user;
 }
 
-export async function getUserProperties(username: string) {
+export async function getUserProperties(identifier: string, isAdmin: boolean = false) {
+  const isEmail = identifier.includes('@');
   const properties = await query(
     `SELECT 
       p.id, p.slug, p.title, p.price, p.listing_type, p.status, p.created_at,
@@ -33,9 +35,11 @@ export async function getUserProperties(username: string) {
      FROM properties p
      JOIN users u ON p.owner_id = u.id
      LEFT JOIN property_categories c ON p.category_id = c.id
-     WHERE u.username = $1 AND p.status = 'PUBLISHED' AND p.deleted_at IS NULL
+     WHERE ${isEmail ? 'u.email' : 'u.username'} = $1 
+       ${isAdmin ? '' : "AND p.status = 'PUBLISHED'"} 
+       AND p.deleted_at IS NULL
      ORDER BY p.created_at DESC`,
-    [username]
+    [isEmail ? identifier.toLowerCase() : identifier]
   );
 
   return properties;

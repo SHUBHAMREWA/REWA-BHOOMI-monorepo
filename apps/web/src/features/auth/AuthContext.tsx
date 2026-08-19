@@ -56,21 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }>('/auth/login', { email, password });
 
     setAccessToken(data.data.accessToken);
-    setState({
-      user: {
-        id: data.data.userId,
-        name: data.data.name,
-        email: data.data.email,
-        status: 'ACTIVE',
-        roles: data.data.roles,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      accessToken: data.data.accessToken,
-      isLoading: false,
-      isAuthenticated: true,
-    });
-  }, []);
+    await refreshAuth();
+  }, [refreshAuth]);
 
   const loginWithGoogle = useCallback(async (credential: string) => {
     const data = await apiPost<{
@@ -79,21 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }>('/auth/google', { credential });
 
     setAccessToken(data.data.accessToken);
-    setState({
-      user: {
-        id: data.data.userId,
-        name: data.data.name,
-        email: data.data.email,
-        status: 'ACTIVE',
-        roles: data.data.roles,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      accessToken: data.data.accessToken,
-      isLoading: false,
-      isAuthenticated: true,
-    });
-  }, []);
+    await refreshAuth();
+  }, [refreshAuth]);
 
   const logout = useCallback(async () => {
     try {
@@ -115,21 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }>('/auth/otp/verify-login', { email, otp });
 
     setAccessToken(data.data.accessToken);
-    setState({
-      user: {
-        id: data.data.userId,
-        name: data.data.name,
-        email: data.data.email,
-        status: 'ACTIVE',
-        roles: data.data.roles,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      accessToken: data.data.accessToken,
-      isLoading: false,
-      isAuthenticated: true,
-    });
-  }, []);
+    await refreshAuth();
+  }, [refreshAuth]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, loginWithGoogle, logout, refreshAuth, sendLoginOtp, loginWithOtp }}>

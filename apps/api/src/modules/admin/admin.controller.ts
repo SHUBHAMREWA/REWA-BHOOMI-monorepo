@@ -32,9 +32,10 @@ export const listUsers = async (req: Request, res: Response) => {
 
   let usersQuery = `
     SELECT 
-      u.id, u.email, u.name, u.phone, u.status, 
+      u.id, u.email, u.name, u.phone, u.status, u.avatar_url, u.username,
       (u.email_verified_at IS NOT NULL) AS is_email_verified, 
       u.created_at,
+      u.last_login_at,
       COALESCE(pc.total_properties, 0)::int AS total_properties,
       COALESCE(pc.published_properties, 0)::int AS published_properties,
       COALESCE(pc.pending_properties, 0)::int AS pending_properties
@@ -161,7 +162,7 @@ export const listPropertiesAdmin = async (req: Request, res: Response) => {
   const offset = (parseInt(page as string, 10) - 1) * parseInt(limit as string, 10);
 
   let propertiesQuery = `
-    SELECT p.id, p.title, p.slug, p.status, p.price, p.listing_type, p.is_popular, p.created_at, u.name as owner_name, u.email as owner_email
+    SELECT p.id, p.title, p.slug, p.status, p.price, p.listing_type, p.is_popular, p.created_at, u.name as owner_name, u.email as owner_email, u.avatar_url as owner_avatar
     FROM properties p
     LEFT JOIN users u ON u.id = p.owner_id
     WHERE p.deleted_at IS NULL
@@ -176,6 +177,12 @@ export const listPropertiesAdmin = async (req: Request, res: Response) => {
   if (listingPurpose && listingPurpose !== 'ALL') {
     queryParams.push(listingPurpose);
     propertiesQuery += ` AND p.listing_type = $${queryParams.length}`;
+  }
+
+  const { status } = req.query;
+  if (status && status !== 'ALL') {
+    queryParams.push(status);
+    propertiesQuery += ` AND p.status = $${queryParams.length}`;
   }
 
   if (startDate) {

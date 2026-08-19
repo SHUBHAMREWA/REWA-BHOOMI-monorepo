@@ -331,6 +331,7 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         sender_id           UUID NOT NULL REFERENCES users(id),
         message_type        message_type NOT NULL DEFAULT 'TEXT',
         content             TEXT,
+        is_read             BOOLEAN DEFAULT false,
         reply_to_message_id UUID REFERENCES messages(id),
         created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         edited_at           TIMESTAMPTZ,
@@ -911,6 +912,97 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_user_otps_email ON user_otps(email);
+    `,
+  },
+  {
+    name: '019_blog_cms_upgrade',
+    sql: `
+      -- ─── Upgrade blog_categories with SEO fields ───────────────────────────────
+      ALTER TABLE blog_categories
+        ADD COLUMN IF NOT EXISTS description TEXT,
+        ADD COLUMN IF NOT EXISTS seo_title VARCHAR(70),
+        ADD COLUMN IF NOT EXISTS seo_description VARCHAR(160),
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+      -- ─── Proper relational tags (replaces TEXT[] array) ────────────────────────
+      CREATE TABLE IF NOT EXISTS blog_tags (
+        id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name       VARCHAR(100) NOT NULL,
+        slug       VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_blog_tags_slug ON blog_tags(slug);
+
+      CREATE TABLE IF NOT EXISTS blog_tag_mapping (
+        blog_id UUID NOT NULL REFERENCES blogs(id) ON DELETE CASCADE,
+        tag_id  UUID NOT NULL REFERENCES blog_tags(id) ON DELETE CASCADE,
+        PRIMARY KEY (blog_id, tag_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_blog_tag_mapping_blog_id ON blog_tag_mapping(blog_id);
+      CREATE INDEX IF NOT EXISTS idx_blog_tag_mapping_tag_id ON blog_tag_mapping(tag_id);
+
+      -- ─── FAQ table ─────────────────────────────────────────────────────────────
+      CREATE TABLE IF NOT EXISTS blog_faq (
+        id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        blog_id    UUID NOT NULL REFERENCES blogs(id) ON DELETE CASCADE,
+        question   TEXT NOT NULL,
+        answer     TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_blog_faq_blog_id ON blog_faq(blog_id, sort_order);
+
+      -- ─── Language enum ─────────────────────────────────────────────────────────
+      DO $$ BEGIN
+        CREATE TYPE blog_language AS ENUM ('en', 'hi', 'hinglish');
+      EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+      -- ─── Upgrade blogs table with new columns ──────────────────────────────────
+      ALTER TABLE blogs
+        ADD COLUMN IF NOT EXISTS content_json            JSONB,
+        ADD COLUMN IF NOT EXISTS content_html            TEXT,
+        ADD COLUMN IF NOT EXISTS language                blog_language NOT NULL DEFAULT 'en',
+        ADD COLUMN IF NOT EXISTS translation_group_id    UUID,
+        ADD COLUMN IF NOT EXISTS slug_custom             BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS seo_title               VARCHAR(70),
+        ADD COLUMN IF NOT EXISTS seo_description         VARCHAR(160),
+        ADD COLUMN IF NOT EXISTS focus_keyword           VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS secondary_keywords      TEXT[] DEFAULT '{}',
+        ADD COLUMN IF NOT EXISTS featured_image_alt      TEXT,
+        ADD COLUMN IF NOT EXISTS featured_image_caption  TEXT,
+        ADD COLUMN IF NOT EXISTS og_image_alt            TEXT,
+        ADD COLUMN IF NOT EXISTS twitter_card            VARCHAR(50) DEFAULT 'summary_large_image',
+        ADD COLUMN IF NOT EXISTS twitter_title           VARCHAR(70),
+        ADD COLUMN IF NOT EXISTS twitter_description     VARCHAR(200),
+        ADD COLUMN IF NOT EXISTS twitter_image_url       TEXT,
+        ADD COLUMN IF NOT EXISTS allow_index             BOOLEAN NOT NULL DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS allow_follow            BOOLEAN NOT NULL DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS generate_toc            BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS reading_time            INTEGER;
+
+      -- ─── Backfill allow_index/allow_follow from no_index/no_follow ────────────
+      UPDATE blogs SET
+        allow_index = NOT COALESCE(no_index, FALSE),
+        allow_follow = NOT COALESCE(no_follow, FALSE)
+      WHERE no_index IS NOT NULL OR no_follow IS NOT NULL;
+
+      -- ─── Indexes ───────────────────────────────────────────────────────────────
+      CREATE INDEX IF NOT EXISTS idx_blogs_translation_group ON blogs(translation_group_id);
+      CREATE INDEX IF NOT EXISTS idx_blogs_language ON blogs(language);
+
+      -- ─── Trigger for blog_faq updated_at ─────────────────────────────────────
+      CREATE TRIGGER trg_blog_faq_updated_at
+        BEFORE UPDATE ON blog_faq
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+      -- ─── Trigger for blog_categories updated_at ───────────────────────────────
+      CREATE TRIGGER trg_blog_categories_updated_at
+        BEFORE UPDATE ON blog_categories
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     `,
   },
 ];

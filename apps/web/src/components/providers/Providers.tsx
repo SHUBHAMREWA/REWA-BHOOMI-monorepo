@@ -7,6 +7,8 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 import { theme } from '@/lib/theme';
 import { AuthProvider } from '@/features/auth/AuthContext';
+import { SocketProvider } from '@/lib/SocketProvider';
+import UserChatWidget from '@/features/chat/components/UserChatWidget';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const queryClient = new QueryClient({
@@ -47,19 +49,22 @@ export default function Providers({ children }: { children: ReactNode }) {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
-            {children}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#1e293b',
-                  color: '#f1f5f9',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                },
-              }}
-            />
+            <SocketProvider>
+              {children}
+              <UserChatWidget />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#1e293b',
+                    color: '#f1f5f9',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                  },
+                }}
+              />
+            </SocketProvider>
           </AuthProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}

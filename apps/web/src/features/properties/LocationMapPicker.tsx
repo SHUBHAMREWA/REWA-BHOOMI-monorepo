@@ -138,11 +138,11 @@ export default function LocationMapPicker({
       <Box sx={{ display: 'flex', gap: 2, mt: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
         <Paper sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 1.5 }}>
           <Typography variant="caption" sx={{ color: '#64748B' }}>Latitude: </Typography>
-          <Typography variant="caption" fontWeight={700} color="text.primary">{lat.toFixed(6)}</Typography>
+          <Typography variant="caption" fontWeight={700} color="text.primary">{Number(lat).toFixed(6)}</Typography>
         </Paper>
         <Paper sx={{ px: 2, py: 0.75, bgcolor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 1.5 }}>
           <Typography variant="caption" sx={{ color: '#64748B' }}>Longitude: </Typography>
-          <Typography variant="caption" fontWeight={700} color="text.primary">{lng.toFixed(6)}</Typography>
+          <Typography variant="caption" fontWeight={700} color="text.primary">{Number(lng).toFixed(6)}</Typography>
         </Paper>
         <Typography variant="caption" sx={{ color: '#16A34A', fontWeight: 600 }}>
           ✓ Coordinates auto-saved

@@ -64,7 +64,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             <BottomNavigationAction label="Home" icon={<Home />} />
             <BottomNavigationAction label="Search" icon={<Search />} />
             <BottomNavigationAction 
-              label="Post" 
+              label="Sell" 
               icon={<AddCircle sx={{ fontSize: 32, color: value === 2 ? '#1B4FD8' : '#3B82F6', mb: 0.5 }} />} 
             />
             <BottomNavigationAction label="Profile" icon={<Person />} />

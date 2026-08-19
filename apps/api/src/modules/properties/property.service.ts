@@ -557,6 +557,8 @@ export async function updateProperty(
 
   return getPropertyBySlug(
     (await queryOne<{ slug: string }>('SELECT slug FROM properties WHERE id = $1', [id]))!.slug,
+    requesterId,
+    isAdmin
   );
 }
 
@@ -672,6 +674,7 @@ export async function moderateProperty(
       status = $1,
       rejection_reason = $2,
       published_at = CASE WHEN $1 = 'PUBLISHED' THEN NOW() ELSE published_at END,
+      is_popular = CASE WHEN $1 != 'PUBLISHED' THEN FALSE ELSE is_popular END,
       updated_at = NOW()
      WHERE id = $3`,
     [status, rejectionReason ?? null, id],
@@ -685,6 +688,12 @@ export async function setPropertyPopular(
   isPopular: boolean,
   popularRank?: number,
 ) {
+  const property = await queryOne<{ status: string }>('SELECT status FROM properties WHERE id = $1', [id]);
+  if (!property) throw new NotFoundError('Property not found');
+  if (property.status !== 'PUBLISHED' && isPopular) {
+    throw new Error('Only published properties can be marked as popular');
+  }
+
   await query(
     'UPDATE properties SET is_popular = $1, popular_rank = $2, updated_at = NOW() WHERE id = $3',
     [isPopular, isPopular ? (popularRank ?? null) : null, id],

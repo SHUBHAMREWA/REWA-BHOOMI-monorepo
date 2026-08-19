@@ -3,17 +3,18 @@ import { asyncHandler, successResponse } from '../../middleware/errorHandler';
 import { getUserByUsername, getUserProperties } from './users.service';
 
 export const getPublicProfileHandler = asyncHandler(async (req: Request, res: Response) => {
-  const { username } = req.params;
-  const user = await getUserByUsername(username);
+  const { identifier } = req.params;
+  const user = await getUserByUsername(identifier);
   
   return successResponse(res, user);
 });
 
 export const getPublicPropertiesHandler = asyncHandler(async (req: Request, res: Response) => {
-  const { username } = req.params;
+  const { identifier } = req.params;
   // Ensure user exists first
-  await getUserByUsername(username);
+  await getUserByUsername(identifier);
   
-  const properties = await getUserProperties(username);
+  const isAdmin = req.user?.roles.includes('ADMIN') || false;
+  const properties = await getUserProperties(identifier, isAdmin);
   return successResponse(res, properties);
 });

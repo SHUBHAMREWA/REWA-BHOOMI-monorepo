@@ -6,6 +6,7 @@ import { Person, CalendarToday } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { apiClient } from '@/lib/api';
 import PropertyCard from '@/features/properties/PropertyCard';
+import { useAuth } from '@/features/auth/AuthContext';
 import type { User } from '@rewa-bhoomi/types';
 
 interface PublicProfilePageProps {
@@ -13,6 +14,8 @@ interface PublicProfilePageProps {
 }
 
 export default function PublicProfilePage({ username }: PublicProfilePageProps) {
+  const { user: authUser } = useAuth();
+  const isAdmin = authUser?.roles?.includes('ADMIN') || authUser?.roles?.includes('SUPER_ADMIN');
   const [user, setUser] = useState<User | null>(null);
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,7 +123,7 @@ export default function PublicProfilePage({ username }: PublicProfilePageProps) 
           <Grid container spacing={3}>
             {properties.map((property) => (
               <Grid item xs={12} sm={6} md={4} key={property.id}>
-                <PropertyCard property={property} viewMode="grid" />
+                <PropertyCard property={property} viewMode="grid" showStatusBadge={isAdmin} />
               </Grid>
             ))}
           </Grid>

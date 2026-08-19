@@ -94,30 +94,32 @@ export default function HeroSection() {
                 backdropFilter: 'blur(4px)',
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 2, 
-                py: 1, 
+                py: { xs: 0.6, md: 1 }, 
                 px: 2,
-                mb: 3, 
+                mb: { xs: 2, md: 3 }, 
+                whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center'
               }}
             >
-              <Typography 
-                sx={{ 
-                  color: '#E2E8F0', 
-                  whiteSpace: 'nowrap', 
+              <Box
+                sx={{
                   display: 'inline-block',
-                  fontWeight: 500,
-                  fontSize: { xs: '0.85rem', md: '0.95rem' },
-                  '@keyframes marquee': {
-                    '0%': { transform: 'translateX(100%)' },
-                    '100%': { transform: 'translateX(-120%)' }
+                  '@keyframes marqueeContinuous': {
+                    '0%': { transform: 'translateX(0)' },
+                    '100%': { transform: 'translateX(-50%)' }
                   },
-                  animation: 'marquee 40s linear infinite',
+                  animation: 'marqueeContinuous 72s linear infinite',
                   '&:hover': { animationPlayState: 'paused' }
                 }}
               >
-                स्वागत है आपका हमारी इस वेबसाइट में! यहाँ अगर आपको कोई जानकारी लेनी है और कहीं भी प्लॉट या ज़मीन लेनी है, तो आप हमें संपर्क कर सकते हैं। नीचे हमारा नंबर और WhatsApp दिया गया है। (Swagat hai apka hamare es website me yaha agar apko koi janakari leni hai aur kahi bhi plot ya jamni leni hai toh app hame contact kr sakte hai niche number and whatsapp diya gaya hai)
-              </Typography>
+                <Typography component="span" sx={{ color: '#E2E8F0', fontWeight: 500, fontSize: { xs: '0.85rem', md: '0.95rem' }, pl: '30vw', pr: '30vw' }}>
+                  स्वागत है आपका हमारी इस वेबसाइट में! यहाँ अगर आपको कोई जानकारी लेनी है और कहीं भी प्लॉट या ज़मीन लेनी है, तो आप हमें संपर्क कर सकते हैं। नीचे हमारा नंबर और WhatsApp दिया गया है। (Swagat hai apka hamare es website me yaha agar apko koi janakari leni hai aur kahi bhi plot ya jamni leni hai toh app hame contact kr sakte hai niche number and whatsapp diya gaya hai)
+                </Typography>
+                <Typography component="span" sx={{ color: '#E2E8F0', fontWeight: 500, fontSize: { xs: '0.85rem', md: '0.95rem' }, pr: '30vw' }}>
+                  स्वागत है आपका हमारी इस वेबसाइट में! यहाँ अगर आपको कोई जानकारी लेनी है और कहीं भी प्लॉट या ज़मीन लेनी है, तो आप हमें संपर्क कर सकते हैं। नीचे हमारा नंबर और WhatsApp दिया गया है। (Swagat hai apka hamare es website me yaha agar apko koi janakari leni hai aur kahi bhi plot ya jamni leni hai toh app hame contact kr sakte hai niche number and whatsapp diya gaya hai)
+                </Typography>
+              </Box>
             </Box>
 
             {/* Badge */}
@@ -142,15 +144,15 @@ export default function HeroSection() {
                 fontSize: { xs: '2rem', sm: '2.75rem', md: '3.25rem' },
                 fontWeight: 800,
                 color: '#FFFFFF',
-                lineHeight: 1.15,
+                lineHeight: { xs: 1.1, md: 1.15 },
                 letterSpacing: '-0.03em',
                 mb: 2,
               }}
             >
-              Rewa Me Dhoodhein Apna{' '}
+              रीवा में खोजें अपने{' '}
               <Box component="span" className="gradient-text"
                 sx={{ background: 'linear-gradient(135deg, #5B8EFF, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Dream Property
+                सपनों की संपत्ति
               </Box>
             </Typography>
 
@@ -160,112 +162,18 @@ export default function HeroSection() {
               Rewa ke aaspas hazaaron verified plots, makaan, flats aur commercial properties bina kisi extra brokerage ke dhoodhein.
             </Typography>
 
-            {/* 0% Trust Badges */}
-            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 }, mb: 3.5, flexWrap: 'wrap', alignItems: 'center' }}>
-              {[
-                { icon: '🏷️', text: '0% Commission' },
-                { icon: '💸', text: '0% Brokerage' },
-                { icon: '✅', text: 'Direct Owner Deal' },
-              ].map(({ icon, text }) => (
-                <Box
-                  key={text}
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.6,
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '20px',
-                    px: { xs: 1.4, sm: 2 },
-                    py: { xs: 0.5, sm: 0.65 },
-                    fontSize: { xs: '0.75rem', sm: '0.82rem' },
-                    fontWeight: 700,
-                    color: 'rgba(255,255,255,0.92)',
-                    letterSpacing: '0.01em',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      background: 'rgba(255,255,255,0.16)',
-                      color: '#fff',
-                      transform: 'translateY(-1px)',
-                    },
-                  }}
-                >
-                  <span style={{ fontSize: '1em' }}>{icon}</span>
-                  {text}
-                </Box>
-              ))}
-            </Box>
-
-            {/* Quick Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/properties"
-                startIcon={<HomeWorkIcon sx={{ transition: 'transform 0.3s' }} />}
-                sx={{
-                  background: 'linear-gradient(135deg, #1B4FD8 0%, #3B82F6 100%)',
-                  color: 'white',
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  borderRadius: '30px',
-                  px: 3.5,
-                  py: 1.4,
-                  boxShadow: '0 8px 20px -6px rgba(27, 79, 216, 0.6)',
-                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
-                    transform: 'translateY(-3px) scale(1.03)',
-                    boxShadow: '0 14px 28px -6px rgba(27, 79, 216, 0.75)',
-                    '& svg': { transform: 'scale(1.15) rotate(-5deg)' }
-                  }
-                }}
-              >
-                Click to see Property
-              </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/projects"
-                startIcon={<ApartmentIcon sx={{ transition: 'transform 0.3s' }} />}
-                sx={{
-                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                  color: '#0F172A',
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  borderRadius: '30px',
-                  px: 3.5,
-                  py: 1.4,
-                  boxShadow: '0 8px 20px -6px rgba(245, 158, 11, 0.4)',
-                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
-                    transform: 'translateY(-3px) scale(1.03)',
-                    boxShadow: '0 14px 28px -6px rgba(245, 158, 11, 0.55)',
-                    '& svg': { transform: 'scale(1.15)' }
-                  }
-                }}
-              >
-                Click to see Project
-              </Button>
-            </Box>
-
             {/* Search Box */}
             <Box
               className="glass"
               sx={{
                 display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
+                flexDirection: { xs: 'column', sm: 'row' },
                 gap: 0,
-                borderRadius: 3,
-                p: 1,
+                borderRadius: { xs: 3, sm: 3 },
+                p: { xs: 0.8, sm: 1 },
                 background: 'rgba(255,255,255,0.12)',
                 border: '1px solid rgba(255,255,255,0.2)',
                 backdropFilter: 'blur(20px)',
-                // Transition styling
                 transform: isRedirecting ? 'translate3d(0, -20px, 0) scale(1.025)' : 'translate3d(0, 0, 0) scale(1)',
                 boxShadow: isRedirecting 
                   ? '0 20px 40px rgba(0,0,0,0.4), 0 0 15px rgba(91,142,255,0.25)' 
@@ -275,7 +183,7 @@ export default function HeroSection() {
               }}
             >
               {/* Listing Type */}
-              <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, minWidth: 100 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, minWidth: { xs: '100%', sm: 100 }, borderBottom: { xs: '1px solid rgba(255,255,255,0.15)', sm: 'none' }, pb: { xs: 0.5, sm: 0 } }}>
                 <Select
                   value={listingType}
                   onChange={(e) => setListingType(e.target.value)}
@@ -283,6 +191,7 @@ export default function HeroSection() {
                   disableUnderline
                   displayEmpty
                   sx={{
+                    width: '100%',
                     color: 'white', fontSize: '0.85rem', fontWeight: 500,
                     '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.7)' },
                   }}
@@ -293,7 +202,7 @@ export default function HeroSection() {
                 </Select>
               </Box>
 
-              <Box sx={{ width: '1px', background: 'rgba(255,255,255,0.15)', my: 1, display: { xs: 'none', md: 'block' } }} />
+              <Box sx={{ width: '1px', background: 'rgba(255,255,255,0.15)', my: 1, display: { xs: 'none', sm: 'block' } }} />
 
               {/* Keyword Input */}
               <InputBase
@@ -304,7 +213,7 @@ export default function HeroSection() {
                 onClick={handleInputFocus}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 sx={{
-                  flex: 1, color: 'white', px: 2, fontSize: '0.85rem',
+                  flex: 1, color: 'white', px: { xs: 1.5, sm: 2 }, py: { xs: 1, sm: 0 }, fontSize: '0.85rem', width: '100%',
                   '&::placeholder': { color: 'rgba(255,255,255,0.5)' },
                   '& input::placeholder': { color: 'rgba(255,255,255,0.5)' },
                 }}
@@ -317,11 +226,13 @@ export default function HeroSection() {
                 startIcon={<SearchIcon />}
                 onClick={() => handleSearch()}
                 sx={{
-                  borderRadius: 2.5, px: 2.5, py: 1.2, fontWeight: 700,
+                  width: { xs: '100%', sm: 'auto' },
+                  borderRadius: { xs: 2.5, sm: 2.5 }, px: 2.5, py: { xs: 1, sm: 1.2 }, fontWeight: 700,
                   background: 'linear-gradient(135deg, #F59E0B, #D97706)',
                   color: '#0F172A',
                   '&:hover': { background: 'linear-gradient(135deg, #FBBF24, #F59E0B)', transform: 'none' },
                   flexShrink: 0,
+                  mt: { xs: 0.5, sm: 0 }
                 }}
               >
                 Search
@@ -329,7 +240,7 @@ export default function HeroSection() {
             </Box>
 
             {/* Popular searches */}
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 3, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2, alignItems: 'center', mb: 3.5 }}>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
                 Popular:
               </Typography>
@@ -355,10 +266,109 @@ export default function HeroSection() {
                 </Box>
               ))}
             </Box>
+
+            {/* Quick Action Buttons */}
+            <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, mb: 3.5, flexWrap: { xs: 'nowrap', sm: 'wrap' } }}>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/properties"
+                startIcon={<HomeWorkIcon sx={{ transition: 'transform 0.3s' }} />}
+                sx={{
+                  flex: { xs: 1, sm: 'none' },
+                  background: 'linear-gradient(135deg, #1B4FD8 0%, #3B82F6 100%)',
+                  color: 'white',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: { xs: '0.8rem', sm: '0.95rem' },
+                  borderRadius: '16px',
+                  px: { xs: 1.5, sm: 3.5 },
+                  py: { xs: 1, sm: 1.4 },
+                  boxShadow: '0 8px 20px -6px rgba(27, 79, 216, 0.6)',
+                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                    transform: 'translateY(-3px) scale(1.03)',
+                    boxShadow: '0 14px 28px -6px rgba(27, 79, 216, 0.75)',
+                    '& svg': { transform: 'scale(1.15) rotate(-5deg)' }
+                  },
+                  lineHeight: 1.2,
+                  textAlign: 'left'
+                }}
+              >
+                Browse <br /> Properties
+              </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/projects"
+                startIcon={<ApartmentIcon sx={{ transition: 'transform 0.3s' }} />}
+                sx={{
+                  flex: { xs: 1, sm: 'none' },
+                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                  color: '#0F172A',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: { xs: '0.8rem', sm: '0.95rem' },
+                  borderRadius: '16px',
+                  px: { xs: 1.5, sm: 3.5 },
+                  py: { xs: 1, sm: 1.4 },
+                  boxShadow: '0 8px 20px -6px rgba(245, 158, 11, 0.4)',
+                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                    transform: 'translateY(-3px) scale(1.03)',
+                    boxShadow: '0 14px 28px -6px rgba(245, 158, 11, 0.55)',
+                    '& svg': { transform: 'scale(1.15)' }
+                  },
+                  lineHeight: 1.2,
+                  textAlign: 'left'
+                }}
+              >
+                Explore <br /> Projects
+              </Button>
+            </Box>
+
+            {/* 0% Trust Badges */}
+            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 }, flexWrap: 'wrap', alignItems: 'center' }}>
+              {[
+                { icon: '🏷️', text: '0% Commission' },
+                { icon: '💸', text: '0% Brokerage' },
+                { icon: '✅', text: 'Direct Owner Deal' },
+              ].map(({ icon, text }) => (
+                <Box
+                  key={text}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.6,
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    px: { xs: 1.2, sm: 2 },
+                    py: { xs: 0.4, sm: 0.65 },
+                    fontSize: { xs: '0.7rem', sm: '0.82rem' },
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.92)',
+                    letterSpacing: '0.01em',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      background: 'rgba(255,255,255,0.16)',
+                      color: '#fff',
+                      transform: 'translateY(-1px)',
+                    },
+                  }}
+                >
+                  <span style={{ fontSize: '1em' }}>{icon}</span>
+                  {text}
+                </Box>
+              ))}
+            </Box>
           </Grid>
 
           {/* Right Column - Stacked Cards */}
-          <Grid item xs={12} md={4.5} sx={{ display: 'flex', justifyContent: 'center', mt: { xs: 6, md: 0 } }}>
+          <Grid item xs={12} md={4.5} sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', mt: { xs: 6, md: 0 } }}>
             <StackedCardDeck />
           </Grid>
         </Grid>

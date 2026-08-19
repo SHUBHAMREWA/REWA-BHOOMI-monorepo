@@ -58,34 +58,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PropertySeoRoute({ params }: Props) {
   const property = await getProperty(params.slug);
-  if (!property) notFound();
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'RealEstateListing',
-            name: property.title,
-            description: property.description,
-            image: property.images?.map((img: any) => img.url) || [],
-            offers: {
-              '@type': 'Offer',
-              price: property.price_amount || property.price,
-              priceCurrency: 'INR',
-            },
-            address: {
-              '@type': 'PostalAddress',
-              addressLocality: property.city,
-              addressRegion: property.state,
-              addressCountry: 'IN',
-            },
-          }),
-        }}
-      />
-      <PropertyDetailPage property={property} />
+      {property && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'RealEstateListing',
+              name: property.title,
+              description: property.description,
+              image: property.images?.map((img: any) => img.url) || [],
+              offers: {
+                '@type': 'Offer',
+                price: property.price_amount || property.price,
+                priceCurrency: 'INR',
+              },
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: property.city,
+                addressRegion: property.state,
+                addressCountry: 'IN',
+              },
+            }),
+          }}
+        />
+      )}
+      <PropertyDetailPage initialProperty={property} slug={params.slug} />
     </>
   );
 }

@@ -22,6 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { useAuth } from '@/features/auth/AuthContext';
 
 import { ListingPurpose, PropertyCategoryType, PropertyTypeEnum, AreaUnit } from '@rewa-bhoomi/types';
 import { LISTING_PURPOSES, PROPERTY_CATEGORIES, AREA_UNITS, getFilteredPropertyTypes } from '@/config/propertyFormConfig';
@@ -216,6 +217,170 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   // Submitting
   const [submitting, setSubmitting] = useState(false);
 
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+  const [isLoadingProperty, setIsLoadingProperty] = useState(!!propertyId);
+
+  useEffect(() => {
+    if (propertyId && !isAuthLoading) {
+      apiClient.get(`/properties/${propertyId}`)
+        .then(res => {
+          const prop = res.data.data;
+          setEditingPropertyId(prop.id);
+          setPurpose(prop.listing_purpose);
+          setCategory(prop.category_type);
+          setPropertyType(prop.property_type);
+          
+          if (prop.location) {
+            setLocation(prev => ({ ...prev, ...prop.location }));
+          }
+          setTitle(prop.title || '');
+          setDescription(prop.description || '');
+          setPriceAmount(prop.price_amount || prop.price || '');
+          if (prop.price_type) setPriceType(prop.price_type);
+          if (prop.billing_period) setBillingPeriod(prop.billing_period);
+          setIsPriceNegotiable(prop.is_price_negotiable || false);
+          setPricePerSqFt(prop.price_per_sqft || '');
+
+          if (prop.residentialDetails) {
+            setResDetails({
+              bedrooms: prop.residentialDetails.bedrooms || '',
+              bathrooms: prop.residentialDetails.bathrooms || '',
+              balconies: prop.residentialDetails.balconies || '',
+              builtUpArea: prop.residentialDetails.built_up_area || '',
+              carpetArea: prop.residentialDetails.carpet_area || '',
+              plotArea: prop.residentialDetails.plot_area || '',
+              propertyAge: prop.residentialDetails.property_age || '',
+              floor: prop.residentialDetails.floor || '',
+              totalFloors: prop.residentialDetails.total_floors || '',
+              furnishedStatus: prop.residentialDetails.furnished_status || 'SEMI_FURNISHED',
+              parking: prop.residentialDetails.parking || '',
+              facing: prop.residentialDetails.facing || 'EAST',
+              waterSupply: prop.residentialDetails.water_supply || 'Corporation & Borewell',
+              possessionStatus: prop.residentialDetails.possession_status || 'Ready to Move',
+              roadWidth: prop.residentialDetails.road_width || '',
+            });
+          }
+          if (prop.commercialDetails) {
+            setCommDetails({
+              carpetArea: prop.commercialDetails.carpet_area || '',
+              builtUpArea: prop.commercialDetails.built_up_area || '',
+              frontage: prop.commercialDetails.frontage || '',
+              depth: prop.commercialDetails.depth || '',
+              floor: prop.commercialDetails.floor || '',
+              totalFloors: prop.commercialDetails.total_floors || '',
+              washrooms: prop.commercialDetails.washrooms || '',
+              parking: prop.commercialDetails.parking || '',
+              lift: prop.commercialDetails.lift ?? true,
+              powerBackup: prop.commercialDetails.power_backup ?? true,
+              airConditioning: prop.commercialDetails.air_conditioning ?? false,
+              mainRoadFacing: prop.commercialDetails.main_road_facing ?? true,
+              cornerProperty: prop.commercialDetails.corner_property ?? false,
+              roadWidth: prop.commercialDetails.road_width || '',
+            });
+          }
+          if (prop.landDetails) {
+            setLandDetails({
+              totalLandArea: prop.landDetails.total_land_area || '',
+              areaUnit: prop.landDetails.area_unit || 'SQ_FT',
+              landType: prop.landDetails.land_type || 'Agricultural',
+              irrigationAvailable: prop.landDetails.irrigation_available ?? true,
+              waterSource: prop.landDetails.water_source || 'Canal & Tube Well',
+              borewell: prop.landDetails.borewell ?? true,
+              tubeWell: prop.landDetails.tube_well ?? true,
+              canal: prop.landDetails.canal ?? true,
+              riverAccess: prop.landDetails.river_access ?? false,
+              electricityConnection: prop.landDetails.electricity_connection ?? true,
+              roadAccess: prop.landDetails.road_access ?? true,
+              soilType: prop.landDetails.soil_type || 'Black Cotton Soil',
+              currentCrop: prop.landDetails.current_crop || 'Wheat & Rice',
+              fencing: prop.landDetails.fencing ?? true,
+              farmHouse: prop.landDetails.farm_house ?? false,
+              nearestRoadDistance: prop.landDetails.nearest_road_distance || '100 Meters',
+              nearestVillage: prop.landDetails.nearest_village || 'Kripalpur',
+              nearestCity: prop.landDetails.nearest_city || 'Rewa',
+            });
+          }
+          if (prop.pgDetails) {
+            setPgDetails({
+              pgName: prop.pgDetails.pg_name || 'Shree Krishna PG',
+              roomType: prop.pgDetails.room_type || 'DOUBLE_SHARING',
+              occupancy: prop.pgDetails.occupancy || 'Double',
+              genderPreference: prop.pgDetails.gender_preference || 'ANY',
+              availableFrom: prop.pgDetails.available_from || '',
+              monthlyRent: prop.pgDetails.monthly_rent || 6000,
+              securityDeposit: prop.pgDetails.security_deposit || 6000,
+              foodCharges: prop.pgDetails.food_charges || 2500,
+              electricityCharges: prop.pgDetails.electricity_charges || 500,
+              maintenanceCharges: prop.pgDetails.maintenance_charges || 0,
+              foodAvailable: prop.pgDetails.food_available ?? true,
+              mealPlan: prop.pgDetails.meal_plan || 'ALL_MEALS',
+              smokingAllowed: prop.pgDetails.smoking_allowed ?? false,
+              alcoholAllowed: prop.pgDetails.alcohol_allowed ?? false,
+              visitorsAllowed: prop.pgDetails.visitors_allowed ?? true,
+              petsAllowed: prop.pgDetails.pets_allowed ?? false,
+              curfewTime: prop.pgDetails.curfew_time || '10:00 PM',
+              minimumStayMonths: prop.pgDetails.minimum_stay_months || 3,
+              noticePeriodDays: prop.pgDetails.notice_period_days || 30,
+            });
+          }
+          const leaseData = prop.leaseDetails || prop.commercialLeaseDetails;
+          if (leaseData) {
+            setLeaseDetails({
+              leaseAmount: leaseData.lease_amount || 50000,
+              leasePaymentType: leaseData.lease_payment_type || 'MONTHLY',
+              securityDeposit: leaseData.security_deposit || 200000,
+              leaseDurationYears: leaseData.lease_duration_years || 3,
+              lockInPeriodMonths: leaseData.lock_in_period_months || 12,
+              noticePeriodDays: leaseData.notice_period_days || 60,
+              availableFrom: leaseData.available_from || '',
+              maintenanceCost: leaseData.maintenance_cost || 3000,
+              camCost: leaseData.cam_cost || 2000,
+              electricityCost: leaseData.electricity_cost || 0,
+              waterCost: leaseData.water_cost || 0,
+              parkingSpaces: leaseData.parking_spaces || 4,
+              rentEscalationPercentage: leaseData.rent_escalation_percentage || 5,
+              escalationPeriodMonths: leaseData.escalation_period_months || 12,
+              allowedBusinessTypes: leaseData.allowed_business_types || ['Retail', 'Office', 'Clinic', 'Bank'],
+              fireSafetyCertified: leaseData.fire_safety_certified ?? true,
+              powerLoadKw: leaseData.power_load_kw || 15,
+              loadingUnloadingFacility: leaseData.loading_unloading_facility ?? true,
+            });
+          }
+          if (prop.hallDetails) {
+            setHallDetails({
+              hallType: prop.hallDetails.hall_type || 'Banquet Hall',
+              capacityPeople: prop.hallDetails.capacity_people || 500,
+              seatingCapacity: prop.hallDetails.seating_capacity || 350,
+              hallAreaSqFt: prop.hallDetails.hall_area_sq_ft || 5000,
+              parkingCapacityVehicles: prop.hallDetails.parking_capacity_vehicles || 50,
+              acAvailable: prop.hallDetails.ac_available ?? true,
+              kitchenAvailable: prop.hallDetails.kitchen_available ?? true,
+              stageAvailable: prop.hallDetails.stage_available ?? true,
+              diningAreaAvailable: prop.hallDetails.dining_area_available ?? true,
+              washroomsCount: prop.hallDetails.washrooms_count || 6,
+              soundSystemAvailable: prop.hallDetails.sound_system_available ?? true,
+              generatorBackupAvailable: prop.hallDetails.generator_backup_available ?? true,
+              cateringAvailable: prop.hallDetails.catering_available ?? true,
+              pricingType: prop.hallDetails.pricing_type || 'PER_DAY',
+              priceRate: prop.hallDetails.price_rate || 45000,
+              securityDeposit: prop.hallDetails.security_deposit || 10000,
+            });
+          }
+
+          if (prop.images) {
+            setImageUrls(prop.images.map((i: any) => i.url));
+            setImageStorageKeys(prop.images.map((i: any) => i.storage_key).filter(Boolean));
+          }
+          if (prop.amenities) {
+            setSelectedAmenityIds(prop.amenities.map((a: any) => a.id));
+          }
+        })
+        .catch(() => toast.error('Failed to load property for editing'))
+        .finally(() => setIsLoadingProperty(false));
+    }
+  }, [propertyId, isAuthLoading]);
+
   useEffect(() => {
     apiGet<any[]>('/properties/amenities')
       .then(res => setAvailableAmenities(res || []))
@@ -369,8 +534,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         hallDetails: category === 'SPECIAL' ? cleanDetailObj(hallDetails) : undefined,
       };
 
-      await apiPost('/properties', payload);
-      toast.success('Property posted successfully!');
+      if (editingPropertyId) {
+        await apiClient.patch(`/properties/${editingPropertyId}`, payload);
+        toast.success('Property updated successfully!');
+      } else {
+        await apiPost('/properties', payload);
+        toast.success('Property posted successfully!');
+      }
       setActiveStep(10); // Move to Publish screen
     } catch (err: any) {
       console.error('Property submit error:', err.response?.data);
@@ -389,40 +559,48 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   };
 
   const PurposeIcon = ({ name }: { name: string }) => {
-    if (name === 'Sell') return <SellIcon sx={{ fontSize: 36, color: '#2563EB' }} />;
-    if (name === 'Key') return <KeyIcon sx={{ fontSize: 36, color: '#16A34A' }} />;
-    if (name === 'Description') return <DescriptionIcon sx={{ fontSize: 36, color: '#D97706' }} />;
-    if (name === 'Hotel') return <HotelIcon sx={{ fontSize: 36, color: '#9333EA' }} />;
-    return <StoreIcon sx={{ fontSize: 36, color: '#0284C7' }} />;
+    if (name === 'Sell') return <SellIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#2563EB' }} />;
+    if (name === 'Key') return <KeyIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#16A34A' }} />;
+    if (name === 'Description') return <DescriptionIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#D97706' }} />;
+    if (name === 'Hotel') return <HotelIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#9333EA' }} />;
+    return <StoreIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#0284C7' }} />;
   };
 
   const CategoryIcon = ({ name }: { name: string }) => {
-    if (name === 'Home') return <HomeIcon sx={{ fontSize: 36, color: '#2563EB' }} />;
-    if (name === 'Business') return <BusinessIcon sx={{ fontSize: 36, color: '#D97706' }} />;
-    if (name === 'Landscape') return <LandscapeIcon sx={{ fontSize: 36, color: '#16A34A' }} />;
-    return <MeetingRoomIcon sx={{ fontSize: 36, color: '#9333EA' }} />;
+    if (name === 'Home') return <HomeIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#2563EB' }} />;
+    if (name === 'Business') return <BusinessIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#D97706' }} />;
+    if (name === 'Landscape') return <LandscapeIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#16A34A' }} />;
+    return <MeetingRoomIcon sx={{ fontSize: { xs: 28, sm: 36 }, color: '#9333EA' }} />;
   };
+
+  if (isLoadingProperty) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', py: { xs: 2, md: 4 } }}>
       <Container maxWidth="lg">
         {/* Header Title */}
         <Box mb={{ xs: 2, sm: 4 }} textAlign="center">
-          <Typography variant="h4" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+          <Typography variant="h4" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
             Apni Property Post Karein
           </Typography>
-          <Typography variant="body1" color="#64748B" mt={0.5} sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+          <Typography variant="body1" color="#64748B" mt={0.5} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>
             Rewa ke #1 Real Estate Marketplace par asani se apni property list karein
           </Typography>
         </Box>
 
         {/* Stepper Header */}
-        <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: { xs: 2, sm: 3 }, mb: { xs: 2.5, sm: 4 }, border: '1px solid #E2E8F0', bgcolor: '#fff', overflowX: 'auto', '&::-webkit-scrollbar': { height: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: 3 } }}>
-          <Box sx={{ minWidth: { xs: 800, md: '100%' }, px: { xs: 1, sm: 0 } }}>
+        <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: { xs: 2, sm: 3 }, mb: { xs: 2.5, sm: 4 }, border: '1px solid #E2E8F0', bgcolor: '#fff', overflowX: 'auto', '&::-webkit-scrollbar': { height: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: 2 } }}>
+          <Box sx={{ minWidth: { xs: 500, sm: 800, md: '100%' }, px: { xs: 1, sm: 0 } }}>
             <Stepper activeStep={activeStep} alternativeLabel>
             {STEPS.map((label, idx) => (
               <Step key={label} completed={activeStep > idx}>
-                <StepLabel sx={{ '& .MuiStepLabel-label': { fontSize: { xs: '0.7rem', sm: '0.875rem' }, mt: { xs: 0.5, sm: 1 } } }}>{label}</StepLabel>
+                <StepLabel sx={{ '& .MuiStepLabel-label': { fontSize: { xs: '0.65rem', sm: '0.875rem' }, mt: { xs: 0.5, sm: 1 } }, '& .MuiStepIcon-root': { width: { xs: 20, sm: 24 }, height: { xs: 20, sm: 24 } } }}>{label}</StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -432,10 +610,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         {/* ─── STEP 0: LISTING PURPOSE ─── */}
         {activeStep === 0 && (
           <Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1}>
+            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               Aap Kya Karna Chahte Hain?
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mb={4}>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
               Apni requirement ke hisab se niche diya gaya option select karein
             </Typography>
 
@@ -448,7 +626,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       elevation={0}
                       onClick={() => handlePurposeSelect(item.key)}
                       sx={{
-                        p: { xs: 2, sm: 3 },
+                        p: { xs: 1.5, sm: 3 },
                         borderRadius: { xs: 2, sm: 3 },
                         cursor: 'pointer',
                         border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
@@ -457,13 +635,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                         '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 10px 20px rgba(0,0,0,0.05)' },
                       }}
                     >
-                      <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+                      <Box display="flex" alignItems="center" gap={1.5} mb={1}>
                         <PurposeIcon name={item.iconName} />
-                        <Typography variant="h6" fontWeight={700} color="#0F172A">
+                        <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                           {item.title}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="#64748B">
+                      <Typography variant="body2" color="#64748B" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                         {item.subtitle}
                       </Typography>
                     </Paper>
@@ -477,10 +655,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         {/* ─── STEP 1: PROPERTY CATEGORY ─── */}
         {activeStep === 1 && (
           <Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1}>
+            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               Aapki Property Kis Category Me Aati Hai?
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mb={4}>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
               Purpose selected: <strong>{purpose}</strong> — Apni property ki category select karein
             </Typography>
 
@@ -496,7 +674,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       elevation={0}
                       onClick={() => handleCategorySelect(item.key)}
                       sx={{
-                        p: { xs: 2, sm: 3 },
+                        p: { xs: 1.5, sm: 3 },
                         borderRadius: { xs: 2, sm: 3 },
                         cursor: 'pointer',
                         border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
@@ -506,13 +684,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                         '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 10px 20px rgba(0,0,0,0.05)' },
                       }}
                     >
-                      <Box mb={1.5} display="flex" justifyContent="center">
+                      <Box mb={1} display="flex" justifyContent="center">
                         <CategoryIcon name={item.iconName} />
                       </Box>
-                      <Typography variant="h6" fontWeight={700} color="#0F172A" mb={0.5}>
+                      <Typography variant="h6" fontWeight={700} color="#0F172A" mb={0.5} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                         {item.title}
                       </Typography>
-                      <Typography variant="caption" color="#64748B">
+                      <Typography variant="caption" color="#64748B" sx={{ fontSize: { xs: '0.75rem', sm: '0.75rem' } }}>
                         {item.subtitle}
                       </Typography>
                     </Paper>
@@ -526,10 +704,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         {/* ─── STEP 2: PROPERTY TYPE ─── */}
         {activeStep === 2 && (
           <Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1}>
+            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               Property Ka Type Select Karein
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mb={4}>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
               Category: <strong>{category}</strong> | Purpose: <strong>{purpose}</strong> — Sahi type par click karein
             </Typography>
 
@@ -542,7 +720,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       elevation={0}
                       onClick={() => handlePropertyTypeSelect(item.key)}
                       sx={{
-                        p: { xs: 2, sm: 2.5 },
+                        p: { xs: 1.5, sm: 2.5 },
                         borderRadius: { xs: 2, sm: 3 },
                         cursor: 'pointer',
                         border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
@@ -553,7 +731,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                         '&:hover': { borderColor: '#2563EB' },
                       }}
                     >
-                      <Typography variant="subtitle1" fontWeight={700} color="#0F172A">
+                      <Typography variant="subtitle1" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                         {item.label}
                       </Typography>
                       {isSelected && <CheckCircleIcon color="primary" fontSize="small" sx={{ ml: 'auto' }} />}
@@ -568,7 +746,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         {/* ─── STEP 3: LOCATION ─── */}
         {activeStep === 3 && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
-            <Typography variant="h6" fontWeight={700} mb={3}>
+            <Typography variant="h6" fontWeight={700} mb={3} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
               Location Details
             </Typography>
             <Grid container spacing={2}>
@@ -632,7 +810,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         {/* ─── STEP 4: PROPERTY SPECIFIC DETAILS ─── */}
         {activeStep === 4 && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
-            <Typography variant="h6" fontWeight={700} mb={3}>
+            <Typography variant="h6" fontWeight={700} mb={3} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
               Property Attributes ({propertyType.replace('_', ' ')})
             </Typography>
 
@@ -932,7 +1110,14 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             </Box>
 
             <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-              <strong>Note:</strong> Property submit karne ke baad admin approval ke baad hi ye listing public hogi. Koi bhi galti ho toh neeche "Back" karke fix kar lo.
+              {user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN') ? (
+                <strong>Note:</strong>
+              ) : (
+                <strong>Note:</strong>
+              )}
+              {user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN') 
+                ? ' Aap admin hain, toh submit/update karte hi action turant apply hoga. Koi bhi galti ho toh neeche "Back" karke fix kar lo.' 
+                : ' Property submit karne ke baad admin approval ke baad hi ye listing public hogi. Koi bhi galti ho toh neeche "Back" karke fix kar lo.'}
             </Alert>
 
             {/* Property Images Preview */}
@@ -969,7 +1154,9 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 <Chip label={purpose} color="primary" size="small" sx={{ fontWeight: 700 }} />
                 <Chip label={category} variant="outlined" size="small" />
                 <Chip label={propertyType.replace(/_/g, ' ')} variant="outlined" size="small" />
-                <Chip label="⏳ Pending Admin Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 600 }} />
+                {!(user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN')) && (
+                  <Chip label="⏳ Pending Admin Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 600 }} />
+                )}
               </Box>
 
               {/* Title */}
@@ -1086,7 +1273,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             </Paper>
 
             <Alert severity="warning" sx={{ borderRadius: 2 }}>
-              <strong>Ek Baar Aur Check Karo:</strong> Koi bhi jankari galat lagi toh <strong>"Back"</strong> button se wapas jao aur sudhaar lo. Submit karne ke baad Admin review karega.
+              <strong>Ek Baar Aur Check Karo:</strong> Koi bhi jankari galat lagi toh <strong>"Back"</strong> button se wapas jao aur sudhaar lo. 
+              {user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN') 
+                ? ' Action turant apply ho jayega.' 
+                : ' Submit karne ke baad Admin review karega.'}
             </Alert>
           </Box>
         )}
@@ -1096,14 +1286,21 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           <Paper elevation={0} sx={{ p: { xs: 3, sm: 6 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff', textAlign: 'center' }}>
             <Box sx={{ fontSize: 72, mb: 2 }}>🎉</Box>
             <Typography variant="h4" fontWeight={800} color="#0F172A" mb={1}>
-              Property Submit Ho Gayi!
+              {editingPropertyId ? 'Property Update Ho Gayi!' : 'Property Submit Ho Gayi!'}
             </Typography>
             <Typography variant="body1" color="#64748B" mb={1}>
-              Aapki property successfully submit ho gayi hai.
+              Aapki property successfully {editingPropertyId ? 'update' : 'submit'} ho gayi hai.
             </Typography>
-            <Alert severity="info" sx={{ mb: 4, textAlign: 'left', borderRadius: 2 }}>
-              <strong>Admin Approval Baaki Hai:</strong> Aapki property abhi <strong>Review Queue</strong> me hai. Hamara admin team jald hi review karega. Approve hone ke baad automatically Rewa Bhoomi par live ho jaayegi. Aapko notify kiya jaayega.
-            </Alert>
+            
+            {user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN') ? (
+              <Alert severity="success" sx={{ mb: 4, textAlign: 'left', borderRadius: 2 }}>
+                <strong>Admin Action Successful:</strong> {editingPropertyId ? 'Property update ho gayi hai. Agar property abhi Pending/Rejected hai, toh aap dashboard se ise Approve kar sakte hain.' : 'Kyunki aap Admin hain, aapki nayi property directly live ho gayi hai!'}
+              </Alert>
+            ) : (
+              <Alert severity="info" sx={{ mb: 4, textAlign: 'left', borderRadius: 2 }}>
+                <strong>Admin Approval Baaki Hai:</strong> Aapki property abhi <strong>Review Queue</strong> me hai. Hamara admin team jald hi review karega. Approve hone ke baad automatically Rewa Bhoomi par live ho jaayegi. Aapko notify kiya jaayega.
+              </Alert>
+            )}
 
             <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
               <Button variant="contained" onClick={() => router.push('/properties')} sx={{ textTransform: 'none', px: 4 }}>

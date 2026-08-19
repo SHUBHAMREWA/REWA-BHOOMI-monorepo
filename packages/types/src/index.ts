@@ -338,11 +338,34 @@ export interface GeoPolygon {
 // ─── Blog ──────────────────────────────────────────────────────────────────────
 
 export type BlogStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type BlogLanguage = 'en' | 'hi' | 'hinglish';
 
 export interface BlogCategory {
   id: string;
   name: string;
   slug: string;
+  description?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BlogTag {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt?: string;
+}
+
+export interface BlogFaq {
+  id: string;
+  blogId: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Blog {
@@ -350,20 +373,54 @@ export interface Blog {
   slug: string;
   title: string;
   excerpt?: string;
+  /** Legacy plain-text/HTML content field — kept for backward compat */
   content: string;
+  /** Tiptap JSON content (source of truth for rich text) */
+  contentJson?: Record<string, unknown> | null;
+  /** Server-rendered sanitized HTML from contentJson */
+  contentHtml?: string | null;
+  language: BlogLanguage;
+  translationGroupId?: string | null;
   featuredImageUrl?: string;
+  featuredImageAlt?: string;
+  featuredImageCaption?: string;
   author: Pick<User, 'id' | 'name' | 'avatar_url'>;
   category?: BlogCategory;
+  /** Legacy text array tags — kept for backward compat */
   tags: string[];
+  /** New relational tags */
+  blogTags?: BlogTag[];
+  faqs?: BlogFaq[];
+  // Legacy SEO fields (kept for backward compat)
   metaTitle?: string;
   metaDescription?: string;
+  // New primary SEO fields
+  seoTitle?: string;
+  seoDescription?: string;
+  focusKeyword?: string;
+  secondaryKeywords?: string[];
   canonicalUrl?: string;
+  // Open Graph
   ogTitle?: string;
   ogDescription?: string;
   ogImageUrl?: string;
+  ogImageAlt?: string;
+  // Twitter / X Card
+  twitterCard?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImageUrl?: string;
+  // Advanced SEO
   schemaType?: string;
+  /** Legacy fields — kept for backward compat */
   noIndex?: boolean;
   noFollow?: boolean;
+  /** New fields — replaces noIndex/noFollow with correct semantics */
+  allowIndex?: boolean;
+  allowFollow?: boolean;
+  // Content Features
+  generateToc?: boolean;
+  readingTime?: number | null;
   status: BlogStatus;
   publishedAt?: string;
   createdAt: string;
@@ -374,23 +431,49 @@ export interface CreateBlogInput {
   title: string;
   slug?: string;
   excerpt?: string;
-  content: string;
+  content?: string;
+  contentJson?: Record<string, unknown>;
+  language?: BlogLanguage;
+  translationGroupId?: string;
   featuredImageUrl?: string;
+  featuredImageAlt?: string;
+  featuredImageCaption?: string;
   categoryId?: string;
+  tagIds?: string[];
   tags?: string[];
+  // Legacy SEO
   metaTitle?: string;
   metaDescription?: string;
+  // New SEO
+  seoTitle?: string;
+  seoDescription?: string;
+  focusKeyword?: string;
+  secondaryKeywords?: string[];
   canonicalUrl?: string;
+  // Open Graph
   ogTitle?: string;
   ogDescription?: string;
   ogImageUrl?: string;
+  ogImageAlt?: string;
+  // Twitter
+  twitterCard?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImageUrl?: string;
+  // Advanced
   schemaType?: string;
   noIndex?: boolean;
   noFollow?: boolean;
+  allowIndex?: boolean;
+  allowFollow?: boolean;
+  generateToc?: boolean;
   status?: BlogStatus;
+  faqs?: Omit<BlogFaq, 'id' | 'blogId' | 'createdAt' | 'updatedAt'>[];
 }
 
 export type UpdateBlogInput = Partial<CreateBlogInput>;
+
+
 
 // ─── Notifications ─────────────────────────────────────────────────────────────
 

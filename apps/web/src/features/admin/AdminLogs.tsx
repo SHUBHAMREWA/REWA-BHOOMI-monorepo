@@ -85,7 +85,7 @@ export default function AdminLogs() {
                   </TableCell>
                   <TableCell sx={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                      {log.details ? log.details : '-'}
+                      {log.details ? (typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details)) : '-'}
                     </Typography>
                   </TableCell>
                 </TableRow>

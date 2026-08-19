@@ -17,6 +17,7 @@ import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import AddIcon from '@mui/icons-material/Add';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ArticleIcon from '@mui/icons-material/Article';
+import ChatIcon from '@mui/icons-material/Chat';
 
 const navLinks = [
   { name: 'Properties', href: '/properties', icon: HomeWorkIcon },
@@ -202,15 +203,15 @@ export default function Navbar() {
                 </Typography>
                 
                 {/* Animated Text Section */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.3, sm: 0.5 }, bgcolor: 'rgba(27, 79, 216, 0.08)', px: { xs: 1, sm: 1.5 }, py: { xs: 0.3, sm: 0.5 }, borderRadius: 2 }}>
-                  <Typography sx={{ fontWeight: 600, color: '#475569', fontSize: { xs: '0.75rem', sm: '0.9rem' } }}>Buy</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.2, sm: 0.4 }, bgcolor: 'rgba(27, 79, 216, 0.08)', px: { xs: 0.7, sm: 1 }, py: { xs: 0.2, sm: 0.35 }, borderRadius: 2 }}>
+                  <Typography sx={{ fontWeight: 600, color: '#475569', fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>Buy</Typography>
                   <Typography 
                     key={wordIndex} 
                     sx={{ 
                       fontWeight: 800, 
                       color: '#1B4FD8', 
-                      fontSize: { xs: '0.75rem', sm: '0.9rem' }, 
-                      minWidth: { xs: '55px', sm: '70px' },
+                      fontSize: { xs: '0.65rem', sm: '0.75rem' }, 
+                      minWidth: { xs: '40px', sm: '55px' },
                       '@keyframes popIn': {
                         '0%': { opacity: 0, transform: 'translateY(5px)' },
                         '100%': { opacity: 1, transform: 'translateY(0)' },
@@ -247,10 +248,43 @@ export default function Navbar() {
                   {link.name}
                 </Link>
               ))}
+
+              {/* Dynamic Chat Link */}
+              {user && user.roles.includes('ADMIN') ? (
+                <Link
+                  href="/admin/chat"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    textDecoration: 'none', color: pathname === '/admin/chat' ? '#1B4FD8' : '#475569',
+                    fontWeight: pathname === '/admin/chat' ? 700 : 500, fontSize: '15px', transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1B4FD8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = pathname === '/admin/chat' ? '#1B4FD8' : '#475569')}
+                >
+                  <ChatIcon sx={{ fontSize: 18 }} />
+                  Chat
+                </Link>
+              ) : user ? (
+                <Box
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.dispatchEvent(new Event('open-chat'));
+                  }}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    color: '#475569', fontWeight: 500, fontSize: '15px',
+                    transition: 'color 0.2s', cursor: 'pointer',
+                    '&:hover': { color: '#1B4FD8' }
+                  }}
+                >
+                  <ChatIcon sx={{ fontSize: 18 }} />
+                  Chat
+                </Box>
+              ) : null}
             </Box>
 
             {/* Auth Controls & Saved Properties Quick Icon */}
-            <Box sx={{ flex: { md: 1 }, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+            <Box sx={{ flex: { md: 1 }, display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
               <Button
                 variant="outlined"
                 component={Link}

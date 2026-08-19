@@ -170,7 +170,7 @@ export default function PropertiesSearchPage() {
               onClick={handleApplyFilters}
               sx={{ py: { xs: 0.5, sm: 1 }, px: { xs: 2, sm: 3 }, borderRadius: 2, bgcolor: '#1B4FD8', fontWeight: 700, fontSize: { xs: '0.82rem', sm: '0.9rem' } }}
             >
-              Filter
+              Apply Filter
             </Button>
           </Box>
         </Box>

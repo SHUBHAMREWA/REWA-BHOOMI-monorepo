@@ -189,6 +189,7 @@ export async function authWithGoogle(credential: string, ip?: string) {
       });
     } else {
       // Existing user login via Google
+      await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [userId]);
       const loginTime = new Date().toLocaleString();
       sendLoginAlertEmail(email.toLowerCase(), userName, ip || 'Unknown', loginTime, 'Web Browser').catch(err => {
         logger.error({ err, email }, 'Failed to send login alert email (Google Auth)');
@@ -246,6 +247,8 @@ export async function loginUser(input: LoginInput, ip?: string) {
   );
 
   logger.info({ userId: user.id, email: user.email }, 'User logged in');
+  
+  await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
   const loginTime = new Date().toLocaleString();
   sendLoginAlertEmail(user.email, user.name, ip || 'Unknown', loginTime, 'Web Browser').catch(err => {
@@ -345,6 +348,8 @@ export async function verifyLoginOtp(input: { email: string; otp: string }, ip?:
   );
 
   logger.info({ userId: user.id, email: user.email }, 'User logged in via OTP');
+
+  await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
   const loginTime = new Date().toLocaleString();
   sendLoginAlertEmail(user.email, user.name, ip || 'Unknown', loginTime, 'Web Browser').catch(err => {

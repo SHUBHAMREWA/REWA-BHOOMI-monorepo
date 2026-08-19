@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Box, Container, Grid, Typography, Button, Chip, Divider, Avatar, Paper, Breadcrumbs, IconButton, Dialog, Alert } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Container, Grid, Typography, Button, Chip, Divider, Avatar, Paper, Breadcrumbs, IconButton, Dialog, Alert, CircularProgress } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -84,10 +84,59 @@ interface PropertyData {
   owner_id?: string;
 }
 
-export default function PropertyDetailPage({ property }: { property: PropertyData }) {
+export default function PropertyDetailPage({ initialProperty, slug }: { initialProperty: PropertyData | null, slug: string }) {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
-  const [isFavorited, setIsFavorited] = useState(property.is_favorited);
+  const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
+  
+  const [property, setProperty] = useState<PropertyData | null>(initialProperty);
+  const [loading, setLoading] = useState(!initialProperty);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!initialProperty && !isAuthLoading) {
+      // Fetch property client-side if missing from SSR (e.g. requires auth)
+      import('@/lib/api').then(({ apiClient }) => {
+        apiClient.get(`/properties/${slug}`)
+          .then(res => {
+            setProperty(res.data.data);
+            setLoading(false);
+          })
+          .catch(() => {
+            setError(true);
+            setLoading(false);
+          });
+      });
+    }
+  }, [initialProperty, slug, isAuthLoading]);
+
+  const [isFavorited, setIsFavorited] = useState(property?.is_favorited || false);
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const [showPhone, setShowPhone] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+
+  useEffect(() => {
+    if (property) {
+      setIsFavorited(property.is_favorited);
+    }
+  }, [property]);
+
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !property) {
+    return (
+      <Box sx={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography variant="h5" color="error">Property not found</Typography>
+        <Button sx={{ mt: 2 }} variant="outlined" onClick={() => router.push('/properties')}>Go Back</Button>
+      </Box>
+    );
+  }
 
   const handleGoBack = () => {
     if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -96,10 +145,6 @@ export default function PropertyDetailPage({ property }: { property: PropertyDat
       router.push('/properties');
     }
   };
-  const [activeImgIdx, setActiveImgIdx] = useState(0);
-  const [showPhone, setShowPhone] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1);
 
   const handleOpenModal = () => {
     setZoomScale(1);
