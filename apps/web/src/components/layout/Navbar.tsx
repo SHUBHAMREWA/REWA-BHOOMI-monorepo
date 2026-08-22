@@ -372,7 +372,12 @@ export default function Navbar() {
                   >
                     <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
                       <span style={{ display: 'block', fontWeight: 600, color: '#0F172A' }}>{user.name}</span>
-                      <span style={{ fontSize: '13px', color: '#64748B' }}>{user.email}</span>
+                      <span style={{ display: 'block', fontSize: '13px', color: '#64748B', marginTop: '2px' }}>{user.email}</span>
+                      {(user as any).username && (
+                        <span style={{ display: 'block', fontSize: '12px', color: '#94A3B8', marginTop: '4px', fontWeight: 500 }}>
+                          @{ (user as any).username }
+                        </span>
+                      )}
                     </Box>
 
                     <MenuItem onClick={handleMenuClose} component={Link} href="/profile" sx={{ py: 1.5, fontWeight: 500 }}>

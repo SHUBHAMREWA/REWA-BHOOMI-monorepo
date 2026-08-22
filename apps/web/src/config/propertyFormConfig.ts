@@ -61,9 +61,9 @@ export const LISTING_PURPOSES: ListingPurposeOption[] = [
 ];
 
 export const PROPERTY_CATEGORIES: CategoryOption[] = [
+  { key: 'LAND', title: 'Land & Plots', subtitle: 'Plot, Kheti ki Zameen (Farm Land) aur Land Parcels ke liye', iconName: 'Landscape' },
   { key: 'RESIDENTIAL', title: 'Residential', subtitle: 'Ghar, Flat, Villa, Kamra aur PG listings ke liye', iconName: 'Home' },
   { key: 'COMMERCIAL', title: 'Commercial', subtitle: 'Dukaan, Office, Showroom aur Warehouse ke liye', iconName: 'Business' },
-  { key: 'LAND', title: 'Land & Plots', subtitle: 'Plot, Kheti ki Zameen (Farm Land) aur Land Parcels ke liye', iconName: 'Landscape' },
   { key: 'SPECIAL', title: 'Special Purpose', subtitle: 'Marriage Hall, Banquet, Guest House aur Hotel ke liye', iconName: 'MeetingRoom' },
 ];
 

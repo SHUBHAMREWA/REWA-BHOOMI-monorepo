@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Box, Container, Paper, Typography, Button, Grid, TextField, MenuItem, Select, FormControl,
   InputLabel, Chip, CircularProgress, Stepper, Step, StepLabel, Checkbox, FormControlLabel,
-  Switch, Divider, Alert, Card, CardMedia, CardContent, IconButton
+  Switch, Divider, Alert, Card, CardMedia, CardContent, IconButton, Autocomplete
 } from '@mui/material';
 import SellIcon from '@mui/icons-material/Sell';
 import KeyIcon from '@mui/icons-material/Key';
@@ -29,19 +29,11 @@ import { LISTING_PURPOSES, PROPERTY_CATEGORIES, AREA_UNITS, getFilteredPropertyT
 import { apiGet, apiPost, apiClient } from '@/lib/api';
 import LocationMapPicker from './LocationMapPicker';
 import toast from 'react-hot-toast';
+import { State, City } from 'country-state-city';
 
 const STEPS = [
-  'Purpose (Maksad)',
-  'Category',
-  'Property Type',
-  'Location (Jagah)',
-  'Details',
-  'Kimat (Price)',
-  'Suvidhayein (Amenities)',
-  'Photos & Media',
-  'Description (Vivaran)',
-  'Preview Check',
-  'Publish (Live)',
+  'Property Details',
+  'Location & Media'
 ];
 
 export default function PropertyPostingWizard({ propertyId }: { propertyId?: string }) {
@@ -51,9 +43,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   const [activeStep, setActiveStep] = useState(0);
 
   // Core Form State
-  const [purpose, setPurpose] = useState<ListingPurpose>('SALE');
-  const [category, setCategory] = useState<PropertyCategoryType>('RESIDENTIAL');
-  const [propertyType, setPropertyType] = useState<PropertyTypeEnum>('HOUSE');
+  const [purpose, setPurpose] = useState<ListingPurpose | null>(null);
+  const [category, setCategory] = useState<PropertyCategoryType | null>(null);
+  const [propertyType, setPropertyType] = useState<PropertyTypeEnum | null>(null);
+  const [progressLevel, setProgressLevel] = useState(0);
 
   // Location
   const [location, setLocation] = useState({
@@ -216,6 +209,11 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
   // Submitting
   const [submitting, setSubmitting] = useState(false);
+  const indianStates = State.getStatesOfCountry('IN');
+  const selectedStateObj = indianStates.find(s => s.name === location.state);
+  const citiesOfState = selectedStateObj 
+    ? City.getCitiesOfState('IN', selectedStateObj.isoCode).map(c => c.name)
+    : [];
 
   const { user, isLoading: isAuthLoading } = useAuth();
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
@@ -230,6 +228,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           setPurpose(prop.listing_purpose);
           setCategory(prop.category_type);
           setPropertyType(prop.property_type);
+          setProgressLevel(3);
           
           if (prop.location) {
             setLocation(prev => ({ ...prev, ...prop.location }));
@@ -388,7 +387,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   }, []);
 
   // Filter property types whenever purpose or category changes
-  const filteredTypes = getFilteredPropertyTypes(purpose, category);
+  const filteredTypes = getFilteredPropertyTypes((purpose as ListingPurpose) || "SALE", (category as PropertyCategoryType) || "RESIDENTIAL");
 
   useEffect(() => {
     if (filteredTypes.length > 0) {
@@ -409,23 +408,25 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   }, [purpose]);
 
   const handlePurposeSelect = (pKey: ListingPurpose) => {
-    setPurpose(pKey);
-    const purposeOpt = LISTING_PURPOSES.find(p => p.key === pKey);
-    if (purposeOpt && !purposeOpt.allowedCategories.includes(category)) {
-      setCategory(purposeOpt.allowedCategories[0]);
-    }
-    setActiveStep(1);
-  };
+      setPurpose(pKey);
+      const purposeOpt = LISTING_PURPOSES.find(p => p.key === pKey);
+      if (purposeOpt && category && !purposeOpt.allowedCategories.includes(category)) {
+        setCategory(null);
+        setPropertyType(null);
+      }
+      setProgressLevel(1);
+    };
 
   const handleCategorySelect = (cKey: PropertyCategoryType) => {
-    setCategory(cKey);
-    setActiveStep(2);
-  };
+      setCategory(cKey);
+      setPropertyType(null);
+      setProgressLevel(2);
+    };
 
   const handlePropertyTypeSelect = (tKey: PropertyTypeEnum) => {
-    setPropertyType(tKey);
-    setActiveStep(3);
-  };
+      setPropertyType(tKey);
+      setProgressLevel(3);
+    };
 
   // Media Upload Handler (WebP converted & uploaded to R2)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -485,7 +486,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     setSubmitting(true);
     try {
       const rawTitle = title.trim();
-      const finalTitle = rawTitle.length >= 5 ? rawTitle : `${propertyType.replace('_', ' ')} for ${purpose} in ${location.city}`;
+      const finalTitle = rawTitle.length >= 5 ? rawTitle : `${(propertyType || "").replace('_', ' ')} for ${purpose} in ${location.city}`;
       
       const rawDesc = description.trim();
       const finalDesc = rawDesc.length >= 10 
@@ -581,6 +582,15 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     );
   }
 
+  
+  const handleStepClick = (idx: number) => {
+    if (activeStep === 2) return; // Disallow going back from success page
+    if (idx === 0) setActiveStep(0);
+    if (idx === 1 && title.length >= 10 && description.length >= 10 && progressLevel >= 3) {
+      setActiveStep(1);
+    }
+  };
+
   return (
     <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', py: { xs: 2, md: 4 } }}>
       <Container maxWidth="lg">
@@ -595,12 +605,19 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         </Box>
 
         {/* Stepper Header */}
-        <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: { xs: 2, sm: 3 }, mb: { xs: 2.5, sm: 4 }, border: '1px solid #E2E8F0', bgcolor: '#fff', overflowX: 'auto', '&::-webkit-scrollbar': { height: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: 2 } }}>
-          <Box sx={{ minWidth: { xs: 500, sm: 800, md: '100%' }, px: { xs: 1, sm: 0 } }}>
+        <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 3 }, borderRadius: { xs: 2, sm: 3 }, mb: { xs: 2.5, sm: 4 }, border: '1px solid #E2E8F0', bgcolor: '#fff',  }}>
+          <Box sx={{ width: '100%', px: { xs: 1, sm: 0 } }}>
             <Stepper activeStep={activeStep} alternativeLabel>
             {STEPS.map((label, idx) => (
               <Step key={label} completed={activeStep > idx}>
-                <StepLabel sx={{ '& .MuiStepLabel-label': { fontSize: { xs: '0.65rem', sm: '0.875rem' }, mt: { xs: 0.5, sm: 1 } }, '& .MuiStepIcon-root': { width: { xs: 20, sm: 24 }, height: { xs: 20, sm: 24 } } }}>{label}</StepLabel>
+                <StepLabel 
+                  onClick={() => handleStepClick(idx)} 
+                  sx={{ 
+                    cursor: (activeStep === 2) ? 'default' : ((idx === 0) || (idx === 1 && title.length >= 10 && description.length >= 10 && progressLevel >= 3)) ? 'pointer' : 'default',
+                    '& .MuiStepLabel-label': { fontSize: { xs: '0.75rem', sm: '0.875rem' }, mt: { xs: 0.5, sm: 1 } }, 
+                    '& .MuiStepIcon-root': { width: { xs: 20, sm: 24 }, height: { xs: 20, sm: 24 } } 
+                  }}
+                >{label}</StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -608,12 +625,22 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         </Paper>
 
         {/* ─── STEP 0: LISTING PURPOSE ─── */}
-        {activeStep === 0 && (
+        {((activeStep === 0)) && (
           <Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+            {progressLevel > 0 && purpose ? (
+              <Paper sx={{ p: { xs: 1.5, sm: 2 }, mb: 3, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" letterSpacing={1}>Listing Purpose</Typography>
+                  <Typography variant="subtitle1" fontWeight={700} color="#0F172A" display="flex" alignItems="center" gap={0.75}><CheckCircleIcon sx={{ color: '#22c55e', fontSize: '1.25rem' }} /> {LISTING_PURPOSES.find(p => p.key === purpose)?.title}</Typography>
+                </Box>
+                <Button size="small" variant="outlined" onClick={() => setProgressLevel(0)} sx={{ textTransform: 'none', borderRadius: 2 }}>Change</Button>
+              </Paper>
+            ) : (
+              <Box mb={4}>
+                <Typography variant="h6" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
               Aap Kya Karna Chahte Hain?
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               Apni requirement ke hisab se niche diya gaya option select karein
             </Typography>
 
@@ -626,7 +653,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       elevation={0}
                       onClick={() => handlePurposeSelect(item.key)}
                       sx={{
-                        p: { xs: 1.5, sm: 3 },
+                        p: { xs: 1.25, sm: 2.5 },
                         borderRadius: { xs: 2, sm: 3 },
                         cursor: 'pointer',
                         border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
@@ -637,11 +664,11 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                     >
                       <Box display="flex" alignItems="center" gap={1.5} mb={1}>
                         <PurposeIcon name={item.iconName} />
-                        <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                        <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '0.95rem', sm: '1.25rem' } }}>
                           {item.title}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="#64748B" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                      <Typography variant="body2" color="#64748B" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                         {item.subtitle}
                       </Typography>
                     </Paper>
@@ -649,16 +676,29 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 );
               })}
             </Grid>
+          
+              </Box>
+            )}
           </Box>
         )}
 
         {/* ─── STEP 1: PROPERTY CATEGORY ─── */}
-        {activeStep === 1 && (
+        {((activeStep === 0)) && progressLevel >= 1 && purpose !== null && (
           <Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+            {progressLevel > 1 && category ? (
+              <Paper sx={{ p: { xs: 1.5, sm: 2 }, mb: 3, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" letterSpacing={1}>Property Category</Typography>
+                  <Typography variant="subtitle1" fontWeight={700} color="#0F172A" display="flex" alignItems="center" gap={0.75}><CheckCircleIcon sx={{ color: '#22c55e', fontSize: '1.25rem' }} /> {PROPERTY_CATEGORIES.find(c => c.key === category)?.title}</Typography>
+                </Box>
+                <Button size="small" variant="outlined" onClick={() => setProgressLevel(1)} sx={{ textTransform: 'none', borderRadius: 2 }}>Change</Button>
+              </Paper>
+            ) : (
+              <Box mb={4}>
+                <Typography variant="h6" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
               Aapki Property Kis Category Me Aati Hai?
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               Purpose selected: <strong>{purpose}</strong> — Apni property ki category select karein
             </Typography>
 
@@ -669,12 +709,12 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               }).map((item) => {
                 const isSelected = category === item.key;
                 return (
-                  <Grid item xs={12} sm={6} md={3} key={item.key}>
+                  <Grid item xs={6} sm={6} md={3} key={item.key}>
                     <Paper
                       elevation={0}
                       onClick={() => handleCategorySelect(item.key)}
                       sx={{
-                        p: { xs: 1.5, sm: 3 },
+                        p: { xs: 1.25, sm: 2.5 },
                         borderRadius: { xs: 2, sm: 3 },
                         cursor: 'pointer',
                         border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
@@ -687,7 +727,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       <Box mb={1} display="flex" justifyContent="center">
                         <CategoryIcon name={item.iconName} />
                       </Box>
-                      <Typography variant="h6" fontWeight={700} color="#0F172A" mb={0.5} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                      <Typography variant="h6" fontWeight={700} color="#0F172A" mb={0.5} sx={{ fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>
                         {item.title}
                       </Typography>
                       <Typography variant="caption" color="#64748B" sx={{ fontSize: { xs: '0.75rem', sm: '0.75rem' } }}>
@@ -698,29 +738,42 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 );
               })}
             </Grid>
+          
+              </Box>
+            )}
           </Box>
         )}
 
         {/* ─── STEP 2: PROPERTY TYPE ─── */}
-        {activeStep === 2 && (
+        {((activeStep === 0)) && progressLevel >= 2 && category !== null && (
           <Box>
-            <Typography variant="h5" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+            {progressLevel > 2 && propertyType ? (
+              <Paper sx={{ p: { xs: 1.5, sm: 2 }, mb: 4, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" letterSpacing={1}>Property Type</Typography>
+                  <Typography variant="subtitle1" fontWeight={700} color="#0F172A" display="flex" alignItems="center" gap={0.75}><CheckCircleIcon sx={{ color: '#22c55e', fontSize: '1.25rem' }} /> {filteredTypes.find(p => p.key === propertyType!)?.label}</Typography>
+                </Box>
+                <Button size="small" variant="outlined" onClick={() => setProgressLevel(2)} sx={{ textTransform: 'none', borderRadius: 2 }}>Change</Button>
+              </Paper>
+            ) : (
+              <Box mb={4}>
+                <Typography variant="h6" fontWeight={700} textAlign="center" mb={1} sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
               Property Ka Type Select Karein
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+            <Typography variant="body2" color="text.secondary" textAlign="center" mb={3} sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
               Category: <strong>{category}</strong> | Purpose: <strong>{purpose}</strong> — Sahi type par click karein
             </Typography>
 
             <Grid container spacing={2}>
               {filteredTypes.map((item) => {
-                const isSelected = propertyType === item.key;
+                const isSelected = propertyType! === item.key;
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={item.key}>
+                  <Grid item xs={6} sm={6} md={4} key={item.key}>
                     <Paper
                       elevation={0}
                       onClick={() => handlePropertyTypeSelect(item.key)}
                       sx={{
-                        p: { xs: 1.5, sm: 2.5 },
+                        p: { xs: 1.25, sm: 2 },
                         borderRadius: { xs: 2, sm: 3 },
                         cursor: 'pointer',
                         border: isSelected ? '2px solid #2563EB' : '1px solid #E2E8F0',
@@ -740,11 +793,14 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 );
               })}
             </Grid>
+          
+              </Box>
+            )}
           </Box>
         )}
 
         {/* ─── STEP 3: LOCATION ─── */}
-        {activeStep === 3 && (
+        {((activeStep === 1)) && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
             <Typography variant="h6" fontWeight={700} mb={3} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
               Location Details
@@ -797,7 +853,32 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             </Grid>
 
             {/* Dynamic Interactive Location Map Picker */}
-            <LocationMapPicker
+            <Grid container spacing={2} mb={3}>
+              <Grid item xs={12} sm={4}>
+                <Autocomplete
+                  options={indianStates.map(s => s.name)}
+                  value={location.state}
+                  onChange={(e: any, newValue: string | null) => setLocation({ ...location, state: newValue || '', city: '', locality: '' })}
+                  renderInput={(params) => <TextField {...params} label="State" required size="small" />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Autocomplete
+                  options={citiesOfState}
+                  value={location.city}
+                  onChange={(e: any, newValue: string | null) => setLocation({ ...location, city: newValue || '', locality: '' })}
+                  renderInput={(params) => <TextField {...params} label="City" required size="small" />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth size="small" label="Locality" required
+                  value={location.locality}
+                  onChange={(e) => setLocation({ ...location, locality: e.target.value })}
+                  placeholder="e.g. Civil Lines"
+                />
+              </Grid>
+            </Grid>\n            <LocationMapPicker
               initialLat={location.latitude}
               initialLng={location.longitude}
               city={location.city}
@@ -808,10 +889,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 4: PROPERTY SPECIFIC DETAILS ─── */}
-        {activeStep === 4 && (
+        {((activeStep === 0)) && progressLevel >= 3 && propertyType !== null && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
             <Typography variant="h6" fontWeight={700} mb={3} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-              Property Attributes ({propertyType.replace('_', ' ')})
+              Property Attributes ({(propertyType || "").replace('_', ' ')})
             </Typography>
 
             {/* Residential House/Apartment/Villa Fields */}
@@ -914,7 +995,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 5: PRICING / FINANCIALS ─── */}
-        {activeStep === 5 && (
+        {((activeStep === 0)) && progressLevel >= 3 && propertyType !== null && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
             <Typography variant="h6" fontWeight={700} mb={3}>
               Financial & Pricing Details
@@ -965,7 +1046,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 6: AMENITIES ─── */}
-        {activeStep === 6 && (
+        {((activeStep === 1)) && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
             <Typography variant="h6" fontWeight={700} mb={1}>
               Property Ki Suvidhayein (Amenities) Select Karein
@@ -974,45 +1055,37 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               Aapki property me jo-jo suvidhayein uplabdh hain unhe tick karein
             </Typography>
 
-            <Grid container spacing={2}>
-              {(availableAmenities.length > 0 ? availableAmenities : [
-                { id: '1', name: 'Parking' }, { id: '2', name: 'Power Backup' }, { id: '3', name: '24x7 Security' },
-                { id: '4', name: 'WiFi' }, { id: '5', name: 'Lift / Elevator' }, { id: '6', name: 'Air Conditioning' },
-                { id: '7', name: 'Water Supply' }, { id: '8', name: 'CCTV Surveillance' }, { id: '9', name: 'Garden / Park' },
-              ]).map((item) => {
-                const isChecked = selectedAmenityIds.includes(item.id);
-                return (
-                  <Grid item xs={6} sm={4} md={3} key={item.id}>
-                    <Paper
-                      elevation={0}
+                          <Box display="flex" flexWrap="wrap" gap={1.5}>
+                {(availableAmenities.length > 0 ? availableAmenities : [
+                  { id: '1', name: 'Parking' }, { id: '2', name: 'Power Backup' }, { id: '3', name: '24x7 Security' },
+                  { id: '4', name: 'WiFi' }, { id: '5', name: 'Lift / Elevator' }, { id: '6', name: 'Air Conditioning' },
+                  { id: '7', name: 'Water Supply' }, { id: '8', name: 'CCTV Surveillance' }, { id: '9', name: 'Garden / Park' },
+                ]).map((item) => {
+                  const isChecked = selectedAmenityIds.includes(item.id);
+                  return (
+                    <Chip
+                      key={item.id}
+                      label={item.name}
+                      clickable
                       onClick={() => {
                         setSelectedAmenityIds(prev =>
-                          isChecked ? prev.filter(id => id !== item.id) : [...prev, item.id]
+                          prev.includes(item.id)
+                            ? prev.filter(id => id !== item.id)
+                            : [...prev, item.id]
                         );
                       }}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        border: isChecked ? '2px solid #2563EB' : '1px solid #E2E8F0',
-                        bgcolor: isChecked ? '#EFF6FF' : '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <Checkbox checked={isChecked} size="small" />
-                      <Typography variant="body2" fontWeight={600} color="#0F172A">{item.name}</Typography>
-                    </Paper>
-                  </Grid>
-                );
-              })}
-            </Grid>
+                      color={isChecked ? 'primary' : 'default'}
+                      variant={isChecked ? 'filled' : 'outlined'}
+                      sx={{ fontSize: '0.875rem', px: 1, py: 2, borderRadius: 2 }}
+                    />
+                  );
+                })}
+              </Box>
           </Paper>
         )}
 
         {/* ─── STEP 7: PHOTOS & MEDIA ─── */}
-        {activeStep === 7 && (
+        {((activeStep === 1)) && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
             <Typography variant="h6" fontWeight={700} mb={1}>
               Property Ki Photos Upload Karein
@@ -1071,7 +1144,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 8: DESCRIPTION ─── */}
-        {activeStep === 8 && (
+        {((activeStep === 0)) && progressLevel >= 3 && propertyType !== null && (
           <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
             <Typography variant="h6" fontWeight={700} mb={3}>
               Title Aur Property Ka Vivaran (Description)
@@ -1079,18 +1152,34 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <TextField
-                  fullWidth size="small" label="Property Title"
+                  fullWidth size="small" label="Property Title" required
                   value={title}
+                  inputProps={{ maxLength: 70 }}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={`e.g. Beautiful 3 BHK House in Civil Lines, Rewa`}
+                  placeholder="e.g. Beautiful 3 BHK House in Civil Lines, Rewa"
+                  error={title.length > 0 && title.length < 10}
+                  helperText={
+                    <Box display="flex" justifyContent="space-between" width="100%">
+                      <span>{title.length > 0 && title.length < 10 ? "A minimum length of 10 characters is required." : ""}</span>
+                      <span>{70 - (title?.length || 0)} characters left</span>
+                    </Box>
+                  }
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  fullWidth multiline rows={5} label="Detailed Description"
+                  fullWidth multiline rows={5} label="Detailed Description" required
                   value={description}
+                  inputProps={{ maxLength: 4096 }}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe key highlights, surrounding landmarks, connectivity, road width, and special terms..."
+                  error={description.length > 0 && description.length < 10}
+                  helperText={
+                    <Box display="flex" justifyContent="space-between" width="100%">
+                      <span>{description.length > 0 && description.length < 10 ? "A minimum length of 10 characters is required." : ""}</span>
+                      <span>{4096 - (description?.length || 0)} characters left</span>
+                    </Box>
+                  }
                 />
               </Grid>
             </Grid>
@@ -1098,7 +1187,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 9: PREVIEW ─── */}
-        {activeStep === 9 && (
+        {false && (
           <Box>
             <Box textAlign="center" mb={4}>
               <Typography variant="h5" fontWeight={800} color="#0F172A" mb={0.5}>
@@ -1153,7 +1242,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               <Box display="flex" gap={1} mb={2} flexWrap="wrap">
                 <Chip label={purpose} color="primary" size="small" sx={{ fontWeight: 700 }} />
                 <Chip label={category} variant="outlined" size="small" />
-                <Chip label={propertyType.replace(/_/g, ' ')} variant="outlined" size="small" />
+                <Chip label={(propertyType || "").replace(/_/g, ' ')} variant="outlined" size="small" />
                 {!(user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN')) && (
                   <Chip label="⏳ Pending Admin Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 600 }} />
                 )}
@@ -1161,7 +1250,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
               {/* Title */}
               <Typography variant="h5" fontWeight={800} color="#0F172A" mb={1} sx={{ lineHeight: 1.3 }}>
-                {title || `${propertyType.replace(/_/g, ' ')} for ${purpose} in ${location.city}`}
+                {title || `${(propertyType || "").replace(/_/g, ' ')} for ${purpose} in ${location.city}`}
               </Typography>
 
               {/* Location */}
@@ -1282,7 +1371,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 10: SUBMIT SUCCESS ─── */}
-        {activeStep === 10 && (
+        {((activeStep === 2)) && (
           <Paper elevation={0} sx={{ p: { xs: 3, sm: 6 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff', textAlign: 'center' }}>
             <Box sx={{ fontSize: 72, mb: 2 }}>🎉</Box>
             <Typography variant="h4" fontWeight={800} color="#0F172A" mb={1}>
@@ -1314,7 +1403,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* Navigation Control Buttons */}
-        {activeStep < 10 && (
+        {activeStep < 2 && (
           <Box display="flex" justifyContent="space-between" mt={4}>
             <Button
               disabled={activeStep === 0}
@@ -1325,9 +1414,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               Back
             </Button>
 
-            {activeStep < 9 ? (
+            {activeStep < 1 ? (
               <Button
                 variant="contained"
+                disabled={title.length < 10 || description.length < 10 || progressLevel < 3}
                 onClick={() => setActiveStep(prev => prev + 1)}
                 endIcon={<ArrowForwardIcon />}
                 sx={{ textTransform: 'none', px: 4 }}

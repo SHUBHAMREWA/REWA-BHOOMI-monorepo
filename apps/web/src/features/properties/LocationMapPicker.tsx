@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, TextField, Paper, InputAdornment } from '@mui/material';
+import { Box, Typography, Button, TextField, Paper, InputAdornment, CircularProgress } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import dynamic from 'next/dynamic';
+
+const InteractiveMap = dynamic(() => import('./InteractiveMap'), { ssr: false });
 
 interface LocationMapPickerProps {
   initialLat?: number;
@@ -40,6 +43,28 @@ export default function LocationMapPicker({
     setIsClient(true);
   }, []);
 
+  const fetchReverseGeocode = async (latitude: number, longitude: number) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+      const data = await res.json();
+      if (data && data.address) {
+        onLocationSelect({
+          lat: latitude,
+          lng: longitude,
+          address: data.display_name,
+          city: data.address.city || data.address.town || data.address.village || city,
+          state: data.address.state || state,
+          pincode: data.address.postcode || pincode,
+        });
+      } else {
+        onLocationSelect({ lat: latitude, lng: longitude });
+      }
+    } catch (e) {
+      console.error('Reverse geocoding error:', e);
+      onLocationSelect({ lat: latitude, lng: longitude });
+    }
+  };
+
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -48,13 +73,19 @@ export default function LocationMapPicker({
           const newLng = pos.coords.longitude;
           setLat(newLat);
           setLng(newLng);
-          onLocationSelect({ lat: newLat, lng: newLng });
+          fetchReverseGeocode(newLat, newLng);
         },
         () => {
           // Fallback
         }
       );
     }
+  };
+
+  const handleMapChange = (newLat: number, newLng: number) => {
+    setLat(newLat);
+    setLng(newLng);
+    fetchReverseGeocode(newLat, newLng);
   };
 
   const handleSearchLocation = async () => {
@@ -121,14 +152,7 @@ export default function LocationMapPicker({
       {/* Embedded OpenStreetMap Leaflet Map */}
       <Paper elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: 2, overflow: 'hidden', height: 320, position: 'relative' }}>
         {isClient ? (
-          <iframe
-            title="Property Location Map"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            loading="lazy"
-            src={`https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`}
-          />
+          <InteractiveMap lat={lat} lng={lng} onChange={handleMapChange} />
         ) : (
           <Box sx={{ p: 4, textAlign: 'center', color: '#64748B' }}>Loading Map...</Box>
         )}
@@ -151,3 +175,5 @@ export default function LocationMapPicker({
     </Box>
   );
 }
+
+
