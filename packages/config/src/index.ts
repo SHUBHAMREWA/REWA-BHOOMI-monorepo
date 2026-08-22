@@ -80,7 +80,7 @@ export const PASSWORD_RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
 export const APP_NAME = 'Rewa Bhoomi';
 export const APP_DESCRIPTION = 'Rewa\'s trusted real estate marketplace for buying, selling and renting properties.';
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.rewabhoomi.com';
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 // ─── WebRTC ─────────────────────────────────────────────────────────────────────
