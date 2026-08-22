@@ -114,6 +114,8 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   // Land Details
   const [landDetails, setLandDetails] = useState({
     totalLandArea: '' as any,
+    plotLength: '' as any,
+    plotWidth: '' as any,
     areaUnit: 'SQ_FT' as AreaUnit,
     landType: 'Agricultural',
     irrigationAvailable: true,
@@ -281,6 +283,8 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           if (prop.landDetails) {
             setLandDetails({
               totalLandArea: prop.landDetails.total_land_area || '',
+              plotLength: prop.landDetails.plot_length || '',
+              plotWidth: prop.landDetails.plot_width || '',
               areaUnit: prop.landDetails.area_unit || 'SQ_FT',
               landType: prop.landDetails.land_type || 'Agricultural',
               irrigationAvailable: prop.landDetails.irrigation_available ?? true,
@@ -929,7 +933,38 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               </Grid>
             )}
 
-            {/* Land & Agricultural Fields */}
+            
+              {/* Commercial Fields */}
+              {category === 'COMMERCIAL' && (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth size="small" type="number" label="Carpet Area (Sq Ft)" value={commDetails.carpetArea} onChange={(e) => setCommDetails({ ...commDetails, carpetArea: toNumVal(e.target.value) as any })} placeholder="e.g. 500" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth size="small" type="number" label="Built-up Area (Sq Ft)" value={commDetails.builtUpArea} onChange={(e) => setCommDetails({ ...commDetails, builtUpArea: toNumVal(e.target.value) as any })} placeholder="e.g. 650" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth size="small" type="number" label="Length / Depth (ft)" value={commDetails.depth} onChange={(e) => setCommDetails({ ...commDetails, depth: toNumVal(e.target.value) as any })} placeholder="e.g. 40" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth size="small" type="number" label="Width / Frontage (ft)" value={commDetails.frontage} onChange={(e) => setCommDetails({ ...commDetails, frontage: toNumVal(e.target.value) as any })} placeholder="e.g. 15" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth size="small" type="number" label="Floor Number" value={commDetails.floor} onChange={(e) => setCommDetails({ ...commDetails, floor: toNumVal(e.target.value) as any })} placeholder="e.g. 0 (Ground), 1" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField fullWidth size="small" type="number" label="Washrooms" value={commDetails.washrooms} onChange={(e) => setCommDetails({ ...commDetails, washrooms: toNumVal(e.target.value) as any })} placeholder="e.g. 1" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel control={<Switch checked={commDetails.mainRoadFacing} onChange={(e) => setCommDetails({ ...commDetails, mainRoadFacing: e.target.checked })} />} label="Main Road Facing?" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel control={<Switch checked={commDetails.cornerProperty} onChange={(e) => setCommDetails({ ...commDetails, cornerProperty: e.target.checked })} />} label="Corner Property?" />
+                  </Grid>
+                </Grid>
+              )}
+
+              {/* Land & Agricultural Fields */}
             {category === 'LAND' && (
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -944,17 +979,27 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Soil Type" value={landDetails.soilType} onChange={(e) => setLandDetails({ ...landDetails, soilType: e.target.value })} placeholder="Black Cotton, Alluvial, Red Soil" />
+                  <TextField fullWidth size="small" type="number" label="Length (ft)" value={landDetails.plotLength} onChange={(e) => setLandDetails({ ...landDetails, plotLength: toNumVal(e.target.value) })} placeholder="e.g. 50" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Current Crop" value={landDetails.currentCrop} onChange={(e) => setLandDetails({ ...landDetails, currentCrop: e.target.value })} placeholder="Wheat, Rice, Pulses" />
+                  <TextField fullWidth size="small" type="number" label="Width (ft)" value={landDetails.plotWidth} onChange={(e) => setLandDetails({ ...landDetails, plotWidth: toNumVal(e.target.value) })} placeholder="e.g. 30" />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControlLabel control={<Switch checked={landDetails.irrigationAvailable} onChange={(e) => setLandDetails({ ...landDetails, irrigationAvailable: e.target.checked })} />} label="Pani ki vyawastha hai? (Sinchai / Water Facility)" />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControlLabel control={<Switch checked={landDetails.borewell} onChange={(e) => setLandDetails({ ...landDetails, borewell: e.target.checked })} />} label="Borewell ya Nal / Tube well ki suvidha hai?" />
-                </Grid>
+                {['AGRICULTURAL_LAND', 'FARM_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
+                  <>
+                    <Grid item xs={12} sm={6}>
+                      <TextField fullWidth size="small" label="Soil Type" value={landDetails.soilType} onChange={(e) => setLandDetails({ ...landDetails, soilType: e.target.value })} placeholder="Black Cotton, Alluvial, Red Soil" />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField fullWidth size="small" label="Current Crop" value={landDetails.currentCrop} onChange={(e) => setLandDetails({ ...landDetails, currentCrop: e.target.value })} placeholder="Wheat, Rice, Pulses" />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControlLabel control={<Switch checked={landDetails.irrigationAvailable} onChange={(e) => setLandDetails({ ...landDetails, irrigationAvailable: e.target.checked })} />} label="Pani ki vyawastha hai? (Sinchai / Water Facility)" />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControlLabel control={<Switch checked={landDetails.borewell} onChange={(e) => setLandDetails({ ...landDetails, borewell: e.target.checked })} />} label="Borewell ya Nal / Tube well ki suvidha hai?" />
+                    </Grid>
+                  </>
+                )}
               </Grid>
             )}
 
@@ -1295,7 +1340,21 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 </Box>
               )}
 
-              {category === 'LAND' && landDetails.totalLandArea && (
+              
+                {category === 'COMMERCIAL' && (commDetails.carpetArea || commDetails.builtUpArea) && (
+                  <Box mb={3}>
+                    <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🏢 Commercial Details</Typography>
+                    <Grid container spacing={2}>
+                      {commDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary">Carpet Area (sqft)</Typography></Box></Grid>}
+                      {commDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary">Built-up Area (sqft)</Typography></Box></Grid>}
+                      {commDetails.depth && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.depth}</Typography><Typography variant="caption" color="text.secondary">Length (ft)</Typography></Box></Grid>}
+                      {commDetails.frontage && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.frontage}</Typography><Typography variant="caption" color="text.secondary">Width (ft)</Typography></Box></Grid>}
+                      {commDetails.floor && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.floor}</Typography><Typography variant="caption" color="text.secondary">Floor</Typography></Box></Grid>}
+                    </Grid>
+                  </Box>
+                )}
+
+                {category === 'LAND' && landDetails.totalLandArea && (
                 <Box mb={3}>
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🌾 Land Details</Typography>
                   <Grid container spacing={2}>

@@ -788,6 +788,57 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 </Box>
               </Paper>
 
+              {/* CARD 3: Future Value Projection */}
+              {property.price && Number(property.price) > 0 && (() => {
+                const base = Number(property.price);
+                const fmt = (v: number) => {
+                  if (v >= 10000000) return (v / 10000000).toFixed(2).replace(/\.?0+$/, '') + ' Cr';
+                  if (v >= 100000) return (v / 100000).toFixed(2).replace(/\.?0+$/, '') + ' Lakh';
+                  if (v >= 1000) return (v / 1000).toFixed(1).replace(/\.?0+$/, '') + 'K';
+                  return '₹' + v.toLocaleString('en-IN');
+                };
+                const projections = [
+                  { label: '2 Saal Mein', multiplier: 1.25 },
+                  { label: '3 Saal Mein', multiplier: 1.50 },
+                  { label: '5 Saal Mein', multiplier: 2.375 },
+                  { label: '10 Saal Mein', multiplier: 3.75 },
+                ];
+                return (
+                  <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
+                    <Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: '0.85rem', mb: 0.5 }}>
+                      Es property ki kimat, agle kuch saalon mein lagbag itni ho sakti hai
+                    </Typography>
+                    <Typography variant="caption" color="#94A3B8" sx={{ fontSize: '0.7rem', display: 'block', mb: 2 }}>
+                      Market average ke hisaab se anumaan
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.4 }}>
+                      {projections.map((p) => {
+                        const projVal = Math.round(base * p.multiplier);
+                        return (
+                          <Box key={p.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" fontWeight={600} color="#334155" sx={{ fontSize: '0.83rem' }}>
+                              {p.label}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                              <Box component="span" sx={{ color: '#CBD5E1', fontSize: '0.9rem' }}>→</Box>
+                              <Typography variant="body2" fontWeight={700} color="#16A34A" sx={{ fontSize: '0.85rem' }}>
+                                ₹{fmt(projVal)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        );
+                      })}
+                    </Box>
+
+                    <Typography variant="caption" color="#CBD5E1" sx={{ display: 'block', mt: 2, fontSize: '0.67rem' }}>
+                      Ye sirf ek anumaan hai. Asli kimat market par depend karti hai.
+                    </Typography>
+                  </Paper>
+                );
+              })()}
+
+
               {/* CARD 2: Seller Info & Action Buttons */}
               <Paper
                 elevation={0}

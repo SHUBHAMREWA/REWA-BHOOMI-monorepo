@@ -49,10 +49,18 @@ export const metadata: Metadata = {
     description: APP_DESCRIPTION,
     images: ['/og-image.jpg'],
   },
-  manifest: '/manifest.json',
+  manifest: '/favicons/site.webmanifest',
   icons: {
-    icon: '/favicon.png',
-    apple: '/icons/apple-touch-icon.png',
+    icon: [
+      { url: '/favicons/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicons/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicons/favicon.ico', sizes: 'any' },
+    ],
+    apple: '/favicons/apple-touch-icon.png',
+    other: [
+      { rel: 'android-chrome', url: '/favicons/android-chrome-192x192.png', sizes: '192x192' },
+      { rel: 'android-chrome', url: '/favicons/android-chrome-512x512.png', sizes: '512x512' },
+    ],
   },
 };
 
