@@ -759,7 +759,8 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         facing             VARCHAR(50),
         water_supply       VARCHAR(100),
         possession_status  VARCHAR(100),
-        road_width         NUMERIC(10,2)
+        road_width         NUMERIC(10,2),
+        tenant_preference  VARCHAR(50)
       );
 
       CREATE TABLE IF NOT EXISTS property_commercial_details (
@@ -799,7 +800,9 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         farm_house             BOOLEAN DEFAULT FALSE,
         nearest_road_distance  VARCHAR(100),
         nearest_village        VARCHAR(100),
-        nearest_city           VARCHAR(100)
+        nearest_city           VARCHAR(100),
+        plot_length            NUMERIC(10,2),
+        plot_width             NUMERIC(10,2)
       );
 
       CREATE TABLE IF NOT EXISTS property_pg_details (
@@ -1003,6 +1006,13 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE TRIGGER trg_blog_categories_updated_at
         BEFORE UPDATE ON blog_categories
         FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    `,
+  },
+  {
+    name: '020_add_plot_length_width',
+    sql: `
+      ALTER TABLE property_land_details ADD COLUMN IF NOT EXISTS plot_length NUMERIC(10,2);
+      ALTER TABLE property_land_details ADD COLUMN IF NOT EXISTS plot_width NUMERIC(10,2);
     `,
   },
 ];

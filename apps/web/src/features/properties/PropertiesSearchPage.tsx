@@ -122,7 +122,7 @@ export default function PropertiesSearchPage() {
             Properties & Plots for Sale in {city || 'Rewa'}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 0.4, fontSize: { xs: '0.78rem', sm: '0.95rem' }, color: '#64748B', display: { xs: 'none', sm: 'block' } }}>
-            Rewa mein Plot, Property, Ghar, Rent par Makan aur Dukaan aasani se khojiye. Apni zarurat ke hisaab se search karein, property pasand aaye toh contact karein.
+            {city || 'Rewa'} में प्लॉट, प्रॉपर्टी, घर, किराए पर मकान और दुकान आसानी से खोजें। अपनी जरूरत के हिसाब से सर्च करें, प्रॉपर्टी पसंद आए तो कांटेक्ट करें।
           </Typography>
         </Box>
 

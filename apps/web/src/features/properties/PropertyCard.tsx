@@ -181,19 +181,38 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
     ? 'TYPE'
     : isPG
     ? 'PG / HOSTEL'
-    : property.bedrooms
-    ? 'CONFIG (BED/BATH)'
     : 'PROPERTY TYPE';
 
-  const col2Value = isLand
-    ? (property.category_name || 'Plot / Land')
+  const PROPERTY_TYPE_LABEL_MAP: Record<string, string> = {
+    FLAT_APARTMENT: 'Flat / Apartment', INDEPENDENT_HOUSE_VILLA: 'House / Villa',
+    ROOM: 'Single Room', PG: 'PG Accommodation', HOSTEL: 'Hostel Room', BUILDER_FLOOR: 'Builder Floor',
+    STUDIO: 'Studio Apartment', SHOP: 'Dukaan / Shop', OFFICE: 'Office Space', SHOWROOM: 'Showroom',
+    WAREHOUSE: 'Warehouse / Godown', COMMERCIAL_BUILDING: 'Commercial Building', CO_WORKING: 'Co-Working Space',
+    INDUSTRIAL_PROPERTY: 'Industrial Property', RESIDENTIAL_PLOT: 'Residential Plot (Basti Plot)',
+    COMMERCIAL_PLOT: 'Commercial Plot', AGRICULTURAL_LAND: 'Kheti ki Zameen (Agricultural Land)',
+    FARM_LAND: 'Farm Land', INDUSTRIAL_LAND: 'Industrial Land', LAND_PARCEL: 'Badi Zameen (Large Land Parcel)',
+    HALL: 'Hall', MARRIAGE_HALL: 'Marriage / Banquet Hall', GUEST_HOUSE: 'Guest House',
+    HOTEL: 'Hotel / Resort', SCHOOL: 'School / Institute', OTHER: 'Other',
+  };
+
+  const formattedPropertyType = property.property_type 
+    ? (PROPERTY_TYPE_LABEL_MAP[property.property_type] || property.property_type.replace(/_/g, ' '))
+    : property.category_type 
+      ? property.category_type.replace(/_/g, ' ') 
+      : property.category_name;
+
+  const fallbackValue = isLand
+    ? 'Plot / Land'
     : isCommercial
-    ? (property.category_name || 'Commercial')
+    ? 'Commercial'
     : isPG
     ? 'Single / Shared'
-    : property.bedrooms
-    ? `${property.bedrooms} BHK / ${property.bathrooms || 1} Bath`
-    : (property.category_name || 'Residential');
+    : 'Residential';
+
+  const baseType = formattedPropertyType || fallbackValue;
+  const configSuffix = property.bedrooms ? ` (${property.bedrooms} BHK)` : '';
+
+  const col2Value = `${baseType}${configSuffix}`;
 
   const col3Title = 'PURPOSE';
   const col3Value = property.listing_type || ownershipDisplay;
@@ -346,7 +365,16 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         {/* Content */}
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
           <Box>
-            <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', lineHeight: 1.35, mb: 0.5, color: '#0F172A' }}>
+            <Typography variant="h6" fontWeight={700} sx={{ 
+              fontSize: '1rem', 
+              lineHeight: 1.35, 
+              mb: 0.5, 
+              color: '#0F172A',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden' 
+            }}>
               {property.title}
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -400,7 +428,12 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
   // Listing View (Responsive Mobile Card + Desktop Card)
   return (
     <Box
+      component={Link}
+      href={`/property/${property.slug}`}
       sx={{
+        display: 'block',
+        textDecoration: 'none',
+        color: 'inherit',
         bgcolor: '#FFFFFF',
         borderRadius: '16px',
         border: '1.5px solid #80DEEA',
@@ -432,8 +465,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           {/* Image Container */}
           <Box
-            component={Link}
-            href={`/property/${property.slug}`}
+
+
             sx={{
               position: 'relative',
               width: 130,
@@ -574,8 +607,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
             {/* Title */}
             <Typography
-              component={Link}
-              href={`/property/${property.slug}`}
+
+
               sx={{
                 fontSize: '0.85rem',
                 fontWeight: 600,
@@ -590,9 +623,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 '&:hover': { color: '#1B4FD8' },
               }}
             >
-              {property.category_name
-                ? `${property.category_name} in ${property.city}, ${property.state}`
-                : property.title}
+              {property.title}
             </Typography>
 
             {/* Plot Area & Dimensions Specs */}
@@ -616,8 +647,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
         {/* VIEW PLOT ON MAP Bar */}
         <Box
-          component={Link}
-          href={`/property/${property.slug}`}
+
+
           sx={{
             mt: 1.2,
             mb: 1,
@@ -632,18 +663,22 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             textDecoration: 'none',
             color: '#334155',
             fontSize: '0.78rem',
-            fontWeight: 700,
-            letterSpacing: '0.04em',
+            fontWeight: 600,
+            letterSpacing: '0.02em',
             '&:hover': { bgcolor: '#E2E8F0', color: '#1B4FD8' },
           }}
         >
-          <LocationOnIcon sx={{ fontSize: 16, color: '#475569' }} />
-          VIEW PLOT ON MAP
+          <LocationOnIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+          {property.city}, {property.state}
         </Box>
 
         {/* Description snippet with arrow */}
         <Box
-          onClick={() => setDescriptionOpen(!descriptionOpen)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDescriptionOpen(!descriptionOpen);
+          }}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -660,7 +695,10 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               lineHeight: 1.4,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: descriptionOpen ? 'normal' : 'nowrap',
+              display: '-webkit-box',
+              WebkitLineClamp: descriptionOpen ? 3 : 1,
+              WebkitBoxOrient: 'vertical',
+              whiteSpace: 'normal',
               maxWidth: '92%',
             }}
           >
@@ -676,8 +714,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         <Box sx={{ width: { sm: 280, md: 310 }, flexShrink: 0 }}>
           {/* Image Frame */}
           <Box
-            component={Link}
-            href={`/property/${property.slug}`}
+
+
             sx={{
               position: 'relative',
               height: 195,
@@ -829,8 +867,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
               <Typography
-                component={Link}
-                href={`/property/${property.slug}`}
+
+
                 variant="h6"
                 sx={{
                   fontWeight: 600,
@@ -838,12 +876,14 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                   fontSize: { sm: '1.1rem', md: '1.18rem' },
                   lineHeight: 1.35,
                   textDecoration: 'none',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
                   '&:hover': { color: '#1B4FD8' },
                 }}
               >
-                {property.category_name
-                  ? `${property.category_name} in ${property.city}, ${property.state}`
-                  : property.title}
+                {property.title}
               </Typography>
 
               {/* Action Buttons: Heart & Share */}
@@ -866,19 +906,19 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <LocationOnIcon sx={{ color: '#EF4444', fontSize: 18 }} />
                 <Typography
-                  component={Link}
-                  href={`/property/${property.slug}`}
+
+
                   variant="body2"
                   sx={{
-                    color: '#334155',
+                    color: '#475569',
                     fontSize: '0.85rem',
-                    fontWeight: 600,
-                    textDecoration: 'underline',
+                    fontWeight: 500,
+                    textDecoration: 'none',
                     cursor: 'pointer',
                     '&:hover': { color: '#1B4FD8' },
                   }}
                 >
-                  See on map
+                  {property.city}, {property.state}
                 </Typography>
               </Box>
               <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600, mr: 2 }}>
@@ -942,7 +982,11 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             {/* Description Snippet with Expand Arrow */}
             <Box>
               <Box
-                onClick={() => setDescriptionOpen(!descriptionOpen)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDescriptionOpen(!descriptionOpen);
+                }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -960,7 +1004,10 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                     lineHeight: 1.4,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: descriptionOpen ? 'normal' : 'nowrap',
+                    display: '-webkit-box',
+                    WebkitLineClamp: descriptionOpen ? 4 : 1,
+                    WebkitBoxOrient: 'vertical',
+                    whiteSpace: 'normal',
                     maxWidth: '90%',
                   }}
                 >
@@ -1012,8 +1059,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 </IconButton>
               )}
               <Typography
-                component={Link}
-                href={`/property/${property.slug}`}
+
+
                 variant="body2"
                 sx={{
                   color: '#334155',

@@ -22,6 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '@/features/auth/AuthContext';
 
 import { ListingPurpose, PropertyCategoryType, PropertyTypeEnum, AreaUnit } from '@rewa-bhoomi/types';
@@ -33,7 +34,8 @@ import { State, City } from 'country-state-city';
 
 const STEPS = [
   'Property Details',
-  'Location & Media'
+  'Location & Media',
+  'Preview'
 ];
 
 export default function PropertyPostingWizard({ propertyId }: { propertyId?: string }) {
@@ -87,10 +89,11 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     totalFloors: '' as any,
     furnishedStatus: 'SEMI_FURNISHED',
     parking: '' as any,
-    facing: 'EAST',
+    facing: '',
     waterSupply: 'Corporation & Borewell',
     possessionStatus: 'Ready to Move',
     roadWidth: '' as any,
+    tenantPreference: '',
   });
 
   // Commercial Details
@@ -117,87 +120,87 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     plotLength: '' as any,
     plotWidth: '' as any,
     areaUnit: 'SQ_FT' as AreaUnit,
-    landType: 'Agricultural',
-    irrigationAvailable: true,
-    waterSource: 'Canal & Tube Well',
-    borewell: true,
-    tubeWell: true,
-    canal: true,
+    landType: '',
+    irrigationAvailable: false,
+    waterSource: '',
+    borewell: false,
+    tubeWell: false,
+    canal: false,
     riverAccess: false,
-    electricityConnection: true,
-    roadAccess: true,
-    soilType: 'Black Cotton Soil',
-    currentCrop: 'Wheat & Rice',
-    fencing: true,
+    electricityConnection: false,
+    roadAccess: false,
+    soilType: '',
+    currentCrop: '',
+    fencing: false,
     farmHouse: false,
-    nearestRoadDistance: '100 Meters',
-    nearestVillage: 'Kripalpur',
-    nearestCity: 'Rewa',
+    nearestRoadDistance: '',
+    nearestVillage: '',
+    nearestCity: '',
   });
 
   // PG Details
   const [pgDetails, setPgDetails] = useState({
-    pgName: 'Shree Krishna PG',
-    roomType: 'DOUBLE_SHARING',
-    occupancy: 'Double',
-    genderPreference: 'ANY',
+    pgName: '',
+    roomType: '',
+    occupancy: '',
+    genderPreference: '',
     availableFrom: '',
-    monthlyRent: 6000,
-    securityDeposit: 6000,
-    foodCharges: 2500,
-    electricityCharges: 500,
-    maintenanceCharges: 0,
-    foodAvailable: true,
-    mealPlan: 'ALL_MEALS',
+    monthlyRent: '' as any,
+    securityDeposit: '' as any,
+    foodCharges: '' as any,
+    electricityCharges: '' as any,
+    maintenanceCharges: '' as any,
+    foodAvailable: false,
+    mealPlan: '',
     smokingAllowed: false,
     alcoholAllowed: false,
-    visitorsAllowed: true,
+    visitorsAllowed: false,
     petsAllowed: false,
-    curfewTime: '10:00 PM',
-    minimumStayMonths: 3,
-    noticePeriodDays: 30,
+    curfewTime: '',
+    minimumStayMonths: '' as any,
+    noticePeriodDays: '' as any,
   });
 
   // Lease / Commercial Lease Details
   const [leaseDetails, setLeaseDetails] = useState({
-    leaseAmount: 50000,
-    leasePaymentType: 'MONTHLY',
-    securityDeposit: 200000,
-    leaseDurationYears: 3,
-    lockInPeriodMonths: 12,
-    noticePeriodDays: 60,
+    leaseAmount: '' as any,
+    leasePaymentType: '',
+    securityDeposit: '' as any,
+    leaseDurationYears: '' as any,
+    lockInPeriodMonths: '' as any,
+    noticePeriodDays: '' as any,
     availableFrom: '',
-    maintenanceCost: 3000,
-    camCost: 2000,
-    electricityCost: 0,
-    waterCost: 0,
-    parkingSpaces: 4,
-    rentEscalationPercentage: 5,
-    escalationPeriodMonths: 12,
-    allowedBusinessTypes: ['Retail', 'Office', 'Clinic', 'Bank'],
-    fireSafetyCertified: true,
-    powerLoadKw: 15,
-    loadingUnloadingFacility: true,
+    maintenanceCost: '' as any,
+    camCost: '' as any,
+    electricityCost: '' as any,
+    waterCost: '' as any,
+    parkingSpaces: '' as any,
+    rentEscalationPercentage: '' as any,
+    escalationPeriodMonths: '' as any,
+    allowedBusinessTypes: [] as string[],
+    fireSafetyCertified: false,
+    powerLoadKw: '' as any,
+    loadingUnloadingFacility: false,
   });
 
   // Hall Details
   const [hallDetails, setHallDetails] = useState({
-    hallType: 'Banquet Hall',
-    capacityPeople: 500,
-    seatingCapacity: 350,
-    hallAreaSqFt: 5000,
-    parkingCapacityVehicles: 50,
-    acAvailable: true,
-    kitchenAvailable: true,
-    stageAvailable: true,
-    diningAreaAvailable: true,
-    washroomsCount: 6,
-    soundSystemAvailable: true,
-    generatorBackupAvailable: true,
-    cateringAvailable: true,
-    pricingType: 'PER_DAY',
-    priceRate: 45000,
-    securityDeposit: 10000,
+    hallType: '',
+    capacityPeople: '' as any,
+    seatingCapacity: '' as any,
+    hallAreaSqFt: '' as any,
+    parkingCapacityVehicles: '' as any,
+    acAvailable: false,
+    kitchenAvailable: false,
+    stageAvailable: false,
+    diningAreaAvailable: false,
+    washroomsCount: '' as any,
+    soundSystemAvailable: false,
+    generatorBackupAvailable: false,
+    cateringAvailable: false,
+    pricingType: '',
+    priceRate: '' as any,
+    securityDeposit: '' as any,
   });
 
   // Amenities
@@ -546,7 +549,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         await apiPost('/properties', payload);
         toast.success('Property posted successfully!');
       }
-      setActiveStep(10); // Move to Publish screen
+      setActiveStep(3); // Move to Publish screen
     } catch (err: any) {
       console.error('Property submit error:', err.response?.data);
       const fieldErrors = err.response?.data?.error?.details?.fieldErrors;
@@ -588,10 +591,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
   
   const handleStepClick = (idx: number) => {
-    if (activeStep === 2) return; // Disallow going back from success page
+    if (activeStep === 3) return; // Disallow going back from success page
     if (idx === 0) setActiveStep(0);
-    if (idx === 1 && title.length >= 10 && description.length >= 10 && progressLevel >= 3) {
+    if (idx === 1 && progressLevel >= 3) {
       setActiveStep(1);
+    }
+    if (idx === 2 && progressLevel >= 3 && title.length >= 10 && description.length >= 10) {
+      setActiveStep(2);
     }
   };
 
@@ -617,7 +623,11 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 <StepLabel 
                   onClick={() => handleStepClick(idx)} 
                   sx={{ 
-                    cursor: (activeStep === 2) ? 'default' : ((idx === 0) || (idx === 1 && title.length >= 10 && description.length >= 10 && progressLevel >= 3)) ? 'pointer' : 'default',
+                    cursor: (activeStep === 3) ? 'default' : (
+                      idx === 0 || 
+                      (idx === 1 && progressLevel >= 3) || 
+                      (idx === 2 && progressLevel >= 3 && title.length >= 10 && description.length >= 10)
+                    ) ? 'pointer' : 'default',
                     '& .MuiStepLabel-label': { fontSize: { xs: '0.75rem', sm: '0.875rem' }, mt: { xs: 0.5, sm: 1 } }, 
                     '& .MuiStepIcon-root': { width: { xs: 20, sm: 24 }, height: { xs: 20, sm: 24 } } 
                   }}
@@ -809,34 +819,45 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             <Typography variant="h6" fontWeight={700} mb={3} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
               Location Details
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth size="small" label="City"
-                  value={location.city}
-                  onChange={(e) => setLocation({ ...location, city: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth size="small" label="State"
+            <Grid container spacing={2} mb={3}>
+              <Grid item xs={12} sm={4}>
+                <Autocomplete
+                  options={indianStates.map(s => s.name)}
                   value={location.state}
-                  onChange={(e) => setLocation({ ...location, state: e.target.value })}
+                  onChange={(e: any, newValue: string | null) => setLocation({ ...location, state: newValue || '', city: '', locality: '' })}
+                  renderInput={(params) => <TextField {...params} label="State *" size="small" />}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
+                <Autocomplete
+                  options={citiesOfState}
+                  value={location.city}
+                  onChange={(e: any, newValue: string | null) => setLocation({ ...location, city: newValue || '', locality: '' })}
+                  renderInput={(params) => <TextField {...params} label="City *" size="small" />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
                 <TextField
-                  fullWidth size="small" label="Locality / Sector / Area"
+                  fullWidth size="small" label="Locality / Sector / Area *"
                   value={location.locality}
                   onChange={(e) => setLocation({ ...location, locality: e.target.value })}
                   placeholder="e.g. Civil Lines, Kripalpur"
                 />
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth size="small" label="Pincode"
                   value={location.pincode}
                   onChange={(e) => setLocation({ ...location, pincode: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth size="small" label="Google Maps Link (Optional)"
+                  value={location.googleMapsLink}
+                  onChange={(e) => setLocation({ ...location, googleMapsLink: e.target.value })}
+                  placeholder="https://maps.app.goo.gl/..."
                 />
               </Grid>
               <Grid item xs={12}>
@@ -846,43 +867,9 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   onChange={(e) => setLocation({ ...location, address: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth size="small" label="Google Maps Link (Optional)"
-                  value={location.googleMapsLink}
-                  onChange={(e) => setLocation({ ...location, googleMapsLink: e.target.value })}
-                  placeholder="https://maps.app.goo.gl/..."
-                />
-              </Grid>
             </Grid>
 
-            {/* Dynamic Interactive Location Map Picker */}
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={12} sm={4}>
-                <Autocomplete
-                  options={indianStates.map(s => s.name)}
-                  value={location.state}
-                  onChange={(e: any, newValue: string | null) => setLocation({ ...location, state: newValue || '', city: '', locality: '' })}
-                  renderInput={(params) => <TextField {...params} label="State" required size="small" />}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Autocomplete
-                  options={citiesOfState}
-                  value={location.city}
-                  onChange={(e: any, newValue: string | null) => setLocation({ ...location, city: newValue || '', locality: '' })}
-                  renderInput={(params) => <TextField {...params} label="City" required size="small" />}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth size="small" label="Locality" required
-                  value={location.locality}
-                  onChange={(e) => setLocation({ ...location, locality: e.target.value })}
-                  placeholder="e.g. Civil Lines"
-                />
-              </Grid>
-            </Grid>\n            <LocationMapPicker
+            <LocationMapPicker
               initialLat={location.latitude}
               initialLng={location.longitude}
               city={location.city}
@@ -900,7 +887,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             </Typography>
 
             {/* Residential House/Apartment/Villa Fields */}
-            {category === 'RESIDENTIAL' && (
+            {category === 'RESIDENTIAL' && purpose !== 'PG' && (
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <TextField fullWidth size="small" type="number" label="Bedrooms (BHK)" value={resDetails.bedrooms} onChange={(e) => setResDetails({ ...resDetails, bedrooms: toNumVal(e.target.value) })} placeholder="e.g. 2" />
@@ -912,10 +899,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   <TextField fullWidth size="small" type="number" label="Balconies" value={resDetails.balconies} onChange={(e) => setResDetails({ ...resDetails, balconies: toNumVal(e.target.value) })} placeholder="e.g. 1" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" type="number" label="Carpet Area (Sq Ft)" value={resDetails.carpetArea} onChange={(e) => setResDetails({ ...resDetails, carpetArea: toNumVal(e.target.value) })} placeholder="e.g. 1000" />
+                  <TextField fullWidth size="small" type="number" label="Carpet Area (कारपेट एरिया) Sq Ft" value={resDetails.carpetArea} onChange={(e) => setResDetails({ ...resDetails, carpetArea: toNumVal(e.target.value) })} placeholder="e.g. 1000" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" type="number" label="Built-up Area (Sq Ft)" value={resDetails.builtUpArea} onChange={(e) => setResDetails({ ...resDetails, builtUpArea: toNumVal(e.target.value) })} placeholder="e.g. 1200" />
+                  <TextField fullWidth size="small" type="number" label="Built-up Area (बिल्ट-अप एरिया) Sq Ft" value={resDetails.builtUpArea} onChange={(e) => setResDetails({ ...resDetails, builtUpArea: toNumVal(e.target.value) })} placeholder="e.g. 1200" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
@@ -928,8 +915,33 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Facing Direction" value={resDetails.facing} onChange={(e) => setResDetails({ ...resDetails, facing: e.target.value })} placeholder="East, North-East, West..." />
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Facing Direction (प्रॉपर्टी की दिशा)</InputLabel>
+                    <Select label="Facing Direction (प्रॉपर्टी की दिशा)" value={resDetails.facing || ''} onChange={(e) => setResDetails({ ...resDetails, facing: e.target.value })}>
+                      <MenuItem value="East (पूर्व)">East (पूर्व)</MenuItem>
+                      <MenuItem value="West (पश्चिम)">West (पश्चिम)</MenuItem>
+                      <MenuItem value="North (उत्तर)">North (उत्तर)</MenuItem>
+                      <MenuItem value="South (दक्षिण)">South (दक्षिण)</MenuItem>
+                      <MenuItem value="North-East (उत्तर-पूर्व)">North-East (उत्तर-पूर्व)</MenuItem>
+                      <MenuItem value="North-West (उत्तर-पश्चिम)">North-West (उत्तर-पश्चिम)</MenuItem>
+                      <MenuItem value="South-East (दक्षिण-पूर्व)">South-East (दक्षिण-पूर्व)</MenuItem>
+                      <MenuItem value="South-West (दक्षिण-पश्चिम)">South-West (दक्षिण-पश्चिम)</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
+                {purpose === 'RENT' && (
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Tenant Preference (किरायेदार की प्राथमिकता)</InputLabel>
+                      <Select label="Tenant Preference (किरायेदार की प्राथमिकता)" value={resDetails.tenantPreference || ''} onChange={(e) => setResDetails({ ...resDetails, tenantPreference: e.target.value })}>
+                        <MenuItem value="BACHELORS">Bachelors Allowed (बैचलर्स)</MenuItem>
+                        <MenuItem value="FAMILY">Family Allowed (परिवार)</MenuItem>
+                        <MenuItem value="BOTH">Both Allowed (दोनों)</MenuItem>
+                        <MenuItem value="ANY">Any (कोई भी)</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
               </Grid>
             )}
 
@@ -938,10 +950,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               {category === 'COMMERCIAL' && (
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Carpet Area (Sq Ft)" value={commDetails.carpetArea} onChange={(e) => setCommDetails({ ...commDetails, carpetArea: toNumVal(e.target.value) as any })} placeholder="e.g. 500" />
+                    <TextField fullWidth size="small" type="number" label="Carpet Area (कारपेट एरिया) Sq Ft" value={commDetails.carpetArea} onChange={(e) => setCommDetails({ ...commDetails, carpetArea: toNumVal(e.target.value) as any })} placeholder="e.g. 500" />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Built-up Area (Sq Ft)" value={commDetails.builtUpArea} onChange={(e) => setCommDetails({ ...commDetails, builtUpArea: toNumVal(e.target.value) as any })} placeholder="e.g. 650" />
+                    <TextField fullWidth size="small" type="number" label="Built-up Area (बिल्ट-अप एरिया) Sq Ft" value={commDetails.builtUpArea} onChange={(e) => setCommDetails({ ...commDetails, builtUpArea: toNumVal(e.target.value) as any })} placeholder="e.g. 650" />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField fullWidth size="small" type="number" label="Length / Depth (ft)" value={commDetails.depth} onChange={(e) => setCommDetails({ ...commDetails, depth: toNumVal(e.target.value) as any })} placeholder="e.g. 40" />
@@ -1139,51 +1151,53 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               Khariddaar aur tenants ko dikhane ke liye acchi photos add karein
             </Typography>
 
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px dashed #CBD5E1',
-                borderRadius: 3,
-                p: { xs: 3, sm: 4 },
-                textAlign: 'center',
-                bgcolor: '#F8FAFC',
-                cursor: 'pointer',
-                '&:hover': { borderColor: '#2563EB', bgcolor: '#EFF6FF' },
-              }}
-              component="label"
-            >
-              <CloudUploadIcon sx={{ fontSize: 48, color: '#64748B', mb: 1 }} />
-              <Typography variant="subtitle1" fontWeight={700} color="#0F172A">
-                Click to upload property images
-              </Typography>
-              <Typography variant="caption" color="#94A3B8">
-                PNG, JPG, WebP supported. Auto-compressed before R2 storage.
-              </Typography>
-              <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
-            </Box>
-
-            {uploading && <Box textAlign="center" my={2}><CircularProgress size={24} /><Typography variant="caption" display="block">Uploading to Cloudflare R2...</Typography></Box>}
-
-            {imageUrls.length > 0 && (
-              <Grid container spacing={2} mt={3}>
-                {imageUrls.map((url, idx) => (
-                  <Grid item xs={6} sm={4} md={3} key={url}>
-                    <Card sx={{ position: 'relative', borderRadius: 2 }}>
-                      <CardMedia component="img" height="140" image={url} alt={`Upload ${idx}`} />
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveImage(idx)}
-                        sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', '&:hover': { bgcolor: '#EF4444' } }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Card>
-                  </Grid>
-                ))}
+            <Grid container spacing={2} mt={1}>
+              <Grid item xs={6} sm={4} md={3}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px dashed #CBD5E1',
+                    borderRadius: 2,
+                    height: 140,
+                    width: '100%',
+                    bgcolor: '#F8FAFC',
+                    cursor: 'pointer',
+                    '&:hover': { borderColor: '#2563EB', bgcolor: '#EFF6FF' },
+                  }}
+                  component="label"
+                >
+                  <AddIcon sx={{ fontSize: 40, color: '#64748B' }} />
+                  <Typography variant="caption" fontWeight={600} color="#64748B" mt={1}>
+                    Add Photo
+                  </Typography>
+                  <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                </Box>
               </Grid>
+
+              {imageUrls.map((url, idx) => (
+                <Grid item xs={6} sm={4} md={3} key={url}>
+                  <Card sx={{ position: 'relative', borderRadius: 2, height: 140 }}>
+                    <CardMedia component="img" height="140" image={url} alt={`Upload ${idx}`} />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveImage(idx)}
+                      sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', '&:hover': { bgcolor: '#EF4444' } }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+
+            {uploading && (
+              <Box display="flex" alignItems="center" gap={1} mt={2}>
+                <CircularProgress size={16} />
+                <Typography variant="caption">Uploading to Cloudflare R2...</Typography>
+              </Box>
             )}
           </Paper>
         )}
@@ -1232,7 +1246,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 9: PREVIEW ─── */}
-        {false && (
+        {activeStep === 2 && (
           <Box>
             <Box textAlign="center" mb={4}>
               <Typography variant="h5" fontWeight={800} color="#0F172A" mb={0.5}>
@@ -1325,17 +1339,18 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               <Divider sx={{ mb: 3 }} />
 
               {/* Key Details Grid */}
-              {category === 'RESIDENTIAL' && (resDetails.bedrooms || resDetails.bathrooms || resDetails.carpetArea || resDetails.builtUpArea) && (
+              {category === 'RESIDENTIAL' && purpose !== 'PG' && (resDetails.bedrooms || resDetails.bathrooms || resDetails.carpetArea || resDetails.builtUpArea) && (
                 <Box mb={3}>
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🏠 Property Details</Typography>
                   <Grid container spacing={2}>
                     {resDetails.bedrooms && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{resDetails.bedrooms}</Typography><Typography variant="caption" color="text.secondary">Bedrooms</Typography></Box></Grid>}
                     {resDetails.bathrooms && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{resDetails.bathrooms}</Typography><Typography variant="caption" color="text.secondary">Bathrooms</Typography></Box></Grid>}
-                    {resDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{resDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary">Carpet Area (sqft)</Typography></Box></Grid>}
-                    {resDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{resDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary">Built-up Area (sqft)</Typography></Box></Grid>}
+                    {resDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{resDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary">Carpet Area (कारपेट एरिया) sqft</Typography></Box></Grid>}
+                    {resDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{resDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary">Built-up Area (बिल्ट-अप एरिया) sqft</Typography></Box></Grid>}
                     {resDetails.furnishedStatus && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Furnished</Typography><Typography variant="body2" fontWeight={700} color="#0F172A">{resDetails.furnishedStatus.replace('_', ' ')}</Typography></Box></Grid>}
-                    {resDetails.facing && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Facing</Typography><Typography variant="body2" fontWeight={700} color="#0F172A">{resDetails.facing}</Typography></Box></Grid>}
+                    {resDetails.facing && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Facing (प्रॉपर्टी की दिशा)</Typography><Typography variant="body2" fontWeight={700} color="#0F172A">{resDetails.facing}</Typography></Box></Grid>}
                     {resDetails.possessionStatus && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Possession</Typography><Typography variant="body2" fontWeight={700} color="#0F172A">{resDetails.possessionStatus}</Typography></Box></Grid>}
+                    {resDetails.tenantPreference && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Tenant Preference (किरायेदार की प्राथमिकता)</Typography><Typography variant="body2" fontWeight={700} color="#0F172A">{resDetails.tenantPreference === 'ANY' ? 'Any (कोई भी)' : resDetails.tenantPreference === 'BOTH' ? 'Both Allowed (दोनों)' : resDetails.tenantPreference === 'BACHELORS' ? 'Bachelors Allowed (बैचलर्स)' : 'Family Allowed (परिवार)'}</Typography></Box></Grid>}
                   </Grid>
                 </Box>
               )}
@@ -1345,8 +1360,8 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   <Box mb={3}>
                     <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🏢 Commercial Details</Typography>
                     <Grid container spacing={2}>
-                      {commDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary">Carpet Area (sqft)</Typography></Box></Grid>}
-                      {commDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary">Built-up Area (sqft)</Typography></Box></Grid>}
+                      {commDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary">Carpet Area (कारपेट एरिया) sqft</Typography></Box></Grid>}
+                      {commDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary">Built-up Area (बिल्ट-अप एरिया) sqft</Typography></Box></Grid>}
                       {commDetails.depth && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.depth}</Typography><Typography variant="caption" color="text.secondary">Length (ft)</Typography></Box></Grid>}
                       {commDetails.frontage && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.frontage}</Typography><Typography variant="caption" color="text.secondary">Width (ft)</Typography></Box></Grid>}
                       {commDetails.floor && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{commDetails.floor}</Typography><Typography variant="caption" color="text.secondary">Floor</Typography></Box></Grid>}
@@ -1430,7 +1445,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* ─── STEP 10: SUBMIT SUCCESS ─── */}
-        {((activeStep === 2)) && (
+        {activeStep === 3 && (
           <Paper elevation={0} sx={{ p: { xs: 3, sm: 6 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid #E2E8F0', bgcolor: '#fff', textAlign: 'center' }}>
             <Box sx={{ fontSize: 72, mb: 2 }}>🎉</Box>
             <Typography variant="h4" fontWeight={800} color="#0F172A" mb={1}>
@@ -1462,10 +1477,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         )}
 
         {/* Navigation Control Buttons */}
-        {activeStep < 2 && (
+        {activeStep < 3 && (
           <Box display="flex" justifyContent="space-between" mt={4}>
             <Button
-              disabled={activeStep === 0}
+              disabled={activeStep === 0 || submitting}
               onClick={() => setActiveStep(prev => prev - 1)}
               startIcon={<ArrowBackIcon />}
               sx={{ textTransform: 'none' }}
@@ -1473,15 +1488,18 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               Back
             </Button>
 
-            {activeStep < 1 ? (
+            {activeStep < 2 ? (
               <Button
                 variant="contained"
-                disabled={title.length < 10 || description.length < 10 || progressLevel < 3}
+                disabled={
+                  (activeStep === 0 && progressLevel < 3) || 
+                  (activeStep === 1 && (title.length < 10 || description.length < 10))
+                }
                 onClick={() => setActiveStep(prev => prev + 1)}
                 endIcon={<ArrowForwardIcon />}
                 sx={{ textTransform: 'none', px: 4 }}
               >
-                Continue
+                {activeStep === 1 ? 'Preview' : 'Continue'}
               </Button>
             ) : (
               <Button
@@ -1491,7 +1509,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 disabled={submitting}
                 sx={{ textTransform: 'none', px: 5, py: 1.2, fontWeight: 700 }}
               >
-                {submitting ? <CircularProgress size={24} color="inherit" /> : 'Publish Listing Now'}
+                {submitting ? <CircularProgress size={24} color="inherit" /> : (propertyId ? 'Confirm & Update Property' : 'Confirm & Post Property')}
               </Button>
             )}
           </Box>
