@@ -263,6 +263,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               waterSupply: prop.residentialDetails.water_supply || 'Corporation & Borewell',
               possessionStatus: prop.residentialDetails.possession_status || 'Ready to Move',
               roadWidth: prop.residentialDetails.road_width || '',
+              tenantPreference: prop.residentialDetails.tenant_preference || 'ANY',
             });
           }
           if (prop.commercialDetails) {

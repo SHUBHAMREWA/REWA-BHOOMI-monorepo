@@ -672,16 +672,19 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                       <Grid item xs={6} sm={4}>
                         <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Facing (प्रॉपर्टी की दिशा)</Typography>
                         <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>
-                          {{
-                            'EAST': 'East (पूर्व)',
-                            'WEST': 'West (पश्चिम)',
-                            'NORTH': 'North (उत्तर)',
-                            'SOUTH': 'South (दक्षिण)',
-                            'NORTH_EAST': 'North-East (उत्तर-पूर्व)',
-                            'NORTH_WEST': 'North-West (उत्तर-पश्चिम)',
-                            'SOUTH_EAST': 'South-East (दक्षिण-पूर्व)',
-                            'SOUTH_WEST': 'South-West (दक्षिण-पश्चिम)'
-                          }[res.facing.toUpperCase()] || res.facing}
+                          {(() => {
+                            const map: Record<string, string> = {
+                              'EAST': 'East (पूर्व)',
+                              'WEST': 'West (पश्चिम)',
+                              'NORTH': 'North (उत्तर)',
+                              'SOUTH': 'South (दक्षिण)',
+                              'NORTH_EAST': 'North-East (उत्तर-पूर्व)',
+                              'NORTH_WEST': 'North-West (उत्तर-पश्चिम)',
+                              'SOUTH_EAST': 'South-East (दक्षिण-पूर्व)',
+                              'SOUTH_WEST': 'South-West (दक्षिण-पश्चिम)'
+                            };
+                            return map[String(res.facing).toUpperCase()] || res.facing;
+                          })()}
                         </Typography>
                       </Grid>
                     )}
