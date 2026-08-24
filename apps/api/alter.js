@@ -1,0 +1,1 @@
+const { Client } = require('pg'); const client = new Client({ connectionString: 'postgresql://postgres:shubham@localhost:5432/rewabhoomi' }); client.connect().then(() => client.query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS custom_amenities TEXT[] DEFAULT ARRAY[]::TEXT[]')).then(() => console.log('Column added')).catch(e => console.error(e)).finally(() => client.end());

@@ -1087,6 +1087,8 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               maxWidth: 900,
               mb: 1.5,
               px: 1,
+              zIndex: 10,
+              position: 'relative',
             }}
           >
             <Typography variant="body2" sx={{ color: 'white', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
@@ -1120,17 +1122,15 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             }}
             sx={{
               position: 'relative',
+              width: '100%',
               maxWidth: 900,
               maxHeight: '75vh',
               borderRadius: '8px',
-              overflow: 'hidden',
               boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
               bgcolor: '#000000',
               display: 'flex',
               alignItems: 'center',
               justify: 'center',
-              transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              transform: `scale(${zoomScale})`,
               cursor: zoomScale > 1 ? 'zoom-out' : 'zoom-in',
             }}
           >
@@ -1142,6 +1142,10 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 maxWidth: '100%',
                 maxHeight: '75vh',
                 objectFit: 'contain',
+                transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: `scale(${zoomScale})`,
+                position: 'relative',
+                zIndex: 1,
               }}
             />
 
@@ -1161,6 +1165,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   bgcolor: 'rgba(0,0,0,0.6)',
                   color: 'white',
                   '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' },
+                  zIndex: 10,
                 }}
               >
                 <ChevronLeftIcon fontSize="large" />
@@ -1183,6 +1188,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   bgcolor: 'rgba(0,0,0,0.6)',
                   color: 'white',
                   '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' },
+                  zIndex: 10,
                 }}
               >
                 <ChevronRightIcon fontSize="large" />
