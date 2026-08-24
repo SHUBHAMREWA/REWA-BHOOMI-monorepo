@@ -68,6 +68,7 @@ interface PropertyData {
   is_favorited: boolean;
   images: PropertyImage[];
   amenities: PropertyAmenity[];
+  custom_amenities?: string[];
   residentialDetails?: any;
   commercialDetails?: any;
   landDetails?: any;
