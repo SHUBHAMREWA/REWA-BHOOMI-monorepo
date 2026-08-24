@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, TextField, Paper, InputAdornment, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, TextField, Paper, InputAdornment, CircularProgress, Autocomplete } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import dynamic from 'next/dynamic';
@@ -88,12 +88,44 @@ export default function LocationMapPicker({
     fetchReverseGeocode(newLat, newLng);
   };
 
+  const [options, setOptions] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Debounced search for Autocomplete
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (searchQuery.trim().length > 2) {
+        setLoadingSuggestions(true);
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=5`);
+          const data = await res.json();
+          setOptions(data || []);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoadingSuggestions(false);
+        }
+      } else {
+        setOptions([]);
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
   const handleSearchLocation = async () => {
     if (!searchQuery) return;
     try {
-      const queryStr = `${searchQuery}, ${city || 'Rewa'}, ${state || 'Madhya Pradesh'}, India`;
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
-      const data = await res.json();
+      // First try the raw searchQuery, fallback to appending city/state if no results
+      let queryStr = searchQuery;
+      let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
+      let data = await res.json();
+      
+      if (!data || data.length === 0) {
+         queryStr = `${searchQuery}, ${city || 'Rewa'}, ${state || 'Madhya Pradesh'}, India`;
+         res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
+         data = await res.json();
+      }
+
       if (data && data.length > 0) {
         const first = data[0];
         const newLat = parseFloat(first.lat);
@@ -118,20 +150,53 @@ export default function LocationMapPicker({
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, mb: 2 }}>
-        <TextField
-          size="small"
+        <Autocomplete
+          freeSolo
           fullWidth
-          placeholder="Search landmark, street or area..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSearchLocation(); }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: '#94A3B8' }} />
-              </InputAdornment>
-            ),
+          size="small"
+          options={options}
+          getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
+          filterOptions={(x) => x}
+          inputValue={searchQuery}
+          onInputChange={(event, newInputValue) => {
+            setSearchQuery(newInputValue);
           }}
+          onChange={(event, newValue) => {
+            if (typeof newValue === 'object' && newValue !== null) {
+              const newLat = parseFloat(newValue.lat);
+              const newLng = parseFloat(newValue.lon);
+              setLat(newLat);
+              setLng(newLng);
+              onLocationSelect({
+                lat: newLat,
+                lng: newLng,
+                address: newValue.display_name,
+              });
+            } else if (typeof newValue === 'string') {
+              handleSearchLocation();
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder="Search landmark, city (e.g., Lucknow)..."
+              InputProps={{
+                ...params.InputProps,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" sx={{ color: '#94A3B8' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <>
+                    {loadingSuggestions ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSearchLocation(); }}
+            />
+          )}
         />
         <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
           <Button variant="contained" size="small" onClick={handleSearchLocation} sx={{ px: { xs: 2, sm: 3 }, flex: { xs: 1, sm: 'auto' }, textTransform: 'none' }}>

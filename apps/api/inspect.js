@@ -1,0 +1,1 @@
+const { Client } = require('pg'); const client = new Client({ connectionString: 'postgresql://postgres:postgres@localhost:5432/rewa_bhoomi' }); client.connect().then(() => client.query('SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ''properties''')).then(res => { console.table(res.rows); client.end(); });

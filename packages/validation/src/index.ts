@@ -103,6 +103,7 @@ export const CreatePropertySchema = z.object({
   pricePerSqFt: z.number().positive().optional(),
   location: PropertyLocationSchema,
   amenityIds: z.array(z.string()).optional(),
+  customAmenities: z.array(z.string().max(50)).max(20).optional(),
   imageUrls: z.array(z.string()).optional(),
   imageStorageKeys: z.array(z.string().nullable()).optional(),
   videos: z.array(z.string()).optional(),

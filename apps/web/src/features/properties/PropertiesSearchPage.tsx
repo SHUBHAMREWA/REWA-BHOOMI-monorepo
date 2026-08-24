@@ -11,11 +11,11 @@ import { apiGet } from '@/lib/api';
 
 const BUDGET_OPTIONS_MIN = [
   { label: 'Min', value: '' },
+  { label: '₹ 3 Lac', value: '300000' },
   { label: '₹ 5 Lac', value: '500000' },
   { label: '₹ 10 Lac', value: '1000000' },
   { label: '₹ 20 Lac', value: '2000000' },
   { label: '₹ 50 Lac', value: '5000000' },
-  { label: '₹ 1 Cr', value: '10000000' },
 ];
 
 const BUDGET_OPTIONS_MAX = [
@@ -24,12 +24,11 @@ const BUDGET_OPTIONS_MAX = [
   { label: '₹ 25 Lac', value: '2500000' },
   { label: '₹ 50 Lac', value: '5000000' },
   { label: '₹ 1 Cr', value: '10000000' },
-  { label: '₹ 5 Cr', value: '50000000' },
 ];
 
 function formatPriceLabel(val: number): string {
-  if (val === 0) return 'Min';
-  if (val >= 50000000) return 'Max (₹5Cr+)';
+  if (val <= 300000) return 'Min';
+  if (val >= 10000000) return 'Max (₹1Cr+)';
   if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`;
   if (val >= 100000) return `₹${(val / 100000).toFixed(0)}Lac`;
   return `₹${val.toLocaleString('en-IN')}`;
@@ -39,7 +38,7 @@ function formatSelectLabel(selected?: string | null, defaultLabel = 'Min'): stri
   if (!selected || selected === '' || selected === '0') return defaultLabel;
   const num = Number(selected);
   if (isNaN(num)) return selected;
-  if (num >= 50000000 && defaultLabel === 'Max') return 'Max';
+  if (num >= 10000000 && defaultLabel === 'Max') return 'Max';
   if (num >= 10000000) return `₹ ${Number.isInteger(num / 10000000) ? (num / 10000000).toFixed(0) : (num / 10000000).toFixed(1)} Cr`;
   if (num >= 100000) return `₹ ${Number.isInteger(num / 100000) ? (num / 100000).toFixed(0) : (num / 100000).toFixed(1)} Lac`;
   return `₹ ${num.toLocaleString('en-IN')}`;
@@ -122,7 +121,7 @@ export default function PropertiesSearchPage() {
             Properties & Plots for Sale in {city || 'Rewa'}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 0.4, fontSize: { xs: '0.78rem', sm: '0.95rem' }, color: '#64748B', display: { xs: 'none', sm: 'block' } }}>
-            Rewa mein Plot, Property, Ghar, Rent par Makan aur Dukaan aasani se khojiye. Apni zarurat ke hisaab se search karein, property pasand aaye toh contact karein.
+            {city || 'Rewa'} में प्लॉट, प्रॉपर्टी, घर, किराए पर मकान और दुकान आसानी से खोजें। अपनी जरूरत के हिसाब से सर्च करें, प्रॉपर्टी पसंद आए तो कांटेक्ट करें।
           </Typography>
         </Box>
 
@@ -276,16 +275,16 @@ export default function PropertiesSearchPage() {
             {/* Dual Thumb Slider matching reference green bar */}
             <Box sx={{ width: { xs: '92%', sm: '88%' }, px: 1, pt: { xs: 1.2, sm: 2 } }}>
               <Slider
-                value={[Number(minPrice) || 0, Number(maxPrice) || 50000000]}
-                min={0}
-                max={50000000}
-                step={500000}
+                value={[Number(minPrice) || 300000, Number(maxPrice) || 10000000]}
+                min={300000}
+                max={10000000}
+                step={100000}
                 valueLabelDisplay="on"
                 valueLabelFormat={formatPriceLabel}
                 onChange={(_, val) => {
                   if (Array.isArray(val)) {
-                    setMinPrice(val[0] === 0 ? '' : String(val[0]));
-                    setMaxPrice(val[1] === 50000000 ? '' : String(val[1]));
+                    setMinPrice(val[0] <= 300000 ? '' : String(val[0]));
+                    setMaxPrice(val[1] >= 10000000 ? '' : String(val[1]));
                   }
                 }}
                 sx={{

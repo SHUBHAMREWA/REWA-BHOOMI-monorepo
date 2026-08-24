@@ -89,11 +89,10 @@ export const PROPERTY_TYPES: PropertyTypeOption[] = [
   { key: 'INDUSTRIAL_PROPERTY', label: 'Industrial Shed / Property', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
 
   // Land Types
-  { key: 'RESIDENTIAL_PLOT', label: 'Residential Plot / Basti Plot', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
-  { key: 'COMMERCIAL_PLOT', label: 'Commercial Plot', category: 'LAND', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'AGRICULTURAL_LAND', label: 'Kheti ki Zameen (Agricultural Land)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
-  { key: 'FARM_LAND', label: 'Farm Land', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
-  { key: 'INDUSTRIAL_LAND', label: 'Industrial Land', category: 'LAND', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
+  { key: 'RESIDENTIAL_PLOT', label: 'Residential Plot / Basti Plot (रिहायशी जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
+  { key: 'COMMERCIAL_PLOT', label: 'Commercial Plot (व्यावसायिक जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
+  { key: 'FARM_LAND', label: 'Farm Land (खेती की ज़मीन, Agricultural Land)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
+  { key: 'INDUSTRIAL_LAND', label: 'Industrial Land (औद्योगिक जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
   { key: 'LAND_PARCEL', label: 'Badi Zameen (Large Land Parcel)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
 
   // Special Types
