@@ -908,12 +908,15 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               </Grid>
             </Paper>
 
+            {/* Mobile-only Future Value Projection (Right under Overview) */}
+            {renderFutureValueProjection({ display: { xs: 'block', md: 'none' }, mb: 2 })}
+
             {/* 3. Amenities & Features Box */}
-            {property.amenities && property.amenities.length > 0 && (
-              <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
+            {((property.amenities && property.amenities.length > 0) || (property.custom_amenities && property.custom_amenities.length > 0)) && (
+              <Paper elevation={0} sx={{ p: { xs: 2, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 2, sm: 3 }, bgcolor: '#FFFFFF' }}>
                 <Typography variant="h6" fontWeight={700} mb={2.5} color="#0F172A">Amenities & Features (सुख सुविधाएं)</Typography>
-                <Grid container spacing={2}>
-                  {property.amenities.map((amenity) => (
+                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                  {property.amenities?.map((amenity) => (
                     <Grid item xs={6} sm={4} key={amenity.id}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <CheckCircleIcon sx={{ fontSize: 18, color: '#16A34A' }} />
@@ -921,9 +924,25 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                       </Box>
                     </Grid>
                   ))}
+                  {property.custom_amenities?.map((amenity, index) => (
+                    <Grid item xs={6} sm={4} key={`custom-${index}`}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CheckCircleIcon sx={{ fontSize: 18, color: '#0EA5E9' }} />
+                        <Typography fontWeight={600} color="#334155" variant="body2">{amenity}</Typography>
+                      </Box>
+                    </Grid>
+                  ))}
                 </Grid>
               </Paper>
             )}
+
+            {/* 4. Description Box */}
+            <Paper elevation={0} sx={{ p: { xs: 2, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
+              <Typography variant="h6" fontWeight={700} mb={1.5} color="#0F172A">Description</Typography>
+              <Typography color="#475569" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: '0.95rem' }}>
+                {property.description}
+              </Typography>
+            </Paper>
           </Grid>
 
           {/* ─── RIGHT COLUMN (~32% width) — Exactly matching screenshot ─── */}
