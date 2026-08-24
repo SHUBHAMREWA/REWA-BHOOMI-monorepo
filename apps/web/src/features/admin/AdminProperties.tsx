@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TextField, InputAdornment, Button, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Tooltip, Avatar } from '@mui/material';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TextField, InputAdornment, Button, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Tooltip, Avatar, IconButton, Checkbox } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import Link from 'next/link';
-import { apiGet, apiPatch } from '@/lib/api';
+import { apiGet, apiPatch, apiDelete, apiPost } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface PropertyAdmin {
@@ -40,6 +43,78 @@ export default function AdminProperties() {
   const [moderateAction, setModerateAction] = useState<'PUBLISHED' | 'REJECTED' | null>(null);
   const [remarks, setRemarks] = useState('');
   const [isModerating, setIsModerating] = useState(false);
+  
+  // Deletion state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [propertyToDelete, setPropertyToDelete] = useState<PropertyAdmin | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Bulk Deletion State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  
+  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      setSelectedIds(properties.map((p) => p.id));
+      return;
+    }
+    setSelectedIds([]);
+  };
+
+  const handleSelectClick = (event: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const selectedIndex = selectedIds.indexOf(id);
+    let newSelected: string[] = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selectedIds, id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selectedIds.slice(1));
+    } else if (selectedIndex === selectedIds.length - 1) {
+      newSelected = newSelected.concat(selectedIds.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selectedIds.slice(0, selectedIndex),
+        selectedIds.slice(selectedIndex + 1),
+      );
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const confirmBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await apiPost('/admin/properties/bulk-delete', { ids: selectedIds });
+      toast.success(`${selectedIds.length} properties deleted successfully`);
+      setSelectedIds([]);
+      fetchProperties();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete properties');
+    } finally {
+      setIsDeleting(false);
+      setBulkDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDeleteClick = (property: PropertyAdmin) => {
+    setPropertyToDelete(property);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!propertyToDelete) return;
+    setIsDeleting(true);
+    try {
+      await apiDelete(`/admin/properties/${propertyToDelete.id}`);
+      toast.success('Property and related data deleted successfully');
+      fetchProperties();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete property');
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setPropertyToDelete(null);
+    }
+  };
 
   const togglePopular = async (property: PropertyAdmin) => {
     try {
@@ -181,15 +256,40 @@ export default function AdminProperties() {
         </Box>
       </Box>
 
-      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 4, border: '1px solid #E2E8F0' }}>
-        <Table>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          {properties.length} properties found
+        </Typography>
+        {selectedIds.length > 1 && (
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            startIcon={<DeleteIcon />}
+            onClick={() => setBulkDeleteDialogOpen(true)}
+          >
+            Delete Selected ({selectedIds.length})
+          </Button>
+        )}
+      </Box>
+
+      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #E2E8F0' }}>
+        <Table size="small">
           <TableHead sx={{ bgcolor: '#F8FAFC' }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Title</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Owner</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Type & Price</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Actions</TableCell>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  color="primary"
+                  indeterminate={selectedIds.length > 0 && selectedIds.length < properties.length}
+                  checked={properties.length > 0 && selectedIds.length === properties.length}
+                  onChange={handleSelectAllClick}
+                />
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Title</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Owner</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Type & Price</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5, align: 'right' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -206,104 +306,121 @@ export default function AdminProperties() {
                 </TableCell>
               </TableRow>
             ) : (
-              properties.map((property) => (
-                <TableRow key={property.id} hover>
-                  <TableCell sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    <Typography variant="body2" fontWeight={600}>{property.title}</Typography>
+              properties.map((property) => {
+                const isItemSelected = selectedIds.indexOf(property.id) !== -1;
+                
+                return (
+                <TableRow key={property.id} hover selected={isItemSelected}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      color="primary"
+                      checked={isItemSelected}
+                      onChange={(e) => handleSelectClick(e, property.id)}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 1 }}>
+                    <Typography variant="body2" fontWeight={600} noWrap title={property.title}>{property.title}</Typography>
                     <Typography variant="caption" color="text.secondary">{new Date(property.created_at).toLocaleDateString()}</Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Box 
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', '&:hover .owner-name': { color: '#2563EB', textDecoration: 'underline' } }} 
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', '&:hover .owner-name': { color: '#2563EB', textDecoration: 'underline' } }} 
                       onClick={() => window.open(`/profile/${property.owner_email}`, '_blank')}
                     >
-                      <Avatar src={property.owner_avatar || undefined} sx={{ width: 32, height: 32 }}>
+                      <Avatar src={property.owner_avatar || undefined} sx={{ width: 28, height: 28, fontSize: '0.875rem' }}>
                         {property.owner_name?.charAt(0).toUpperCase()}
                       </Avatar>
-                      <Box>
-                        <Typography variant="body2" className="owner-name" sx={{ fontWeight: 600, transition: 'color 0.2s' }}>{property.owner_name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{property.owner_email}</Typography>
+                      <Box sx={{ overflow: 'hidden' }}>
+                        <Typography variant="body2" className="owner-name" sx={{ fontWeight: 600, transition: 'color 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }} title={property.owner_name}>{property.owner_name}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }} title={property.owner_email}>{property.owner_email}</Typography>
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Typography variant="body2" fontWeight={600}>{property.listing_type}</Typography>
                     <Typography variant="caption" color="text.secondary">₹{Number(property.price).toLocaleString()}</Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Chip 
                       label={property.status.replace('_', ' ')} 
                       color={getStatusColor(property.status) as any} 
                       size="small" 
+                      sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
                     />
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'nowrap', alignItems: 'center' }}>
-                      <Tooltip title="Property detail preview dekho">
-                        <Button 
+                  <TableCell sx={{ py: 1, align: 'right' }}>
+                    <Box sx={{ display: 'flex', gap: 0, flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <Tooltip title="View Property">
+                        <IconButton 
                           size="small" 
-                          variant="outlined"
                           component={Link}
                           href={`/property/${property.slug}`}
                           target="_blank"
-                          startIcon={<VisibilityIcon sx={{ fontSize: '1rem !important' }} />}
-                          sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem', textTransform: 'none', borderColor: '#6366F1', color: '#6366F1', '&:hover': { bgcolor: 'rgba(99,102,241,0.08)', borderColor: '#4F46E5' } }}
+                          sx={{ color: '#6366F1' }}
                         >
-                          View
-                        </Button>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
                       </Tooltip>
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        color="success"
-                        disabled={property.status === 'PUBLISHED'}
-                        onClick={() => handleModerateClick(property, 'PUBLISHED')}
-                        sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        color="error"
-                        disabled={property.status === 'REJECTED'}
-                        onClick={() => handleModerateClick(property, 'REJECTED')}
-                        sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}
-                      >
-                        Reject
-                      </Button>
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        color="primary"
-                        component={Link}
-                        href={`/properties/edit/${property.slug}`}
-                        startIcon={<EditIcon sx={{ fontSize: '1rem !important' }} />}
-                        sx={{ minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}
-                      >
-                        Edit
-                      </Button>
-                      <Button 
-                        size="small" 
-                        variant={property.is_popular ? 'contained' : 'outlined'} 
-                        color="warning"
-                        disabled={property.status !== 'PUBLISHED'}
-                        onClick={() => togglePopular(property)}
-                        startIcon={property.is_popular ? <StarIcon sx={{ fontSize: '1rem !important' }} /> : <StarBorderIcon sx={{ fontSize: '1rem !important' }} />}
-                        sx={{ 
-                          minWidth: 'auto', px: 1, py: 0.5, fontSize: '0.75rem', textTransform: 'none',
-                          bgcolor: property.is_popular ? '#F59E0B' : 'transparent', 
-                          color: property.is_popular ? 'white' : '#F59E0B', 
-                          borderColor: '#F59E0B', 
-                          '&:hover': { bgcolor: property.is_popular ? '#D97706' : 'rgba(245, 158, 11, 0.1)', borderColor: '#D97706' } 
-                        }}
-                      >
-                        {property.is_popular ? 'Popular' : 'Popular'}
-                      </Button>
+                      <Tooltip title="Approve">
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="success"
+                            disabled={property.status === 'PUBLISHED'}
+                            onClick={() => handleModerateClick(property, 'PUBLISHED')}
+                          >
+                            <CheckCircleIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Reject">
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            disabled={property.status === 'REJECTED'}
+                            onClick={() => handleModerateClick(property, 'REJECTED')}
+                          >
+                            <CancelIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Edit">
+                        <IconButton 
+                          size="small" 
+                          color="primary"
+                          component={Link}
+                          href={`/properties/edit/${property.slug}`}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={() => handleDeleteClick(property)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={property.is_popular ? "Remove Popular" : "Make Popular"}>
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            disabled={property.status !== 'PUBLISHED'}
+                            onClick={() => togglePopular(property)}
+                            sx={{ color: property.is_popular ? '#F59E0B' : 'action.disabled' }}
+                          >
+                            {property.is_popular ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))
+              );
+            })
             )}
           </TableBody>
         </Table>
@@ -339,6 +456,53 @@ export default function AdminProperties() {
             disabled={isModerating}
           >
             {isModerating ? <CircularProgress size={24} color="inherit" /> : 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => !isDeleting && setDeleteDialogOpen(false)}>
+        <DialogTitle>
+          Delete Property
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText mb={2}>
+            Are you sure you want to permanently delete the property "{propertyToDelete?.title}"? 
+            This action cannot be undone and will delete all related documents and images.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit" disabled={isDeleting}>Cancel</Button>
+          <Button 
+            onClick={confirmDelete} 
+            color="error"
+            variant="contained" 
+            disabled={isDeleting}
+          >
+            {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Delete Permanently'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={bulkDeleteDialogOpen} onClose={() => !isDeleting && setBulkDeleteDialogOpen(false)}>
+        <DialogTitle>
+          Delete {selectedIds.length} Properties
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText mb={2}>
+            Are you sure you want to permanently delete {selectedIds.length} properties? 
+            This action cannot be undone and will delete all related documents and images.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkDeleteDialogOpen(false)} color="inherit" disabled={isDeleting}>Cancel</Button>
+          <Button 
+            onClick={confirmBulkDelete} 
+            color="error"
+            variant="contained" 
+            disabled={isDeleting}
+          >
+            {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Delete Permanently'}
           </Button>
         </DialogActions>
       </Dialog>

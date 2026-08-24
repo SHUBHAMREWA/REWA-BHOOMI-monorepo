@@ -142,6 +142,7 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         popular_rank        INTEGER,
         rejection_reason    TEXT,
         published_at        TIMESTAMPTZ,
+        custom_amenities    TEXT[] DEFAULT '{}',
         created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         deleted_at          TIMESTAMPTZ

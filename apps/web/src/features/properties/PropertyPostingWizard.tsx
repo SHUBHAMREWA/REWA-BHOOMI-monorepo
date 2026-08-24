@@ -63,6 +63,11 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     longitude: 81.3037,
     googleMapsLink: '',
   });
+  const [localitySameAsAddress, setLocalitySameAsAddress] = useState(false);
+
+  // Amenities
+  const [customAmenities, setCustomAmenities] = useState<string[]>([]);
+  const [customAmenityInput, setCustomAmenityInput] = useState('');
 
   // Basic Info & Pricing
   const [title, setTitle] = useState('');
@@ -72,6 +77,9 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   const [billingPeriod, setBillingPeriod] = useState<string>('MONTHLY');
   const [isPriceNegotiable, setIsPriceNegotiable] = useState(false);
   const [pricePerSqFt, setPricePerSqFt] = useState<number | ''>('');
+
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
+  const [availableAmenities, setAvailableAmenities] = useState<any[]>([]);
 
   // Helper to handle number input clearing without sticky 0
   const toNumVal = (val: string) => (val === '' ? '' : Number(val));
@@ -204,8 +212,6 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   });
 
   // Amenities
-  const [availableAmenities, setAvailableAmenities] = useState<any[]>([]);
-  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
 
   // Media
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -237,6 +243,9 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           
           if (prop.location) {
             setLocation(prev => ({ ...prev, ...prop.location }));
+            if (prop.location.address && prop.location.address === prop.location.locality) {
+              setLocalitySameAsAddress(true);
+            }
           }
           setTitle(prop.title || '');
           setDescription(prop.description || '');
@@ -382,6 +391,9 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           if (prop.amenities) {
             setSelectedAmenityIds(prop.amenities.map((a: any) => a.id));
           }
+          if (prop.custom_amenities) {
+            setCustomAmenities(prop.custom_amenities);
+          }
         })
         .catch(() => toast.error('Failed to load property for editing'))
         .finally(() => setIsLoadingProperty(false));
@@ -398,10 +410,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   const filteredTypes = getFilteredPropertyTypes((purpose as ListingPurpose) || "SALE", (category as PropertyCategoryType) || "RESIDENTIAL");
 
   useEffect(() => {
-    if (filteredTypes.length > 0) {
-      // Ensure propertyType is valid for purpose & category
+    if (propertyType && filteredTypes.length > 0) {
+      // If the currently selected propertyType is not valid for the new purpose/category, clear it
       if (!filteredTypes.some(t => t.key === propertyType)) {
-        setPropertyType(filteredTypes[0].key);
+        setPropertyType(null);
       }
     }
   }, [purpose, category]);
@@ -532,6 +544,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           googleMapsLink: location.googleMapsLink || undefined,
         },
         amenityIds: validAmenityIds,
+        customAmenities: customAmenities,
         imageUrls: imageUrls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0),
         imageStorageKeys: imageStorageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0),
         residentialDetails: category === 'RESIDENTIAL' ? cleanDetailObj(resDetails) : undefined,
@@ -839,33 +852,53 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField
-                  fullWidth size="small" label="Locality / Sector / Area *"
-                  value={location.locality}
-                  onChange={(e) => setLocation({ ...location, locality: e.target.value })}
-                  placeholder="e.g. Civil Lines, Kripalpur"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
                   fullWidth size="small" label="Pincode"
                   value={location.pincode}
                   onChange={(e) => setLocation({ ...location, pincode: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth size="small" label="Google Maps Link (Optional)"
-                  value={location.googleMapsLink}
-                  onChange={(e) => setLocation({ ...location, googleMapsLink: e.target.value })}
-                  placeholder="https://maps.app.goo.gl/..."
-                />
-              </Grid>
+
               <Grid item xs={12}>
                 <TextField
-                  fullWidth size="small" multiline rows={2} label="Full Address"
+                  fullWidth size="small" multiline rows={2} label="Full Address *"
                   value={location.address}
-                  onChange={(e) => setLocation({ ...location, address: e.target.value })}
+                  onChange={(e) => {
+                    const newAddress = e.target.value;
+                    setLocation(prev => ({ 
+                      ...prev, 
+                      address: newAddress,
+                      locality: localitySameAsAddress ? newAddress : prev.locality
+                    }));
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth size="small" label="Locality / Sector / Area *"
+                  value={location.locality}
+                  onChange={(e) => {
+                    setLocation({ ...location, locality: e.target.value });
+                    if (localitySameAsAddress) setLocalitySameAsAddress(false);
+                  }}
+                  placeholder="e.g. Civil Lines, Kripalpur"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={localitySameAsAddress}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setLocalitySameAsAddress(checked);
+                        if (checked) {
+                          setLocation(prev => ({ ...prev, locality: prev.address }));
+                        }
+                      }}
+                    />
+                  }
+                  label={<Typography variant="caption" color="text.secondary">Same as full address</Typography>}
+                  sx={{ mt: 0.5, ml: 0 }}
                 />
               </Grid>
             </Grid>
@@ -877,6 +910,15 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               state={location.state}
               onLocationSelect={(loc) => setLocation({ ...location, latitude: loc.lat, longitude: loc.lng, address: loc.address || location.address })}
             />
+
+            <Box mt={3}>
+              <TextField
+                fullWidth size="small" label="Google Maps Link (Optional)"
+                value={location.googleMapsLink}
+                onChange={(e) => setLocation({ ...location, googleMapsLink: e.target.value })}
+                placeholder="https://maps.app.goo.gl/..."
+              />
+            </Box>
           </Paper>
         )}
 
@@ -997,7 +1039,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 <Grid item xs={12} sm={6}>
                   <TextField fullWidth size="small" type="number" label="Width (ft)" value={landDetails.plotWidth} onChange={(e) => setLandDetails({ ...landDetails, plotWidth: toNumVal(e.target.value) })} placeholder="e.g. 30" />
                 </Grid>
-                {['AGRICULTURAL_LAND', 'FARM_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
+                {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
                   <>
                     <Grid item xs={12} sm={6}>
                       <TextField fullWidth size="small" label="Soil Type" value={landDetails.soilType} onChange={(e) => setLandDetails({ ...landDetails, soilType: e.target.value })} placeholder="Black Cotton, Alluvial, Red Soil" />
@@ -1113,12 +1155,16 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               Aapki property me jo-jo suvidhayein uplabdh hain unhe tick karein
             </Typography>
 
-                          <Box display="flex" flexWrap="wrap" gap={1.5}>
-                {(availableAmenities.length > 0 ? availableAmenities : [
-                  { id: '1', name: 'Parking' }, { id: '2', name: 'Power Backup' }, { id: '3', name: '24x7 Security' },
-                  { id: '4', name: 'WiFi' }, { id: '5', name: 'Lift / Elevator' }, { id: '6', name: 'Air Conditioning' },
-                  { id: '7', name: 'Water Supply' }, { id: '8', name: 'CCTV Surveillance' }, { id: '9', name: 'Garden / Park' },
-                ]).map((item) => {
+              <Box display="flex" flexWrap="wrap" gap={1.5} mb={4}>
+                {availableAmenities.sort((a, b) => {
+                  const PREFERRED_ORDER = ['Bijli (Power Backup)', 'Water Supply', 'Near Market', 'Near School', 'Bore Well', 'Near Hospital', 'Near College', 'Garden', 'Parking', 'Lift', 'Security', 'Near Gym'];
+                  const idxA = PREFERRED_ORDER.indexOf(a.name);
+                  const idxB = PREFERRED_ORDER.indexOf(b.name);
+                  if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                  if (idxA !== -1) return -1;
+                  if (idxB !== -1) return 1;
+                  return a.name.localeCompare(b.name);
+                }).map((item) => {
                   const isChecked = selectedAmenityIds.includes(item.id);
                   return (
                     <Chip
@@ -1139,6 +1185,61 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   );
                 })}
               </Box>
+
+              <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                Extra Amenities (Upto 20)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Agar koi aur suvidha hai jo upar list me nahi hai, toh yahan type karke "Add" par click karein.
+              </Typography>
+              
+              <Box display="flex" gap={1} mb={2}>
+                <TextField
+                  size="small"
+                  placeholder="e.g. Personal Swimming Pool"
+                  value={customAmenityInput}
+                  onChange={(e) => setCustomAmenityInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (customAmenityInput.trim() && customAmenities.length < 20 && !customAmenities.includes(customAmenityInput.trim())) {
+                        setCustomAmenities([...customAmenities, customAmenityInput.trim()]);
+                        setCustomAmenityInput('');
+                      }
+                    }
+                  }}
+                  disabled={customAmenities.length >= 20}
+                  sx={{ flex: 1, maxWidth: 300 }}
+                />
+                <Button 
+                  variant="contained" 
+                  size="small"
+                  disabled={!customAmenityInput.trim() || customAmenities.length >= 20}
+                  onClick={() => {
+                    if (customAmenityInput.trim() && customAmenities.length < 20 && !customAmenities.includes(customAmenityInput.trim())) {
+                      setCustomAmenities([...customAmenities, customAmenityInput.trim()]);
+                      setCustomAmenityInput('');
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </Box>
+
+              {customAmenities.length > 0 && (
+                <Box display="flex" flexWrap="wrap" gap={1}>
+                  {customAmenities.map((amenity, idx) => (
+                    <Chip
+                      key={idx}
+                      label={amenity}
+                      onDelete={() => setCustomAmenities(prev => prev.filter((_, i) => i !== idx))}
+                      color="secondary"
+                      variant="outlined"
+                      sx={{ borderRadius: 2 }}
+                    />
+                  ))}
+                </Box>
+              )}
           </Paper>
         )}
 
@@ -1375,9 +1476,16 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🌾 Land Details</Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.totalLandArea}</Typography><Typography variant="caption" color="text.secondary">Area ({landDetails.areaUnit})</Typography></Box></Grid>
-                    {landDetails.soilType && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Mitti Ka Prakar</Typography><Typography variant="body2" fontWeight={700}>{landDetails.soilType}</Typography></Box></Grid>}
-                    {landDetails.currentCrop && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Current Fasal</Typography><Typography variant="body2" fontWeight={700}>{landDetails.currentCrop}</Typography></Box></Grid>}
-                    <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Irrigation</Typography><Typography variant="body2" fontWeight={700}>{landDetails.irrigationAvailable ? '✅ Available' : '❌ NA'}</Typography></Box></Grid>
+                    {landDetails.plotLength && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.plotLength}</Typography><Typography variant="caption" color="text.secondary">Plot Length (ft)</Typography></Box></Grid>}
+                    {landDetails.plotWidth && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.plotWidth}</Typography><Typography variant="caption" color="text.secondary">Plot Width (ft)</Typography></Box></Grid>}
+                    {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
+                      <>
+                        {landDetails.soilType && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Mitti Ka Prakar</Typography><Typography variant="body2" fontWeight={700}>{landDetails.soilType}</Typography></Box></Grid>}
+                        {landDetails.currentCrop && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Current Fasal</Typography><Typography variant="body2" fontWeight={700}>{landDetails.currentCrop}</Typography></Box></Grid>}
+                        <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Irrigation</Typography><Typography variant="body2" fontWeight={700}>{landDetails.irrigationAvailable ? '✅ Available' : '❌ NA'}</Typography></Box></Grid>
+                        {landDetails.nearestRoadDistance && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Nearest Road (km)</Typography><Typography variant="body2" fontWeight={700}>{landDetails.nearestRoadDistance}</Typography></Box></Grid>}
+                      </>
+                    )}
                   </Grid>
                 </Box>
               )}
@@ -1395,6 +1503,26 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 </Box>
               )}
 
+              {(purpose === 'LEASE' || purpose === 'RENT') && leaseDetails.securityDeposit && (
+                <Box mb={3}>
+                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>📄 Lease / Rent Details</Typography>
+                  <Grid container spacing={2}>
+                    {leaseDetails.securityDeposit && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">₹{Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}</Typography><Typography variant="caption" color="text.secondary">Security Deposit</Typography></Box></Grid>}
+                  </Grid>
+                </Box>
+              )}
+
+              {purpose === 'COMMERCIAL_LEASE' && (
+                <Box mb={3}>
+                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🏢 Commercial Lease Details</Typography>
+                  <Grid container spacing={2}>
+                    {leaseDetails.securityDeposit && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">₹{Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}</Typography><Typography variant="caption" color="text.secondary">Security Deposit</Typography></Box></Grid>}
+                    {leaseDetails.lockInPeriodMonths && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{leaseDetails.lockInPeriodMonths}</Typography><Typography variant="caption" color="text.secondary">Lock-in (Months)</Typography></Box></Grid>}
+                    {leaseDetails.rentEscalationPercentage && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{leaseDetails.rentEscalationPercentage}%</Typography><Typography variant="caption" color="text.secondary">Rent Escalation</Typography></Box></Grid>}
+                  </Grid>
+                </Box>
+              )}
+
               {/* Description */}
               {description && (
                 <Box mb={3}>
@@ -1406,16 +1534,19 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               )}
 
               {/* Amenities */}
-              {selectedAmenityIds.length > 0 && availableAmenities.length > 0 && (
+              {(selectedAmenityIds.length > 0 || customAmenities.length > 0) && (
                 <Box mb={2}>
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1.5}>✨ Suvidhayein (Amenities)</Typography>
                   <Box display="flex" gap={1} flexWrap="wrap">
                     {availableAmenities
                       .filter(a => selectedAmenityIds.includes(a.id))
                       .map(a => (
-                        <Chip key={a.id} label={a.name} size="small" variant="outlined" sx={{ fontWeight: 500 }} />
+                        <Chip key={a.id} label={a.name} size="small" variant="outlined" sx={{ fontWeight: 500 }} color="primary" />
                       ))
                     }
+                    {customAmenities.map((amenity, idx) => (
+                      <Chip key={`custom-${idx}`} label={amenity} size="small" variant="outlined" sx={{ fontWeight: 500 }} color="secondary" />
+                    ))}
                   </Box>
                 </Box>
               )}

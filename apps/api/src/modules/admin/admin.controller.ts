@@ -265,3 +265,85 @@ export const togglePropertyPopular = async (req: Request, res: Response) => {
     message: `Property marked as ${isPopular ? 'popular' : 'not popular'}`,
   });
 };
+
+// ─── Delete Property (Admin Hard Delete) ────────────────────────────────────
+import { deleteFromR2 } from '../media/media.service';
+
+export const deletePropertyAdmin = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const property = await queryOne('SELECT id FROM properties WHERE id = $1', [id]);
+  if (!property) {
+    throw new NotFoundError('Property not found');
+  }
+
+  // Fetch images to delete from R2 (Cloudflare Storage)
+  const images = await query<{ storage_key: string }>(
+    'SELECT storage_key FROM property_images WHERE property_id = $1',
+    [id],
+  );
+
+  for (const img of images) {
+    if (img.storage_key && !img.storage_key.startsWith('auto_')) {
+      try {
+        await deleteFromR2(img.storage_key);
+      } catch (err) {
+        console.error(`Failed to delete R2 key ${img.storage_key}:`, err);
+      }
+    }
+  }
+
+  // Hard delete: PostgreSQL ON DELETE CASCADE will handle related tables
+  await query('DELETE FROM properties WHERE id = $1', [id]);
+
+  // Log audit
+  await query(
+    'INSERT INTO audit_logs (id, actor_id, action, resource_type, resource_id) VALUES (gen_random_uuid(), $1, $2, $3, $4)',
+    [req.user?.userId, 'PROPERTY_DELETED_ADMIN', 'property', id]
+  );
+
+  res.json({
+    success: true,
+    message: 'Property and all related data deleted successfully',
+  });
+};
+
+// ─── Bulk Delete Properties (Admin) ─────────────────────────────────────────
+export const bulkDeletePropertiesAdmin = async (req: Request, res: Response) => {
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new BadRequestError('An array of property IDs is required');
+  }
+
+  // Fetch images to delete from R2 for ALL selected properties
+  const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+  const images = await query<{ storage_key: string }>(
+    `SELECT storage_key FROM property_images WHERE property_id IN (${placeholders})`,
+    ids
+  );
+
+  for (const img of images) {
+    if (img.storage_key && !img.storage_key.startsWith('auto_')) {
+      try {
+        await deleteFromR2(img.storage_key);
+      } catch (err) {
+        console.error(`Failed to delete R2 key ${img.storage_key}:`, err);
+      }
+    }
+  }
+
+  // Hard delete all specified properties
+  await query(`DELETE FROM properties WHERE id IN (${placeholders})`, ids);
+
+  // Log audit
+  await query(
+    'INSERT INTO audit_logs (id, actor_id, action, resource_type, resource_id, after_data) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)',
+    [req.user?.userId, 'PROPERTIES_BULK_DELETED', 'properties', 'bulk', JSON.stringify({ deleted_ids: ids })]
+  );
+
+  res.json({
+    success: true,
+    message: `${ids.length} properties and related data deleted successfully`,
+  });
+};

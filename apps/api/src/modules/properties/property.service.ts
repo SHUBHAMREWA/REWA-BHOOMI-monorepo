@@ -299,6 +299,18 @@ export async function createProperty(
     );
     const categoryId = catRes.rows[0]?.id || null;
 
+    const area = (input.landDetails as any)?.totalLandArea
+      || (input.residentialDetails as any)?.carpetArea
+      || (input.residentialDetails as any)?.builtUpArea
+      || (input.commercialDetails as any)?.carpetArea
+      || (input.commercialDetails as any)?.builtUpArea
+      || (input.hallDetails as any)?.hallAreaSqFt
+      || null;
+
+    const areaUnit = (input.landDetails as any)?.areaUnit || 'SQ_FT';
+    const bedrooms = (input.residentialDetails as any)?.bedrooms || null;
+    const bathrooms = (input.residentialDetails as any)?.bathrooms || (input.commercialDetails as any)?.washrooms || null;
+
     // 1. Insert Core Property
     const result = await client.query<{ id: string; slug: string }>(
       `INSERT INTO properties (
@@ -306,9 +318,10 @@ export async function createProperty(
         is_price_negotiable, price_per_sqft, listing_purpose, category_type, property_type,
         listing_type, owner_id, created_by, created_by_role,
         city, state, country, address, pincode, latitude, longitude,
-        status, videos, category_id
+        status, videos, category_id, custom_amenities,
+        area, area_unit, bedrooms, bathrooms
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31
       ) RETURNING id, slug`,
       [
         slug, input.title, input.description, input.priceAmount, input.priceAmount, input.priceType ?? 'TOTAL_PRICE', input.billingPeriod ?? null,
@@ -317,7 +330,8 @@ export async function createProperty(
         ownerId, ownerId, createdByRole,
         input.location.city, input.location.state, input.location.country ?? 'India', input.location.address ?? null,
         input.location.pincode ?? null, input.location.latitude ?? null, input.location.longitude ?? null,
-        status, input.videos ?? [], categoryId
+        status, input.videos ?? [], categoryId, input.customAmenities ?? [],
+        area, areaUnit, bedrooms, bathrooms
       ],
     );
 
@@ -481,6 +495,26 @@ export async function updateProperty(
     ['category_type', input.categoryType],
     ['property_type', input.propertyType],
   ];
+
+  const area = (input.landDetails as any)?.totalLandArea
+    || (input.residentialDetails as any)?.carpetArea
+    || (input.residentialDetails as any)?.builtUpArea
+    || (input.commercialDetails as any)?.carpetArea
+    || (input.commercialDetails as any)?.builtUpArea
+    || (input.hallDetails as any)?.hallAreaSqFt
+    || null;
+  const areaUnit = (input.landDetails as any)?.areaUnit || 'SQ_FT';
+  const bedrooms = (input.residentialDetails as any)?.bedrooms || null;
+  const bathrooms = (input.residentialDetails as any)?.bathrooms || (input.commercialDetails as any)?.washrooms || null;
+
+  if (area !== null) fields.push(['area', area]);
+  if (areaUnit) fields.push(['area_unit', areaUnit]);
+  if (bedrooms !== null) fields.push(['bedrooms', bedrooms]);
+  if (bathrooms !== null) fields.push(['bathrooms', bathrooms]);
+
+  if (input.customAmenities !== undefined) {
+    fields.push(['custom_amenities', input.customAmenities]);
+  }
 
   if (input.location) {
     fields.push(

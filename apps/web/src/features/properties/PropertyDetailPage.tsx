@@ -352,6 +352,58 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     </Paper>
   );
 
+  const renderFutureValueProjection = (displayProps: any) => {
+    if (!(property.price && Number(property.price) > 0 && (property.listing_type?.toUpperCase() === 'SELL' || property.listing_type?.toUpperCase() === 'SALE' || property.listing_purpose?.toUpperCase() === 'SELL' || property.listing_purpose?.toUpperCase() === 'SALE'))) {
+      return null;
+    }
+    const base = Number(property.price);
+    const fmt = (v: number) => {
+      if (v >= 10000000) return (v / 10000000).toFixed(2).replace(/\.?0+$/, '') + ' Cr';
+      if (v >= 100000) return (v / 100000).toFixed(2).replace(/\.?0+$/, '') + ' Lakh';
+      if (v >= 1000) return (v / 1000).toFixed(1).replace(/\.?0+$/, '') + 'K';
+      return '₹' + v.toLocaleString('en-IN');
+    };
+    const projections = [
+      { label: '2 Saal Mein', multiplier: 1.25 },
+      { label: '3 Saal Mein', multiplier: 1.50 },
+      { label: '5 Saal Mein', multiplier: 2.375 },
+      { label: '10 Saal Mein', multiplier: 3.75 },
+    ];
+    return (
+      <Paper elevation={0} sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: '10px', border: '1px solid #E2E8F0', bgcolor: '#fff', ...displayProps }}>
+        <Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: '0.85rem', mb: 0.5 }}>
+          Es property ki kimat, agle kuch saalon mein lagbag itni ho sakti hai
+        </Typography>
+        <Typography variant="caption" color="#94A3B8" sx={{ fontSize: '0.7rem', display: 'block', mb: 2 }}>
+          Market average ke hisaab se anumaan
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.4 }}>
+          {projections.map((p) => {
+            const projVal = Math.round(base * p.multiplier);
+            return (
+              <Box key={p.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ fontSize: '0.83rem' }}>
+                  {p.label}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <Box component="span" sx={{ color: '#CBD5E1', fontSize: '0.9rem' }}>→</Box>
+                  <Typography variant="body2" fontWeight={700} color="#16A34A" sx={{ fontSize: '0.85rem' }}>
+                    ₹{fmt(projVal)}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+
+        <Typography variant="caption" color="#CBD5E1" sx={{ display: 'block', mt: 2, fontSize: '0.67rem' }}>
+          Ye sirf ek anumaan hai. Asli kimat market par depend karti hai.
+        </Typography>
+      </Paper>
+    );
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', pt: { xs: 4, sm: 8.5 }, pb: { xs: 6, sm: 8 }, bgcolor: '#F2F4F7' }}>
       <Container maxWidth="lg">
@@ -600,12 +652,12 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             )}
 
             {/* 2. Overview & Details Box */}
-            <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: 3, bgcolor: '#FFFFFF' }}>
+            <Paper elevation={0} sx={{ p: { xs: 2, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 2, sm: 3 }, bgcolor: '#FFFFFF' }}>
               <Typography variant="h6" fontWeight={700} mb={2.5} color="#0F172A">
                 Overview & Details
               </Typography>
 
-              <Grid container spacing={2.5} sx={{ mb: 2 }}>
+              <Grid container spacing={{ xs: 2, sm: 2.5 }} sx={{ mb: 1 }}>
                 <Grid item xs={6} sm={4}>
                   <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Type / Purpose</Typography>
                   <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{property.listing_purpose || property.listing_type || 'SALE'}</Typography>
@@ -614,12 +666,19 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Category</Typography>
                   <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{categoryLabel}</Typography>
                 </Grid>
-                {property.area && (
-                  <Grid item xs={6} sm={4}>
-                    <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Plot / Built Area</Typography>
-                    <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{property.area} {property.area_unit || 'ft²'}</Typography>
-                  </Grid>
-                )}
+                {(() => {
+                  const displayArea = property.area || (land && land.total_land_area) || (res && (res.carpet_area || res.built_up_area)) || (comm && (comm.carpet_area || comm.built_up_area));
+                  const displayUnit = property.area_unit || (land && land.area_unit) || 'ft²';
+                  
+                  if (!displayArea) return null;
+                  
+                  return (
+                    <Grid item xs={6} sm={4}>
+                      <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Plot / Built Area</Typography>
+                      <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{displayArea} {displayUnit}</Typography>
+                    </Grid>
+                  );
+                })()}
 
                 {/* 🌾 Land Specific Details */}
                 {land && (
@@ -632,24 +691,28 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                         </Typography>
                       </Grid>
                     )}
-                    {land.soil_type && (
-                      <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Soil Type</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{land.soil_type}</Typography>
-                      </Grid>
+                    {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(property.property_type || '') && (
+                      <>
+                        {land.soil_type && (
+                          <Grid item xs={6} sm={4}>
+                            <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Soil Type</Typography>
+                            <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{land.soil_type}</Typography>
+                          </Grid>
+                        )}
+                        {land.current_crop && (
+                          <Grid item xs={6} sm={4}>
+                            <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Current Crop</Typography>
+                            <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{land.current_crop}</Typography>
+                          </Grid>
+                        )}
+                        <Grid item xs={6} sm={4}>
+                          <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Irrigation Facility</Typography>
+                          <Typography fontWeight={700} color={land.irrigation_available ? '#16A34A' : '#DC2626'} sx={{ mt: 0.3 }}>
+                            {land.irrigation_available ? 'Available' : 'Not Available'}
+                          </Typography>
+                        </Grid>
+                      </>
                     )}
-                    {land.current_crop && (
-                      <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Current Crop</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{land.current_crop}</Typography>
-                      </Grid>
-                    )}
-                    <Grid item xs={6} sm={4}>
-                      <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Irrigation Facility</Typography>
-                      <Typography fontWeight={700} color={land.irrigation_available ? '#16A34A' : '#DC2626'} sx={{ mt: 0.3 }}>
-                        {land.irrigation_available ? 'Available' : 'Not Available'}
-                      </Typography>
-                    </Grid>
                   </>
                 )}
 
@@ -666,6 +729,24 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                       <Grid item xs={6} sm={4}>
                         <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Bathrooms</Typography>
                         <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.bathrooms}</Typography>
+                      </Grid>
+                    )}
+                    {res.carpet_area && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Carpet Area</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.carpet_area} sqft</Typography>
+                      </Grid>
+                    )}
+                    {res.built_up_area && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Built-up Area</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.built_up_area} sqft</Typography>
+                      </Grid>
+                    )}
+                    {res.furnished_status && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Furnished</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.furnished_status.replace('_', ' ')}</Typography>
                       </Grid>
                     )}
                     {res.facing && (
@@ -688,15 +769,21 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                         </Typography>
                       </Grid>
                     )}
+                    {res.possession_status && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Possession</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.possession_status}</Typography>
+                      </Grid>
+                    )}
+                    {property.listing_purpose === 'RENT' && res.tenant_preference && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Tenant Preference (किरायेदार की प्राथमिकता)</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>
+                          {res.tenant_preference === 'ANY' ? 'Any (कोई भी)' : res.tenant_preference === 'BOTH' ? 'Both Allowed (दोनों)' : res.tenant_preference === 'BACHELORS' ? 'Bachelors Allowed (बैचलर्स)' : 'Family Allowed (परिवार)'}
+                        </Typography>
+                      </Grid>
+                    )}
                   </>
-                )}
-                {res && property.listing_purpose === 'RENT' && res.tenant_preference && (
-                  <Grid item xs={6} sm={4}>
-                    <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Tenant Preference (किरायेदार की प्राथमिकता)</Typography>
-                    <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>
-                      {res.tenant_preference === 'ANY' ? 'Any (कोई भी)' : res.tenant_preference === 'BOTH' ? 'Both Allowed (दोनों)' : res.tenant_preference === 'BACHELORS' ? 'Bachelors Allowed (बैचलर्स)' : 'Family Allowed (परिवार)'}
-                    </Typography>
-                  </Grid>
                 )}
 
                 {/* 🏢 Commercial Details */}
@@ -706,6 +793,24 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                       <Grid item xs={6} sm={4}>
                         <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Carpet Area</Typography>
                         <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.carpet_area} sqft</Typography>
+                      </Grid>
+                    )}
+                    {comm.built_up_area && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Built-up Area</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.built_up_area} sqft</Typography>
+                      </Grid>
+                    )}
+                    {comm.frontage && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Width (ft)</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.frontage}</Typography>
+                      </Grid>
+                    )}
+                    {comm.depth && (
+                      <Grid item xs={6} sm={4}>
+                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Length (ft)</Typography>
+                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.depth}</Typography>
                       </Grid>
                     )}
                     {comm.washrooms && (
@@ -723,7 +828,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   </>
                 )}
 
-                {/* 🏨 PG Details */}
+                {/* 🛏️ PG Details */}
                 {pg && (
                   <>
                     {pg.pg_name && (
@@ -801,13 +906,6 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   </>
                 )}
               </Grid>
-
-              <Divider sx={{ my: 2.5 }} />
-
-              <Typography variant="h6" fontWeight={700} mb={1.5} color="#0F172A">Description</Typography>
-              <Typography color="#475569" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: '0.95rem' }}>
-                {property.description}
-              </Typography>
             </Paper>
 
             {/* 3. Amenities & Features Box */}
@@ -836,54 +934,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               {renderPriceAndTitleCard({ display: { xs: 'none', md: 'block' } })}
 
               {/* CARD 3: Future Value Projection */}
-              {property.price && Number(property.price) > 0 && (property.listing_type?.toUpperCase() === 'SELL' || property.listing_type?.toUpperCase() === 'SALE' || property.listing_purpose?.toUpperCase() === 'SELL' || property.listing_purpose?.toUpperCase() === 'SALE') && (() => {
-                const base = Number(property.price);
-                const fmt = (v: number) => {
-                  if (v >= 10000000) return (v / 10000000).toFixed(2).replace(/\.?0+$/, '') + ' Cr';
-                  if (v >= 100000) return (v / 100000).toFixed(2).replace(/\.?0+$/, '') + ' Lakh';
-                  if (v >= 1000) return (v / 1000).toFixed(1).replace(/\.?0+$/, '') + 'K';
-                  return '₹' + v.toLocaleString('en-IN');
-                };
-                const projections = [
-                  { label: '2 Saal Mein', multiplier: 1.25 },
-                  { label: '3 Saal Mein', multiplier: 1.50 },
-                  { label: '5 Saal Mein', multiplier: 2.375 },
-                  { label: '10 Saal Mein', multiplier: 3.75 },
-                ];
-                return (
-                  <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
-                    <Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: '0.85rem', mb: 0.5 }}>
-                      Es property ki kimat, agle kuch saalon mein lagbag itni ho sakti hai
-                    </Typography>
-                    <Typography variant="caption" color="#94A3B8" sx={{ fontSize: '0.7rem', display: 'block', mb: 2 }}>
-                      Market average ke hisaab se anumaan
-                    </Typography>
-
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.4 }}>
-                      {projections.map((p) => {
-                        const projVal = Math.round(base * p.multiplier);
-                        return (
-                          <Box key={p.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" fontWeight={600} color="#334155" sx={{ fontSize: '0.83rem' }}>
-                              {p.label}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                              <Box component="span" sx={{ color: '#CBD5E1', fontSize: '0.9rem' }}>→</Box>
-                              <Typography variant="body2" fontWeight={700} color="#16A34A" sx={{ fontSize: '0.85rem' }}>
-                                ₹{fmt(projVal)}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-
-                    <Typography variant="caption" color="#CBD5E1" sx={{ display: 'block', mt: 2, fontSize: '0.67rem' }}>
-                      Ye sirf ek anumaan hai. Asli kimat market par depend karti hai.
-                    </Typography>
-                  </Paper>
-                );
-              })()}
+              {renderFutureValueProjection({ display: { xs: 'none', md: 'block' } })}
 
 
               {/* CARD 2: Seller Info & Action Buttons */}

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDashboardStats, listUsers, updateUserStatus, moderateProperty, getAuditLogs, listPropertiesAdmin, listProjectsAdmin, togglePropertyPopular } from './admin.controller';
+import { getDashboardStats, listUsers, updateUserStatus, moderateProperty, getAuditLogs, listPropertiesAdmin, listProjectsAdmin, togglePropertyPopular, deletePropertyAdmin, bulkDeletePropertiesAdmin } from './admin.controller';
 import { createProject, updateProject, deleteProject, createPlot, deletePlot, getProjectByIdAdmin, updatePlot, createPhase, updatePhase, deletePhase, createMapObject, updateMapObject, deleteMapObject, createCluster, updateCluster, deleteCluster, saveMapVersion, publishMapVersion, listMapVersions, bulkSaveMapData } from '../projects/project.controller';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { asyncHandler } from '../../middleware/errorHandler';
@@ -15,6 +15,8 @@ router.patch('/users/:id/status', asyncHandler(updateUserStatus));
 router.get('/properties', asyncHandler(listPropertiesAdmin));
 router.patch('/properties/:id/moderate', asyncHandler(moderateProperty));
 router.patch('/properties/:id/popular', asyncHandler(togglePropertyPopular));
+router.delete('/properties/:id', asyncHandler(deletePropertyAdmin));
+router.post('/properties/bulk-delete', asyncHandler(bulkDeletePropertiesAdmin));
 router.get('/projects', asyncHandler(listProjectsAdmin));
 router.get('/audit-logs', asyncHandler(getAuditLogs));
 
