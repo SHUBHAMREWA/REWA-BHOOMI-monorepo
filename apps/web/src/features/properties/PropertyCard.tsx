@@ -316,6 +316,16 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             )}
 }
 
+          
+            {property.status === 'SOLD' && (
+              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                <Typography variant="h4" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  SOLD
+                </Typography>
+              </Box>
+            )}
+
+
           {/* Badges */}
           <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1 }}>
             <Box sx={{ bgcolor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -502,6 +512,16 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               </Box>
             )}
 }
+
+            
+            {property.status === 'SOLD' && (
+              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                <Typography variant="h4" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  SOLD
+                </Typography>
+              </Box>
+            )}
+
 
             {/* Photo count top left */}
             <Box sx={{ position: 'absolute', top: 6, left: 6, display: 'flex', gap: 1 }}>
@@ -754,6 +774,16 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 <Typography color="text.secondary" variant="caption">No Image Available</Typography>
               </Box>
             )}
+
+            
+            {property.status === 'SOLD' && (
+              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                <Typography variant="h4" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  SOLD
+                </Typography>
+              </Box>
+            )}
+
 
             {/* Top Left Badge: Photos count */}
             <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1 }}>
