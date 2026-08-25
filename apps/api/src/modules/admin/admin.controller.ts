@@ -114,8 +114,8 @@ export const moderateProperty = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status, remarks } = req.body;
 
-  if (!['PUBLISHED', 'REJECTED'].includes(status)) {
-    throw new BadRequestError('Invalid status. Must be PUBLISHED or REJECTED');
+  if (!['PUBLISHED', 'REJECTED', 'SOLD'].includes(status)) {
+    throw new BadRequestError('Invalid status. Must be PUBLISHED, REJECTED, or SOLD');
   }
 
   const property = await queryOne('SELECT id FROM properties WHERE id = $1', [id]);
@@ -209,7 +209,7 @@ export const listPropertiesAdmin = async (req: Request, res: Response) => {
 
 // ─── Projects ─────────────────────────────────────────────────────────────
 export const listProjectsAdmin = async (req: Request, res: Response) => {
-  const { page = '1', limit = '20', search = '' } = req.query;
+  const { page = '1', limit = '20', search = '', startDate, endDate } = req.query;
   const offset = (parseInt(page as string, 10) - 1) * parseInt(limit as string, 10);
 
   let projectsQuery = `
@@ -218,13 +218,27 @@ export const listProjectsAdmin = async (req: Request, res: Response) => {
     WHERE pr.deleted_at IS NULL
   `;
   const queryParams: any[] = [];
+  let paramIndex = 1;
 
   if (search) {
-    projectsQuery += ' AND (pr.name ILIKE $1 OR pr.developer ILIKE $1)';
+    projectsQuery += ` AND (pr.name ILIKE $${paramIndex} OR pr.developer ILIKE $${paramIndex})`;
     queryParams.push(`%${search}%`);
+    paramIndex++;
   }
 
-  projectsQuery += ` ORDER BY pr.created_at DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+  if (startDate) {
+    projectsQuery += ` AND pr.created_at >= $${paramIndex}`;
+    queryParams.push(`${startDate} 00:00:00`);
+    paramIndex++;
+  }
+
+  if (endDate) {
+    projectsQuery += ` AND pr.created_at <= $${paramIndex}`;
+    queryParams.push(`${endDate} 23:59:59`);
+    paramIndex++;
+  }
+
+  projectsQuery += ` ORDER BY pr.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   queryParams.push(parseInt(limit as string, 10), offset);
 
   const projects = await query(projectsQuery, queryParams);

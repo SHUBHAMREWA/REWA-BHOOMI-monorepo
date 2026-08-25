@@ -66,6 +66,7 @@ export default function ProfilePage() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
+  const [selectedPropertyStatus, setSelectedPropertyStatus] = useState<string | null>(null);
   
   // Delete Dialog State
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -165,10 +166,11 @@ export default function ProfilePage() {
     else router.replace('/profile');
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, propertyId: string, propertySlug: string) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, propertyId: string, propertySlug: string, propertyStatus: string) => {
     setAnchorEl(event.currentTarget);
     setSelectedPropertyId(propertyId);
     setSelectedPropertySlug(propertySlug);
+    setSelectedPropertyStatus(propertyStatus);
   };
 
   const handleMenuClose = () => {
@@ -184,6 +186,27 @@ export default function ProfilePage() {
 
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  
+  const handleToggleSoldStatus = async () => {
+    if (!selectedPropertyId) return;
+    const isCurrentlySold = selectedPropertyStatus === 'SOLD';
+    const newIsSold = !isCurrentlySold;
+    
+    try {
+      await apiClient.patch(`/properties/${selectedPropertyId}/status`, { isSold: newIsSold });
+      toast.success(`Property marked as ${newIsSold ? 'SOLD' : 'AVAILABLE'}`);
+      setMyProperties(prev => prev.map(p => {
+        if (p.id === selectedPropertyId) {
+          return { ...p, status: newIsSold ? 'SOLD' : 'PUBLISHED' };
+        }
+        return p;
+      }));
+    } catch (error) {
+      toast.error('Failed to update property status');
+    }
     handleMenuClose();
   };
 
@@ -527,7 +550,7 @@ export default function ProfilePage() {
                                 <Typography variant="h6" color="#1B4FD8" fontWeight={700}>₹{property.price.toLocaleString()}</Typography>
                               </Box>
                               <IconButton
-                                onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, property.id, property.slug); }}
+                                onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, property.id, property.slug, property.status); }}
                                 size="small"
                                 sx={{ ml: 1, color: 'text.secondary' }}
                               >
@@ -585,6 +608,9 @@ export default function ProfilePage() {
                 transformOrigin={{ horizontal: 'left', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
               >
+                <MenuItem onClick={handleToggleSoldStatus}>
+                  <MapsHomeWork fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> {selectedPropertyStatus === 'SOLD' ? 'Mark as Available' : 'Mark as Sold'}
+                </MenuItem>
                 <MenuItem onClick={handleEditClick}>
                   <Edit fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> Edit
                 </MenuItem>

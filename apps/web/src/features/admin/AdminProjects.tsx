@@ -19,6 +19,8 @@ export default function AdminProjects() {
   const [projects, setProjects] = useState<ProjectAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectAdmin | null>(null);
@@ -27,7 +29,11 @@ export default function AdminProjects() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const data = await apiGet<ProjectAdmin[]>(`/admin/projects?search=${search}`);
+      const queryParams = new URLSearchParams({ search });
+      if (startDate) queryParams.append('startDate', startDate);
+      if (endDate) queryParams.append('endDate', endDate);
+      
+      const data = await apiGet<ProjectAdmin[]>(`/admin/projects?${queryParams.toString()}`);
       setProjects(data);
     } catch (error) {
       console.error('Failed to fetch projects', error);
@@ -39,7 +45,7 @@ export default function AdminProjects() {
   useEffect(() => {
     const timeoutId = setTimeout(fetchProjects, 500);
     return () => clearTimeout(timeoutId);
-  }, [search]);
+  }, [search, startDate, endDate]);
 
   const handleDeleteClick = (project: ProjectAdmin) => {
     setProjectToDelete(project);
@@ -76,7 +82,23 @@ export default function AdminProjects() {
     <Box>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
         <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>Projects Management</Typography>
-        <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', md: 'auto' } }}>
+        <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', md: 'auto' }, flexWrap: 'wrap' }}>
+          <TextField
+            type="date"
+            size="small"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            sx={{ bgcolor: 'white', borderRadius: 2 }}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            type="date"
+            size="small"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            sx={{ bgcolor: 'white', borderRadius: 2 }}
+            InputLabelProps={{ shrink: true }}
+          />
           <TextField
             placeholder="Search projects..."
             size="small"

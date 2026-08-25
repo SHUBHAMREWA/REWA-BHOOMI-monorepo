@@ -897,3 +897,21 @@ export async function getAmenities() {
     'SELECT id, name, icon FROM property_amenities ORDER BY name',
   );
 }
+
+
+export async function togglePropertySoldStatus(id: string, isSold: boolean, requesterId: string, requesterRoles: string[]) {
+  const property = await getPropertyById(id);
+  if (!property) throw new NotFoundError('Property not found');
+  
+  const isAdmin = requesterRoles.includes('ADMIN') || requesterRoles.includes('SUPER_ADMIN');
+  if (!isAdmin && property.owner_id !== requesterId) {
+    throw new ForbiddenError('You can only update your own properties');
+  }
+
+  const newStatus = isSold ? 'SOLD' : 'PUBLISHED';
+  
+  await query(
+    `UPDATE properties SET status = $1, updated_at = NOW() WHERE id = $2`,
+    [newStatus, id]
+  );
+}
