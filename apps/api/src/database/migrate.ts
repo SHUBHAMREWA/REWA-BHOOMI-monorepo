@@ -1041,6 +1041,13 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         DROP COLUMN IF EXISTS og_image_url;
     `,
   },
+  {
+    name: '023_add_last_login_to_users',
+    sql: `
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+    `,
+  },
 ];
 
 // ─── Migration runner ────────────────────────────────────────────────────────────
