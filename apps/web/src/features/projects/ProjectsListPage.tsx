@@ -134,9 +134,9 @@ export default function ProjectsListPage() {
                       component="div"
                       sx={{ 
                         height: 200,
-                        background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)',
-                        backgroundImage: `radial-gradient(rgba(255,255,255,0.08) 1.5px, transparent 0)`,
-                        backgroundSize: '16px 16px',
+                        background: project.featured_image_url
+                          ? `url(${project.featured_image_url}) center/cover no-repeat`
+                          : 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -152,30 +152,34 @@ export default function ProjectsListPage() {
                         }
                       }}
                     >
-                      {/* Logo Emblem */}
-                      <Box 
-                        className="project-logo-emblem"
-                        sx={{
-                          width: 60, height: 60,
-                          borderRadius: '50%',
-                          bgcolor: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                          mb: 1,
-                          border: '2px solid rgba(255,255,255,0.8)',
-                          zIndex: 2,
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <Typography variant="h5" fontWeight={900} sx={{ color: '#1B4FD8', letterSpacing: '-0.5px' }}>
-                          {project.name.substring(0,2).toUpperCase()}
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, fontSize: '0.68rem', fontWeight: 700, zIndex: 2 }}>
-                        Mega Development
-                      </Typography>
+                      {!project.featured_image_url && (
+                        <>
+                          {/* Logo Emblem */}
+                          <Box 
+                            className="project-logo-emblem"
+                            sx={{
+                              width: 60, height: 60,
+                              borderRadius: '50%',
+                              bgcolor: 'white',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                              mb: 1,
+                              border: '2px solid rgba(255,255,255,0.8)',
+                              zIndex: 2,
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            <Typography variant="h5" fontWeight={900} sx={{ color: '#1B4FD8', letterSpacing: '-0.5px' }}>
+                              {project.name.substring(0,2).toUpperCase()}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, fontSize: '0.68rem', fontWeight: 700, zIndex: 2 }}>
+                            Mega Development
+                          </Typography>
+                        </>
+                      )}
                     </CardMedia>
                     <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 3 }}>
                       <Chip

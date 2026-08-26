@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, TextField, InputAdornment, Button, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Tooltip, Avatar, IconButton, Checkbox } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
+import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -40,7 +41,7 @@ export default function AdminProperties() {
   // Moderation state
   const [moderateDialogOpen, setModerateDialogOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<PropertyAdmin | null>(null);
-  const [moderateAction, setModerateAction] = useState<'PUBLISHED' | 'REJECTED' | null>(null);
+  const [moderateAction, setModerateAction] = useState<'PUBLISHED' | 'REJECTED' | 'SOLD' | null>(null);
   const [remarks, setRemarks] = useState('');
   const [isModerating, setIsModerating] = useState(false);
   
@@ -149,7 +150,7 @@ export default function AdminProperties() {
     return () => clearTimeout(timeoutId);
   }, [search, purposeFilter, statusFilter, startDate, endDate]);
 
-  const handleModerateClick = (property: PropertyAdmin, action: 'PUBLISHED' | 'REJECTED') => {
+  const handleModerateClick = (property: PropertyAdmin, action: 'PUBLISHED' | 'REJECTED' | 'SOLD') => {
     setSelectedProperty(property);
     setModerateAction(action);
     setRemarks(action === 'PUBLISHED' ? 'Approved by Admin' : '');
@@ -179,6 +180,7 @@ export default function AdminProperties() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PUBLISHED': return 'success';
+      case 'SOLD': return 'info';
       case 'PENDING_REVIEW': return 'warning';
       case 'REJECTED': return 'error';
       case 'DRAFT': return 'default';
@@ -220,7 +222,7 @@ export default function AdminProperties() {
 
         <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', mx: 1, display: { xs: 'none', md: 'block' } }} />
 
-        {['ALL', 'PUBLISHED', 'PENDING_REVIEW', 'REJECTED', 'DRAFT'].map(s => (
+        {['ALL', 'PUBLISHED', 'PENDING_REVIEW', 'REJECTED', 'DRAFT', 'SOLD'].map(s => (
           <Chip
             key={s}
             label={s.replace('_', ' ')}
@@ -385,6 +387,19 @@ export default function AdminProperties() {
                           </IconButton>
                         </span>
                       </Tooltip>
+                      
+                      <Tooltip title={property.status === 'SOLD' ? 'Mark Available' : 'Mark Sold'}>
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="info"
+                            disabled={!['PUBLISHED', 'SOLD'].includes(property.status)}
+                            onClick={() => handleModerateClick(property, property.status === 'SOLD' ? 'PUBLISHED' : 'SOLD')}
+                          >
+                            <MapsHomeWorkIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                       <Tooltip title="Edit">
                         <IconButton 
                           size="small" 
@@ -429,11 +444,11 @@ export default function AdminProperties() {
       {/* Moderation Dialog */}
       <Dialog open={moderateDialogOpen} onClose={() => !isModerating && setModerateDialogOpen(false)}>
         <DialogTitle>
-          {moderateAction === 'PUBLISHED' ? 'Approve Property' : 'Reject Property'}
+          {moderateAction === 'PUBLISHED' && selectedProperty?.status === 'SOLD' ? 'Mark Property Available' : moderateAction === 'SOLD' ? 'Mark Property Sold' : moderateAction === 'PUBLISHED' ? 'Approve Property' : 'Reject Property'}
         </DialogTitle>
         <DialogContent>
           <DialogContentText mb={2}>
-            Are you sure you want to {moderateAction === 'PUBLISHED' ? 'approve' : 'reject'} the property "{selectedProperty?.title}"?
+            Are you sure you want to {moderateAction === 'PUBLISHED' && selectedProperty?.status === 'SOLD' ? 'mark as available' : moderateAction === 'SOLD' ? 'mark as sold' : moderateAction === 'PUBLISHED' ? 'approve' : 'reject'} the property "{selectedProperty?.title}"?
           </DialogContentText>
           <TextField
             autoFocus

@@ -1016,6 +1016,31 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       ALTER TABLE property_land_details ADD COLUMN IF NOT EXISTS plot_width NUMERIC(10,2);
     `,
   },
+  {
+    name: '021_project_seo_and_image',
+    sql: `
+      ALTER TABLE projects
+        ADD COLUMN IF NOT EXISTS featured_image_url TEXT,
+        ADD COLUMN IF NOT EXISTS featured_image_key TEXT,
+        ADD COLUMN IF NOT EXISTS seo_title VARCHAR(70),
+        ADD COLUMN IF NOT EXISTS seo_description VARCHAR(160),
+        ADD COLUMN IF NOT EXISTS schema_data JSONB,
+        ADD COLUMN IF NOT EXISTS og_title VARCHAR(70),
+        ADD COLUMN IF NOT EXISTS og_description VARCHAR(200),
+        ADD COLUMN IF NOT EXISTS og_image_url TEXT;
+    `,
+  },
+  {
+    name: '022_remove_redundant_project_seo_fields',
+    sql: `
+      ALTER TABLE projects
+        DROP COLUMN IF EXISTS seo_title,
+        DROP COLUMN IF EXISTS seo_description,
+        DROP COLUMN IF EXISTS og_title,
+        DROP COLUMN IF EXISTS og_description,
+        DROP COLUMN IF EXISTS og_image_url;
+    `,
+  },
 ];
 
 // ─── Migration runner ────────────────────────────────────────────────────────────

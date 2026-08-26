@@ -229,7 +229,7 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
 
   // Allow owners to preview their own PENDING/DRAFT listings
   // Everyone else only sees PUBLISHED properties
-  if (property.status !== 'PUBLISHED') {
+  if (property.status !== 'PUBLISHED' && property.status !== 'SOLD') {
     const isOwner = requestingUserId && requestingUserId === property.owner_id;
     if (!isOwner && !isAdmin) throw new NotFoundError('Property not found or not yet published');
   }
@@ -895,5 +895,23 @@ export async function getCategories() {
 export async function getAmenities() {
   return query<{ id: string; name: string; icon: string }>(
     'SELECT id, name, icon FROM property_amenities ORDER BY name',
+  );
+}
+
+
+export async function togglePropertySoldStatus(id: string, isSold: boolean, requesterId: string, requesterRoles: string[]) {
+  const property = await getPropertyById(id);
+  if (!property) throw new NotFoundError('Property not found');
+  
+  const isAdmin = requesterRoles.includes('ADMIN') || requesterRoles.includes('SUPER_ADMIN');
+  if (!isAdmin && property.owner_id !== requesterId) {
+    throw new ForbiddenError('You can only update your own properties');
+  }
+
+  const newStatus = isSold ? 'SOLD' : 'PUBLISHED';
+  
+  await query(
+    `UPDATE properties SET status = $1, updated_at = NOW() WHERE id = $2`,
+    [newStatus, id]
   );
 }

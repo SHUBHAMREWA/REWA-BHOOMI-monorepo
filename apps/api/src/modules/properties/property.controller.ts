@@ -14,6 +14,7 @@ import {
   getAmenities,
   moderateProperty,
   setPropertyPopular,
+  togglePropertySoldStatus,
 } from './property.service';
 
 export const listPropertiesHandler = asyncHandler(async (req: Request, res: Response) => {
@@ -91,4 +92,10 @@ export const moderatePropertyHandler = asyncHandler(async (req: Request, res: Re
 export const setPopularHandler = asyncHandler(async (req: Request, res: Response) => {
   await setPropertyPopular(req.params.id, req.body.isPopular, req.body.popularRank);
   return successResponse(res, null, 'Popular status updated');
+});
+
+
+export const togglePropertySoldStatusHandler = asyncHandler(async (req: Request, res: Response) => {
+  await togglePropertySoldStatus(req.params.id, req.body.isSold, req.user!.userId, req.user!.roles);
+  return successResponse(res, null, `Property marked as ${req.body.isSold ? 'SOLD' : 'AVAILABLE'}`);
 });

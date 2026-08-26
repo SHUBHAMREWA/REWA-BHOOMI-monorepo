@@ -22,6 +22,7 @@ import {
   getAmenitiesHandler,
   moderatePropertyHandler,
   setPopularHandler,
+  togglePropertySoldStatusHandler,
 } from './property.controller';
 
 const router = Router();
@@ -37,6 +38,7 @@ router.use(authenticate);
 router.post('/', validate(CreatePropertySchema), createPropertyHandler);
 router.patch('/:id', validate(UpdatePropertySchema), updatePropertyHandler);
 router.delete('/:id', deletePropertyHandler);
+router.patch('/:id/status', togglePropertySoldStatusHandler);
 router.post('/:id/favorite', addFavoriteHandler);
 router.delete('/:id/favorite', removeFavoriteHandler);
 router.get('/me/listings', getMyPropertiesHandler);
