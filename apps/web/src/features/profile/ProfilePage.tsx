@@ -276,14 +276,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pt: { xs: 3.5, md: 8 }, pb: { xs: 8, md: 12 } }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pt: { xs: 3, md: 4 }, pb: { xs: 6, md: 8 } }}>
       <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 3 } }}>
-        <Box sx={{ mb: { xs: 2, md: 6 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ mb: { xs: 2, md: 4 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography variant="h4" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.4rem', md: '2.1rem' } }}>
+            <Typography variant="h5" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.3rem', md: '1.6rem' } }}>
               Account Dashboard
             </Typography>
-            <Typography color="#64748B" sx={{ mt: { xs: 0.3, md: 1 }, fontSize: { xs: '0.8rem', md: '1rem' }, display: { xs: 'none', sm: 'block' } }}>
+            <Typography color="#64748B" sx={{ mt: { xs: 0.3, md: 0.5 }, fontSize: { xs: '0.8rem', md: '0.9rem' }, display: { xs: 'none', sm: 'block' } }}>
               Manage your saved properties, active listings, and personal profile.
             </Typography>
           </Box>
@@ -301,110 +301,105 @@ export default function ProfilePage() {
           </Button>
         </Box>
 
-        <Grid container spacing={{ xs: 2, md: 4 }}>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, pb: { xs: 0, md: 4 }, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0', mb: { xs: 1.5, md: 0 } }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'row', md: 'column' }, alignItems: 'center', textAlign: { xs: 'left', md: 'center' }, gap: { xs: 2, md: 0 } }}>
-                <Box sx={{ position: 'relative', mb: { xs: 0, md: 3 }, flexShrink: 0 }}>
-                  <Avatar
-                    src={currentAvatarUrl || undefined}
-                    sx={{ width: { xs: 64, md: 140 }, height: { xs: 64, md: 140 }, border: '3px solid white', boxShadow: '0 6px 18px rgba(0,0,0,0.1)' }}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, md: 2 } }}>
+          <Paper elevation={0} sx={{ pt: { xs: 2, md: 3 }, px: { xs: 2, md: 3 }, pb: 0, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0' }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', textAlign: { xs: 'center', md: 'left' }, gap: { xs: 2, md: 3 } }}>
+              <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                <Avatar
+                  src={currentAvatarUrl || undefined}
+                  sx={{ width: { xs: 64, md: 80 }, height: { xs: 64, md: 80 }, border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                >
+                  {!currentAvatarUrl && user.name.charAt(0).toUpperCase()}
+                </Avatar>
+                <input
+                  accept="image/*"
+                  type="file"
+                  id="avatar-upload"
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarUpload}
+                />
+                <label htmlFor="avatar-upload">
+                  <IconButton
+                    component="span"
+                    size="small"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      bgcolor: '#1B4FD8',
+                      color: 'white',
+                      p: { xs: 0.4, md: 0.6 },
+                      '&:hover': { bgcolor: '#1D4ED8' },
+                      boxShadow: '0 4px 10px rgba(27, 79, 216, 0.4)'
+                    }}
+                    disabled={isUploading}
                   >
-                    {!currentAvatarUrl && user.name.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <input
-                    accept="image/*"
-                    type="file"
-                    id="avatar-upload"
-                    style={{ display: 'none' }}
-                    onChange={handleAvatarUpload}
-                  />
-                  <label htmlFor="avatar-upload">
-                    <IconButton
-                      component="span"
-                      size="small"
-                      sx={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        bgcolor: '#1B4FD8',
-                        color: 'white',
-                        p: { xs: 0.4, md: 0.8 },
-                        '&:hover': { bgcolor: '#1D4ED8' },
-                        boxShadow: '0 4px 10px rgba(27, 79, 216, 0.4)'
-                      }}
-                      disabled={isUploading}
-                    >
-                      {isUploading ? <CircularProgress size={16} color="inherit" /> : <PhotoCamera sx={{ fontSize: { xs: 16, md: 20 } }} />}
-                    </IconButton>
-                  </label>
-                </Box>
-                
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
-                    {user.name}
-                  </Typography>
-                  <Typography variant="body2" color="#64748B" sx={{ fontSize: { xs: '0.78rem', md: '0.88rem' }, mb: 0.5 }}>
-                    {user.email}
-                  </Typography>
-                  <Box sx={{ display: 'inline-flex', px: 1.5, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.65rem', fontWeight: 700, mt: 0.5 }}>
-                    {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
-                  </Box>
+                    {isUploading ? <CircularProgress size={14} color="inherit" /> : <PhotoCamera sx={{ fontSize: { xs: 14, md: 16 } }} />}
+                  </IconButton>
+                </label>
+              </Box>
+              
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' }, mb: 0.25 }}>
+                  {user.name}
+                </Typography>
+                <Typography variant="body2" color="#64748B" sx={{ mb: 1, fontSize: { xs: '0.8rem', md: '0.85rem' } }}>
+                  {user.email}
+                </Typography>
+                <Box sx={{ display: 'inline-flex', px: 1.2, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.65rem', fontWeight: 700 }}>
+                  {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
                 </Box>
               </Box>
+            </Box>
 
-              <Divider sx={{ my: { xs: 1.5, md: 4 }, display: { xs: 'none', md: 'block' } }} />
-              
-              <Tabs
-                orientation={isMobile ? 'horizontal' : 'vertical'}
-                variant={isMobile ? 'fullWidth' : 'scrollable'}
-                scrollButtons={isMobile ? false : 'auto'}
-                allowScrollButtonsMobile={!isMobile}
-                value={tabValue}
-                onChange={handleTabChange}
-                sx={{
-                  borderRight: isMobile ? 0 : 1,
-                  borderBottom: 0,
-                  borderColor: 'divider',
-                  '& .MuiTab-root': {
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    py: { xs: 1, md: 2 },
-                    px: { xs: 0, md: 3 },
-                    borderRadius: { xs: 0, md: 2 },
-                    mb: { xs: 0, md: 1 },
-                    mr: { xs: 0, md: 0 },
-                    fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.88rem' },
-                    minHeight: { xs: 48, md: 48 },
-                    minWidth: { xs: 0, md: 'auto' },
-                    whiteSpace: 'nowrap',
-                    borderBottom: { xs: '2px solid transparent', md: 'none' },
-                  },
-                  '& .Mui-selected': { 
-                    bgcolor: { xs: 'transparent', md: 'rgba(27, 79, 216, 0.08)' }, 
-                    color: '#1B4FD8 !important', 
-                    fontWeight: 700,
-                    borderBottomColor: { xs: '#1B4FD8', md: 'transparent' }
-                  }
-                }}
-              >
-                <Tab icon={<Person sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label={isMobile ? "Profile" : "Profile Details"} />
-                <Tab icon={<Security sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label="Security" />
-                <Tab icon={<MapsHomeWork sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label={isMobile ? "Listings" : "My Properties"} />
-                <Tab icon={<Favorite sx={{ mr: { xs: 0, md: 0.8 }, mb: { xs: 0.5, md: 0 }, color: '#EF4444', fontSize: { xs: 20, md: 22 } }} />} iconPosition={isMobile ? "top" : "start"} label={isMobile ? "Saved" : "Saved Properties"} />
-              </Tabs>
-            </Paper>
-          </Grid>
+            <Divider sx={{ mt: { xs: 3, md: 4 }, mb: 0 }} />
+            
+            <Tabs
+              orientation="horizontal"
+              variant={isMobile ? 'scrollable' : 'fullWidth'}
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+              value={tabValue}
+              onChange={handleTabChange}
+              sx={{
+                borderBottom: 0,
+                borderColor: 'divider',
+                '& .MuiTab-root': {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  py: { xs: 1, md: 1.5 },
+                  px: { xs: 1.5, md: 2 },
+                  borderRadius: 0,
+                  fontSize: { xs: '0.75rem', md: '0.85rem' },
+                  minHeight: { xs: 40, md: 48 },
+                  whiteSpace: 'nowrap',
+                  borderBottom: '3px solid transparent',
+                  flexDirection: 'row',
+                  gap: 1,
+                  color: '#64748B',
+                  fontWeight: 600
+                },
+                '& .Mui-selected': { 
+                  color: '#1B4FD8 !important', 
+                  borderBottomColor: '#1B4FD8'
+                }
+              }}
+            >
+              <Tab icon={<Person sx={{ fontSize: { xs: 18, md: 20 } }} />} label="Profile Details" />
+              <Tab icon={<Security sx={{ fontSize: { xs: 18, md: 20 } }} />} label="Security" />
+              <Tab icon={<MapsHomeWork sx={{ fontSize: { xs: 18, md: 20 } }} />} label="My Properties" />
+              <Tab icon={<Favorite sx={{ color: '#EF4444', fontSize: { xs: 18, md: 20 } }} />} label="Saved Properties" />
+            </Tabs>
+          </Paper>
 
-          <Grid item xs={12} md={8}>
-            <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0', minHeight: { xs: 300, md: 500 } }}>
+          <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0', minHeight: { xs: 300, md: 400 } }}>
               
               {/* PROFILE TAB */}
               <CustomTabPanel value={tabValue} index={0}>
-                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
-                  <Typography variant="h6" fontWeight={700} mb={4}>Personal Information</Typography>
+                <Box sx={{ px: { xs: 0, sm: 2 }, pt: { xs: 1, sm: 0 } }}>
+                  <Typography variant="h6" fontWeight={700} mb={2.5}>Personal Information</Typography>
                   <form onSubmit={handleSubmit(onSubmit)}>
-                    <Grid container spacing={3}>
+                    <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
                         <TextField
                           label="Full Name"
@@ -465,7 +460,7 @@ export default function ProfilePage() {
                         />
                       </Grid>
                     </Grid>
-                    <Box sx={{ mt: 5, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
                         type="submit"
                         variant="contained"
@@ -646,8 +641,7 @@ export default function ProfilePage() {
               </Dialog>
 
             </Paper>
-          </Grid>
-        </Grid>
+        </Box>
       </Container>
     </Box>
   );

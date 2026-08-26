@@ -13,6 +13,7 @@ interface ProjectData {
   developer?: string;
   city: string;
   state: string;
+  featured_image_url?: string;
 }
 
 async function fetchProjects(): Promise<ProjectData[]> {
@@ -56,8 +57,17 @@ export default async function PopularProjects() {
                 component={Link}
                 href={`/projects/${project.slug}`}
                 className="property-card"
-                sx={{ display: 'block', textDecoration: 'none' }}
+                sx={{ display: 'block', textDecoration: 'none', overflow: 'hidden' }}
               >
+                {project.featured_image_url && (
+                  <Box 
+                    sx={{ 
+                      height: 180, 
+                      width: '100%', 
+                      background: `url(${project.featured_image_url}) center/cover no-repeat` 
+                    }} 
+                  />
+                )}
                 <Box sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Chip label={project.status} size="small" sx={{ bgcolor: '#1B4FD810', color: '#1B4FD8', fontWeight: 700 }} />

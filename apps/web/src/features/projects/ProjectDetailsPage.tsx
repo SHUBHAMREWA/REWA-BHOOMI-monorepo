@@ -55,6 +55,12 @@ export default function ProjectDetailsPage() {
 
   return (
     <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', pb: 8 }}>
+      {project.schema_data && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(project.schema_data) }}
+        />
+      )}
       {/* ─── 1. SHIFTED ABOVE COMPACT HEADER BANNER ─── */}
       <Box sx={{ bgcolor: '#0F172A', color: 'white', pt: { xs: 6.2, md: 6.8 }, pb: 1.2, px: { xs: 2, md: 4 } }}>
         <Container maxWidth="xl">

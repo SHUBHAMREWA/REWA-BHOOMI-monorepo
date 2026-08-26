@@ -1030,6 +1030,17 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         ADD COLUMN IF NOT EXISTS og_image_url TEXT;
     `,
   },
+  {
+    name: '022_remove_redundant_project_seo_fields',
+    sql: `
+      ALTER TABLE projects
+        DROP COLUMN IF EXISTS seo_title,
+        DROP COLUMN IF EXISTS seo_description,
+        DROP COLUMN IF EXISTS og_title,
+        DROP COLUMN IF EXISTS og_description,
+        DROP COLUMN IF EXISTS og_image_url;
+    `,
+  },
 ];
 
 // ─── Migration runner ────────────────────────────────────────────────────────────

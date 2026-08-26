@@ -67,7 +67,7 @@ import { deleteFromR2 } from '../media/media.service';
 export const createProject = asyncHandler(async (req: Request, res: Response) => {
   const { 
     name, slug, description, developer, status, total_plots, total_area, city, state, address, latitude, longitude, google_maps_link,
-    featured_image_url, featured_image_key, seo_title, seo_description, schema_data, og_title, og_description, og_image_url
+    featured_image_url, featured_image_key, schema_data
   } = req.body;
   const parseCoord = (v: any) => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? null : Number(v);
   const latVal = parseCoord(latitude);
@@ -76,11 +76,11 @@ export const createProject = asyncHandler(async (req: Request, res: Response) =>
   const [project] = await query(
     `INSERT INTO projects (
       name, slug, description, developer, status, total_plots, total_area, city, state, address, latitude, longitude, google_maps_link, 
-      featured_image_url, featured_image_key, seo_title, seo_description, schema_data, og_title, og_description, og_image_url, created_by
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
+      featured_image_url, featured_image_key, schema_data, created_by
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
     [
       name, slug, description, developer, status || 'UPCOMING', total_plots || 0, total_area, city, state, address, latVal, lngVal, google_maps_link,
-      featured_image_url || null, featured_image_key || null, seo_title || null, seo_description || null, schema_data ? JSON.stringify(schema_data) : null, og_title || null, og_description || null, og_image_url || null, req.user?.userId
+      featured_image_url || null, featured_image_key || null, schema_data ? JSON.stringify(schema_data) : null, req.user?.userId
     ],
   );
   res.status(201).json({ success: true, data: project });
@@ -91,7 +91,7 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
   const { id } = req.params;
   const { 
     name, slug, description, developer, status, total_plots, total_area, city, state, address, latitude, longitude, google_maps_link,
-    featured_image_url, featured_image_key, seo_title, seo_description, schema_data, og_title, og_description, og_image_url
+    featured_image_url, featured_image_key, schema_data
   } = req.body;
   
   const project = await queryOne<{ id: string; featured_image_key: string }>('SELECT id, featured_image_key FROM projects WHERE id = $1', [id]);
@@ -116,13 +116,11 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
       status=COALESCE($5,status), total_plots=COALESCE($6,total_plots), total_area=COALESCE($7,total_area), city=COALESCE($8,city), 
       state=COALESCE($9,state), address=COALESCE($10,address), latitude=COALESCE($11,latitude), longitude=COALESCE($12,longitude), 
       google_maps_link=COALESCE($13,google_maps_link), featured_image_url=COALESCE($14,featured_image_url), 
-      featured_image_key=COALESCE($15,featured_image_key), seo_title=COALESCE($16,seo_title), seo_description=COALESCE($17,seo_description), 
-      schema_data=COALESCE($18,schema_data), og_title=COALESCE($19,og_title), og_description=COALESCE($20,og_description), 
-      og_image_url=COALESCE($21,og_image_url), updated_at=NOW() 
-    WHERE id=$22 RETURNING *`,
+      featured_image_key=COALESCE($15,featured_image_key), schema_data=COALESCE($16,schema_data), updated_at=NOW() 
+    WHERE id=$17 RETURNING *`,
     [
       name, slug, description, developer, status, total_plots, total_area, city, state, address, latVal, lngVal, google_maps_link,
-      featured_image_url, featured_image_key, seo_title, seo_description, schema_data ? JSON.stringify(schema_data) : null, og_title, og_description, og_image_url, id
+      featured_image_url, featured_image_key, schema_data ? JSON.stringify(schema_data) : null, id
     ],
   );
   res.json({ success: true, data: updated });

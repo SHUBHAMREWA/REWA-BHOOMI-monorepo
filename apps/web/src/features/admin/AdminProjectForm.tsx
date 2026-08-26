@@ -31,11 +31,6 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
     google_maps_link: '',
     featured_image_url: '',
     featured_image_key: '',
-    seo_title: '',
-    seo_description: '',
-    og_title: '',
-    og_description: '',
-    og_image_url: '',
     schema_data: '',
   });
   const [extractedCoords, setExtractedCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -61,11 +56,6 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
             google_maps_link: data.google_maps_link || '',
             featured_image_url: data.featured_image_url || '',
             featured_image_key: data.featured_image_key || '',
-            seo_title: data.seo_title || '',
-            seo_description: data.seo_description || '',
-            og_title: data.og_title || '',
-            og_description: data.og_description || '',
-            og_image_url: data.og_image_url || '',
             schema_data: data.schema_data ? JSON.stringify(data.schema_data, null, 2) : '',
           });
         })
@@ -172,8 +162,7 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
       setFormData(prev => ({ 
         ...prev, 
         featured_image_url: responseData.url,
-        featured_image_key: responseData.storage_key,
-        og_image_url: prev.og_image_url || responseData.url
+        featured_image_key: responseData.storage_key
       }));
       toast.success('Image uploaded successfully');
     } catch (error: any) {
@@ -257,7 +246,7 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Project Name" name="name" value={formData.name} onChange={handleChange} required />
+              <TextField fullWidth label="Project Title" name="name" value={formData.name} onChange={handleChange} required />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="URL Slug" name="slug" value={formData.slug} onChange={handleChange} required />
@@ -326,21 +315,7 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
             <Grid item xs={12}>
               <Typography variant="h6" fontWeight={700} mt={2} mb={1}>Advanced SEO</Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="SEO Title" name="seo_title" value={formData.seo_title} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="SEO Description" name="seo_description" value={formData.seo_description} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Open Graph Title" name="og_title" value={formData.og_title} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Open Graph Description" name="og_description" value={formData.og_description} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} md={12}>
-              <TextField fullWidth label="Open Graph Image URL" name="og_image_url" value={formData.og_image_url} onChange={handleChange} helperText="Auto-filled from Featured Image if empty" />
-            </Grid>
+
             <Grid item xs={12}>
               <TextField fullWidth label="Schema Markup (JSON-LD)" name="schema_data" value={formData.schema_data} onChange={handleChange} multiline rows={6} placeholder='{\n  "@context": "https://schema.org",\n  "@type": "RealEstateListing"\n}' helperText="Valid JSON object for structured data" />
             </Grid>
