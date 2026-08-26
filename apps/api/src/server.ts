@@ -130,6 +130,11 @@ app.use(errorHandler);
 async function start() {
   try {
     await connectDatabase();
+    
+    // Automatically run database migrations on startup (without closing pool)
+    const { runMigrations } = await import('./database/migrate');
+    await runMigrations(false);
+    
     httpServer.listen(env.PORT, '0.0.0.0', () => {
       logger.info(`🚀 API server running on http://127.0.0.1:${env.PORT} and http://localhost:${env.PORT}`);
       logger.info(`📝 Environment: ${env.NODE_ENV}`);

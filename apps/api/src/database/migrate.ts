@@ -1041,13 +1041,20 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         DROP COLUMN IF EXISTS og_image_url;
     `,
   },
+  {
+    name: '023_add_last_login_to_users',
+    sql: `
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+    `,
+  },
 ];
 
 // ─── Migration runner ────────────────────────────────────────────────────────────
 
-async function runMigrations() {
+export async function runMigrations(closePool: boolean = true) {
   await connectDatabase();
-
+  
   const client = await pool.connect();
   try {
     // Create migrations tracking table
@@ -1090,11 +1097,19 @@ async function runMigrations() {
     logger.info('🎉 All migrations applied successfully');
   } finally {
     client.release();
-    await pool.end();
+    if (closePool) {
+      await pool.end();
+    }
   }
 }
 
-runMigrations().catch((err) => {
-  logger.error({ err }, 'Migration runner failed');
-  process.exit(1);
-});
+// Run immediately if this file is executed directly as a script
+const isDirectRun = require.main === module || 
+  (process.argv[1] && (process.argv[1].endsWith('migrate.ts') || process.argv[1].endsWith('migrate.js')));
+
+if (isDirectRun) {
+  runMigrations().catch((err) => {
+    logger.error({ err }, 'Migration runner failed');
+    process.exit(1);
+  });
+}
