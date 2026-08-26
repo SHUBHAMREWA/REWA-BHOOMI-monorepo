@@ -229,7 +229,7 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
 
   // Allow owners to preview their own PENDING/DRAFT listings
   // Everyone else only sees PUBLISHED properties
-  if (property.status !== 'PUBLISHED') {
+  if (property.status !== 'PUBLISHED' && property.status !== 'SOLD') {
     const isOwner = requestingUserId && requestingUserId === property.owner_id;
     if (!isOwner && !isAdmin) throw new NotFoundError('Property not found or not yet published');
   }

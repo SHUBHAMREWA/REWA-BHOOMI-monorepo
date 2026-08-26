@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Button, Grid, Paper, MenuItem, CircularProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { apiPost, apiPatch, apiGet } from '@/lib/api';
+import { apiPost, apiPatch, apiGet, apiClient } from '@/lib/api';
 import toast from 'react-hot-toast';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
@@ -29,8 +29,17 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
     latitude: 24.53,
     longitude: 81.30,
     google_maps_link: '',
+    featured_image_url: '',
+    featured_image_key: '',
+    seo_title: '',
+    seo_description: '',
+    og_title: '',
+    og_description: '',
+    og_image_url: '',
+    schema_data: '',
   });
   const [extractedCoords, setExtractedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -50,6 +59,14 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
             latitude: data.latitude || 24.53,
             longitude: data.longitude || 81.30,
             google_maps_link: data.google_maps_link || '',
+            featured_image_url: data.featured_image_url || '',
+            featured_image_key: data.featured_image_key || '',
+            seo_title: data.seo_title || '',
+            seo_description: data.seo_description || '',
+            og_title: data.og_title || '',
+            og_description: data.og_description || '',
+            og_image_url: data.og_image_url || '',
+            schema_data: data.schema_data ? JSON.stringify(data.schema_data, null, 2) : '',
           });
         })
         .catch((err) => {
@@ -140,15 +157,74 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
     return null;
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    
+    setImageUploading(true);
+    try {
+      const axiosRes = await apiClient.post<any>('/media/upload', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const responseData = axiosRes.data.data;
+      setFormData(prev => ({ 
+        ...prev, 
+        featured_image_url: responseData.url,
+        featured_image_key: responseData.storage_key,
+        og_image_url: prev.og_image_url || responseData.url
+      }));
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      toast.error('Image upload failed: ' + (error.response?.data?.error?.message || error.message));
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const handleImageDelete = async () => {
+    if (!formData.featured_image_url) return;
+    
+    try {
+      await apiPost('/media/delete', { url: formData.featured_image_url });
+      setFormData(prev => ({
+        ...prev,
+        featured_image_url: '',
+        featured_image_key: '',
+      }));
+      toast.success('Image removed');
+    } catch (error: any) {
+      toast.error('Failed to remove image');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    let parsedSchema = null;
+    if (formData.schema_data) {
+      try {
+        parsedSchema = JSON.parse(formData.schema_data);
+      } catch (err) {
+        toast.error('Invalid JSON format in Schema Data');
+        setLoading(false);
+        return;
+      }
+    }
+
+    const submissionData = {
+      ...formData,
+      schema_data: parsedSchema,
+    };
+
     try {
       if (projectId) {
-        await apiPatch(`/admin/projects/${projectId}`, formData);
+        await apiPatch(`/admin/projects/${projectId}`, submissionData);
         toast.success('Project updated successfully');
       } else {
-        const data = await apiPost<any>('/admin/projects', formData);
+        const data = await apiPost<any>('/admin/projects', submissionData);
         toast.success('Project created! Opening map editor...');
         router.push(`/admin/projects/${data.data.id}/map-editor`);
       }
@@ -188,6 +264,21 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
             </Grid>
             <Grid item xs={12}>
               <TextField fullWidth label="Description" name="description" value={formData.description} onChange={handleChange} multiline rows={4} />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" fontWeight={600} mb={1}>Featured Image</Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Button variant="contained" component="label" disabled={imageUploading}>
+                  {imageUploading ? <CircularProgress size={24} /> : 'Upload Image'}
+                  <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+                </Button>
+                {formData.featured_image_url && (
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <img src={formData.featured_image_url} alt="Featured" style={{ height: 60, borderRadius: 4 }} />
+                    <Button variant="outlined" color="error" size="small" onClick={handleImageDelete}>Remove</Button>
+                  </Box>
+                )}
+              </Box>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Developer / Builder" name="developer" value={formData.developer} onChange={handleChange} />
@@ -232,6 +323,28 @@ export default function AdminProjectForm({ projectId }: AdminProjectFormProps) {
               <TextField fullWidth label="Longitude" type="number" inputProps={{ step: "any" }} name="longitude" value={formData.longitude} onChange={handleChange} />
             </Grid>
             
+            <Grid item xs={12}>
+              <Typography variant="h6" fontWeight={700} mt={2} mb={1}>Advanced SEO</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth label="SEO Title" name="seo_title" value={formData.seo_title} onChange={handleChange} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth label="SEO Description" name="seo_description" value={formData.seo_description} onChange={handleChange} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth label="Open Graph Title" name="og_title" value={formData.og_title} onChange={handleChange} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField fullWidth label="Open Graph Description" name="og_description" value={formData.og_description} onChange={handleChange} />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <TextField fullWidth label="Open Graph Image URL" name="og_image_url" value={formData.og_image_url} onChange={handleChange} helperText="Auto-filled from Featured Image if empty" />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth label="Schema Markup (JSON-LD)" name="schema_data" value={formData.schema_data} onChange={handleChange} multiline rows={6} placeholder='{\n  "@context": "https://schema.org",\n  "@type": "RealEstateListing"\n}' helperText="Valid JSON object for structured data" />
+            </Grid>
+
             <Grid item xs={12} sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button type="submit" variant="contained" color="primary" size="large" disabled={loading} sx={{ px: 5 }}>
                 {loading ? <CircularProgress size={24} /> : (projectId ? 'Update Project' : 'Create Project & Open Map Editor')}

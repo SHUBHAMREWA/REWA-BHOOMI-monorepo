@@ -121,8 +121,8 @@ export async function apiGet<T>(url: string, params?: Record<string, unknown>) {
   return response.data.data;
 }
 
-export async function apiPost<T>(url: string, data?: unknown) {
-  const response = await apiClient.post<{ success: true; data: T; message?: string }>(url, data);
+export async function apiPost<T>(url: string, data?: unknown, config?: import('axios').AxiosRequestConfig) {
+  const response = await apiClient.post<{ success: true; data: T; message?: string }>(url, data, config);
   return response.data;
 }
 

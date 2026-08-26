@@ -306,24 +306,15 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#E2E8F0' }}>
               <Typography color="text.secondary" variant="caption">No Image</Typography>
             </Box>
-          )
-            {property.status === 'SOLD' && (
-              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                <Typography variant="h3" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 4, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 2, py: 0.5, borderRadius: 2 }}>
-                  SOLD
-                </Typography>
-              </Box>
-            )}
-}
-
+          )}
           
-            {property.status === 'SOLD' && (
-              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                <Typography variant="h4" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                  SOLD
-                </Typography>
-              </Box>
-            )}
+          {property.status === 'SOLD' && (
+            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+              <Typography variant="h3" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 4, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 2, py: 0.5, borderRadius: 2 }}>
+                SOLD
+              </Typography>
+            </Box>
+          )}
 
 
           {/* Badges */}
@@ -503,16 +494,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="caption" color="text.disabled">No Image</Typography>
               </Box>
-            )
-            {property.status === 'SOLD' && (
-              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                <Typography variant="h3" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 4, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 2, py: 0.5, borderRadius: 2 }}>
-                  SOLD
-                </Typography>
-              </Box>
             )}
-}
-
             
             {property.status === 'SOLD' && (
               <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
