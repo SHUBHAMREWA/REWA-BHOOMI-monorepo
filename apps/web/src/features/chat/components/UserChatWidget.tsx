@@ -17,6 +17,8 @@ import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import SearchIcon from '@mui/icons-material/Search';
 import Badge from '@mui/material/Badge';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -27,7 +29,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export default function UserChatWidget() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, accessToken } = useAuth();
   const { socket } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [activeView, setActiveView] = useState<'LIST' | 'CHAT'>('CHAT');
@@ -39,13 +41,14 @@ export default function UserChatWidget() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
 
-  // usePushNotifications exposes a manual requestPermission function
-  const { requestPermission } = usePushNotifications();
+  // usePushNotifications controller
+  const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
 
   const queryClient = useQueryClient();
   const getOrCreateMutation = useGetOrCreateConversation();
-  // Only fetch conversations when authenticated — avoids empty cache before token is restored
-  const { data: conversations = [], isLoading: loadingConvs } = useConversations(isAuthenticated);
+  // Only fetch conversations when we have a real in-memory access token.
+  // isAuthenticated alone is not enough — it becomes true from localStorage before the token is restored.
+  const { data: conversations = [], isLoading: loadingConvs } = useConversations(!!accessToken);
   const { data: messages = [], isLoading } = useMessages(conversationId || undefined);
   const sendMessageMutation = useSendMessage(conversationId || '');
   const toggleReactionMutation = useToggleReaction(conversationId || '');
@@ -376,6 +379,23 @@ export default function UserChatWidget() {
 
   const renderActiveChatMessages = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#F8FAFC' }}>
+      {/* Enable Notification Banner if not subscribed */}
+      {!isSubscribed && isSupported && (
+        <Box sx={{ px: 2, py: 0.75, bgcolor: '#FEF3C7', borderBottom: '1px solid #FCD34D', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Typography variant="caption" fontWeight={600} color="#92400E" sx={{ fontSize: '0.72rem' }}>
+            🔔 Enable notifications to get alerts when you receive a message
+          </Typography>
+          <Button
+            size="small"
+            variant="contained"
+            color="warning"
+            onClick={enableNotifications}
+            sx={{ fontSize: '0.68rem', fontWeight: 700, height: 22, textTransform: 'none', px: 1, minWidth: 0 }}
+          >
+            Enable
+          </Button>
+        </Box>
+      )}
       {/* Messages Scroll Area */}
       <Box sx={{ flex: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse' }}>
         <div ref={messagesEndRef} />
@@ -528,7 +548,7 @@ export default function UserChatWidget() {
               onClick={async () => {
                 setShowNotifBanner(false);
                 sessionStorage.setItem('notif_banner_dismissed', '1');
-                await requestPermission();
+                await enableNotifications();
               }}
             >
               Enable
@@ -630,6 +650,24 @@ export default function UserChatWidget() {
               </Box>
               
               <Box display="flex" alignItems="center" gap={0.5} sx={{ flexShrink: 0 }}>
+                {/* Enable / Disable Push Notifications Button */}
+                {isSupported && (
+                  <Tooltip title={isSubscribed ? "Notifications Active (Click to disable)" : "Click to Enable Push Notifications"}>
+                    <IconButton
+                      size="small"
+                      onClick={isSubscribed ? disableNotifications : enableNotifications}
+                      sx={{
+                        color: 'white',
+                        bgcolor: isSubscribed ? 'rgba(255,255,255,0.2)' : '#F59E0B',
+                        mr: 0.5,
+                        '&:hover': { bgcolor: isSubscribed ? 'rgba(255,255,255,0.3)' : '#D97706' }
+                      }}
+                    >
+                      {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
+                    </IconButton>
+                  </Tooltip>
+                )}
+
                 {/* Mobile / Compact List toggle chip */}
                 <Box sx={{ display: isExpanded ? { xs: 'block', md: 'none' } : 'block' }}>
                   <Chip 
