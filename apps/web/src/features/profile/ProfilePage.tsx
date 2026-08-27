@@ -6,9 +6,9 @@ import {
   Box, Container, Typography, Paper, Grid, TextField, Button,
   CircularProgress, Avatar, Divider, Tabs, Tab, IconButton, Menu, MenuItem,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip,
-  useTheme, useMediaQuery
+  useTheme, useMediaQuery, Switch, Alert
 } from '@mui/material';
-import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout, Share, WhatsApp, Facebook, Twitter, LinkedIn, Telegram, ContentCopy } from '@mui/icons-material';
+import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout, Share, WhatsApp, Facebook, Twitter, LinkedIn, Telegram, ContentCopy, NotificationsActive } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -16,6 +16,7 @@ import { UpdateProfileSchema, type UpdateProfileInput } from '@rewa-bhoomi/valid
 import { useAuth } from '../auth/AuthContext';
 import { apiPatch, apiClient } from '@/lib/api';
 import PropertyCard from '@/features/properties/PropertyCard';
+import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -48,6 +49,9 @@ export default function ProfilePage() {
   const { user, refreshAuth, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Push notifications controller hook
+  const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
 
   const initialTab = searchParams.get('tab') === 'favorites' ? 3 : searchParams.get('tab') === 'properties' ? 2 : 0;
   const [tabValue, setTabValue] = useState(initialTab);
@@ -575,6 +579,43 @@ export default function ProfilePage() {
                       </Button>
                     </Box>
                   </form>
+
+                  <Divider sx={{ my: 4 }} />
+                  
+                  <Box>
+                    <Typography variant="h6" fontWeight={700} mb={1} display="flex" alignItems="center" gap={1} color="#0F172A">
+                      <NotificationsActive sx={{ color: '#1B4FD8' }} /> Notifications & Alerts
+                    </Typography>
+                    <Typography variant="body2" color="#64748B" mb={3}>
+                      Get real-time push notifications when you receive messages or support chat updates, even when you're not using the app.
+                    </Typography>
+
+                    {isSupported ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: '#F8FAFC', borderRadius: 3, border: '1px solid #E2E8F0' }}>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={700} color="#0F172A">Push Notifications</Typography>
+                          <Typography variant="caption" color="#64748B">
+                            {isSubscribed ? 'Notifications are currently enabled' : 'Notifications are currently disabled'}
+                          </Typography>
+                        </Box>
+                        <Switch
+                          checked={isSubscribed}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              enableNotifications();
+                            } else {
+                              disableNotifications();
+                            }
+                          }}
+                          color="primary"
+                        />
+                      </Box>
+                    ) : (
+                      <Alert severity="warning" sx={{ borderRadius: 2, fontWeight: 500 }}>
+                        Push notifications are not supported on this browser or device.
+                      </Alert>
+                    )}
+                  </Box>
                 </Box>
               </CustomTabPanel>
 

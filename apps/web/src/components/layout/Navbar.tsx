@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   AppBar, Toolbar, Button, IconButton, Box, Container, Drawer, List,
-  ListItem, ListItemButton, ListItemText, ListItemIcon, Avatar, Menu, MenuItem, Tooltip, Typography
+  ListItem, ListItemButton, ListItemText, ListItemIcon, Avatar, Menu, MenuItem, Tooltip, Typography, Switch
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
@@ -18,6 +18,9 @@ import AddIcon from '@mui/icons-material/Add';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ArticleIcon from '@mui/icons-material/Article';
 import ChatIcon from '@mui/icons-material/Chat';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 
 const navLinks = [
   { name: 'Properties', href: '/properties', icon: HomeWorkIcon },
@@ -35,6 +38,7 @@ export default function Navbar() {
   
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -146,6 +150,48 @@ export default function Navbar() {
               <ListItemText primary="My Listings" primaryTypographyProps={{ fontWeight: 600 }} />
             </ListItemButton>
           </ListItem>
+
+          {isSupported && (
+            <ListItem disablePadding sx={{ mb: 1 }}>
+              <Box
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'space-between',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.05)' : '#FEF3C7',
+                  border: isSubscribed ? '1px solid #E2E8F0' : '1px solid #FCD34D'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: isSubscribed ? '#1B4FD8' : '#D97706' }}>
+                    {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Notifications"
+                    secondary={isSubscribed ? "Enabled" : "Disabled"}
+                    primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem', color: '#0F172A' }}
+                    secondaryTypographyProps={{ fontSize: '0.72rem', color: isSubscribed ? '#16A34A' : '#D97706', fontWeight: 600 }}
+                  />
+                </Box>
+                <Switch
+                  size="small"
+                  checked={isSubscribed}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      enableNotifications();
+                    } else {
+                      disableNotifications();
+                    }
+                  }}
+                  color="primary"
+                />
+              </Box>
+            </ListItem>
+          )}
         </List>
       )}
       

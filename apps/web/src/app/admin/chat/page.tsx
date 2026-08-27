@@ -16,6 +16,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import Badge from '@mui/material/Badge';
 import { useSocket } from '@/lib/SocketProvider';
 import { 
@@ -31,10 +33,11 @@ import {
   Message 
 } from '@/features/chat/chat-api';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminChatPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, accessToken } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   
@@ -45,8 +48,11 @@ export default function AdminChatPage() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [impersonateAs, setImpersonateAs] = useState<string>('ADMIN');
+
+  // Push notifications hook
+  const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
   
-  const { data: conversations = [], isLoading: loadingConvs } = useConversations(isAuthenticated);
+  const { data: conversations = [], isLoading: loadingConvs } = useConversations(!!accessToken);
   const { data: messages = [], isLoading: loadingMsgs } = useMessages(activeConvId || undefined);
   const { data: settingsData } = useChatSettings();
   const updateSettingsMutation = useUpdateChatSettings();
@@ -240,24 +246,37 @@ export default function AdminChatPage() {
           </Box>
         </Box>
 
-        <Box display="flex" alignItems="center" gap={1} bgcolor="#F1F5F9" px={2} py={0.5} borderRadius={2}>
-          <FormControlLabel
-            control={
-              <Switch
-                size="small"
-                checked={isAutoApproveActive}
-                disabled={updateSettingsMutation.isPending}
-                onChange={(e) => updateSettingsMutation.mutate({ auto_approve_p2p_chat: e.target.checked })}
-                color="success"
-              />
-            }
-            label={
-              <Typography variant="body2" fontWeight={600} color="#334155">
-                Auto-Approve All User Chats: <span style={{ color: isAutoApproveActive ? '#16A34A' : '#DC2626' }}>{isAutoApproveActive ? 'ON' : 'OFF (Moderated)'}</span>
-              </Typography>
-            }
-            sx={{ m: 0 }}
-          />
+        <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+          {isSupported && (
+            <Chip
+              icon={isSubscribed ? <NotificationsActiveIcon sx={{ fontSize: 16 }} /> : <NotificationsOffIcon sx={{ fontSize: 16 }} />}
+              label={isSubscribed ? "Push Notifications Active" : "Enable Push Notifications"}
+              color={isSubscribed ? "success" : "warning"}
+              variant={isSubscribed ? "outlined" : "filled"}
+              onClick={isSubscribed ? disableNotifications : enableNotifications}
+              sx={{ fontWeight: 700, cursor: 'pointer', height: 32, textTransform: 'none' }}
+            />
+          )}
+
+          <Box display="flex" alignItems="center" gap={1} bgcolor="#F1F5F9" px={2} py={0.5} borderRadius={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={isAutoApproveActive}
+                  disabled={updateSettingsMutation.isPending}
+                  onChange={(e) => updateSettingsMutation.mutate({ auto_approve_p2p_chat: e.target.checked })}
+                  color="success"
+                />
+              }
+              label={
+                <Typography variant="body2" fontWeight={600} color="#334155">
+                  Auto-Approve All User Chats: <span style={{ color: isAutoApproveActive ? '#16A34A' : '#DC2626' }}>{isAutoApproveActive ? 'ON' : 'OFF (Moderated)'}</span>
+                </Typography>
+              }
+              sx={{ m: 0 }}
+            />
+          </Box>
         </Box>
       </Paper>
 
