@@ -58,6 +58,7 @@ export default function EditBlogPage() {
   const [tagInput, setTagInput] = useState('');
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [editorKey, setEditorKey] = useState(0);
+  const [loadedBlogId, setLoadedBlogId] = useState<string | null>(null);
 
   const { control, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<UpdateBlogInput>({
     resolver: zodResolver(UpdateBlogSchema),
@@ -65,7 +66,7 @@ export default function EditBlogPage() {
 
   // Pre-fill form when blog data loads
   useEffect(() => {
-    if (blog) {
+    if (blog && loadedBlogId !== blog.id) {
       reset({
         title: blog.title || '',
         slug: blog.slug || '',
@@ -136,10 +137,12 @@ export default function EditBlogPage() {
         })));
       }
 
+      // Track loaded blog ID to prevent duplicate resets
+      setLoadedBlogId(blog.id);
       // Force editor re-mount so it picks up the initial contentJson
       setEditorKey(k => k + 1);
     }
-  }, [blog, reset, allTags]);
+  }, [blog, loadedBlogId, reset, allTags]);
 
   const watchTitle = watch('title') || '';
   const watchSlug = watch('slug') || '';

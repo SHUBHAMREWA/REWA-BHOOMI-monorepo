@@ -4,15 +4,17 @@ import React, { useState } from 'react';
 import { Box, IconButton, Tooltip, Typography, Snackbar, Alert } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import FacebookIcon from '@mui/icons-material/Facebook';
-import TwitterIcon from '@mui/icons-material/Twitter';
+import XIcon from '@mui/icons-material/X';
 import LinkIcon from '@mui/icons-material/Link';
+import ShareIcon from '@mui/icons-material/Share';
 
 interface ShareButtonsProps {
   url: string;
   title: string;
+  compact?: boolean;
 }
 
-export default function ShareButtons({ url, title }: ShareButtonsProps) {
+export default function ShareButtons({ url, title, compact = false }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
   const shareUrls = {
@@ -33,6 +35,47 @@ export default function ShareButtons({ url, title }: ShareButtonsProps) {
   const handleShare = (platformUrl: string) => {
     window.open(platformUrl, '_blank', 'noopener,noreferrer');
   };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          url
+        });
+      } catch (err) {
+        console.error('Native share failed', err);
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
+
+  if (compact) {
+    return (
+      <>
+        <Tooltip title="Share Article">
+          <IconButton
+            size="small"
+            onClick={handleNativeShare}
+            sx={{ border: '1px solid', borderColor: 'divider' }}
+          >
+            <ShareIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+          </IconButton>
+        </Tooltip>
+        <Snackbar 
+          open={copied} 
+          autoHideDuration={3000} 
+          onClose={() => setCopied(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert severity="success" onClose={() => setCopied(false)} sx={{ width: '100%' }}>
+            Link copied to clipboard!
+          </Alert>
+        </Snackbar>
+      </>
+    );
+  }
 
   return (
     <>
@@ -61,13 +104,13 @@ export default function ShareButtons({ url, title }: ShareButtonsProps) {
           </IconButton>
         </Tooltip>
 
-        <Tooltip title="Share on Twitter">
+        <Tooltip title="Share on X (Twitter)">
           <IconButton 
             size="small" 
             onClick={() => handleShare(shareUrls.twitter)}
-            sx={{ bgcolor: '#1DA1F2', color: 'white', '&:hover': { bgcolor: '#1a91da' } }}
+            sx={{ bgcolor: '#000000', color: 'white', '&:hover': { bgcolor: '#333333' } }}
           >
-            <TwitterIcon fontSize="small" />
+            <XIcon fontSize="small" />
           </IconButton>
         </Tooltip>
 

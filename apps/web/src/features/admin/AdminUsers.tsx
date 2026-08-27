@@ -27,6 +27,7 @@ interface User {
   avatar_url: string | null;
   username: string | null;
   last_login_at?: string | null;
+  roles?: string[];
 }
 
 const STATUS_CONFIG: Record<UserStatus, { label: string; icon: string; bg: string; color: string }> = {
@@ -88,6 +89,29 @@ export default function AdminUsers() {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      setUpdatingId(userId);
+      await apiPatch(`/admin/users/${userId}/role`, { role: newRole });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, roles: [newRole] } : u))
+      );
+      setToast({
+        open: true,
+        message: `User role updated to ${newRole}`,
+        severity: 'success',
+      });
+    } catch (error: any) {
+      setToast({
+        open: true,
+        message: error.response?.data?.error?.message || 'Failed to update user role',
+        severity: 'error',
+      });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
@@ -114,30 +138,28 @@ export default function AdminUsers() {
       </Box>
 
       <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 4, border: '1px solid #E2E8F0' }}>
-        <Table>
+        <Table size="small">
           <TableHead sx={{ bgcolor: '#F8FAFC' }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Phone</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Properties</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Email Verified</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Account Status (Action)</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Joined Date</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Last Login</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Chat</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Email / Phone</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Properties</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Role</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Joined Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.5 }}>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 10 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 5, color: 'text.secondary' }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 5, color: 'text.secondary' }}>
                   No users found
                 </TableCell>
               </TableRow>
@@ -145,10 +167,11 @@ export default function AdminUsers() {
               users.map((user) => {
                 const cfg = STATUS_CONFIG[user.status || 'ACTIVE'];
                 const isUpdating = updatingId === user.id;
+                const primaryRole = user.roles?.[0] || 'USER';
 
                 return (
                   <TableRow key={user.id} hover>
-                    <TableCell>
+                    <TableCell sx={{ py: 1 }}>
                       <Box 
                         component={user.email ? Link : 'div'} 
                         href={user.email ? `/profile/${user.email}` : '#'}
@@ -160,51 +183,66 @@ export default function AdminUsers() {
                           ...(user.email ? { '&:hover': { opacity: 0.8 } } : {})
                         }}
                       >
-                        <Avatar src={user.avatar_url || undefined} alt={user.name} sx={{ width: 40, height: 40, bgcolor: '#1B4FD8' }} />
+                        <Avatar src={user.avatar_url || undefined} alt={user.name} sx={{ width: 32, height: 32, bgcolor: '#1B4FD8', fontSize: '0.9rem' }} />
                         <Box>
-                          <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: '#1E293B' }}>{user.name}</Typography>
-                          <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1E293B' }}>{user.name}</Typography>
+                          <Typography variant="caption" sx={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>
                             {user.username ? `@${user.username}` : 'No username'}
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.phone || '-'}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                        <Chip size="small" label={`Total: ${user.total_properties || 0}`} sx={{ fontSize: '0.7rem', fontWeight: 600, bgcolor: '#F1F5F9' }} />
-                        <Chip size="small" label={`Live: ${user.published_properties || 0}`} color="success" variant="outlined" sx={{ fontSize: '0.7rem', fontWeight: 600 }} />
-                        <Chip size="small" label={`Pending: ${user.pending_properties || 0}`} color="warning" variant="outlined" sx={{ fontSize: '0.7rem', fontWeight: 600 }} />
+                    <TableCell sx={{ py: 1 }}>
+                      <Typography sx={{ fontSize: '0.8rem', color: '#1E293B' }}>{user.email}</Typography>
+                      {user.phone && <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>{user.phone}</Typography>}
+                      {user.is_email_verified && <Chip size="small" label="Verified" color="success" sx={{ height: 16, fontSize: '0.6rem', mt: 0.5 }} />}
+                    </TableCell>
+                    <TableCell sx={{ py: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', maxWidth: 120 }}>
+                        <Chip size="small" label={`Tot: ${user.total_properties || 0}`} sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: '#F1F5F9' }} />
+                        <Chip size="small" label={`Live: ${user.published_properties || 0}`} color="success" variant="outlined" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />
+                        <Chip size="small" label={`Pend: ${user.pending_properties || 0}`} color="warning" variant="outlined" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />
                       </Box>
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.is_email_verified ? 'Verified' : 'Unverified'}
-                        color={user.is_email_verified ? 'success' : 'default'}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
+                    <TableCell sx={{ py: 1 }}>
+                      <FormControl size="small" disabled={isUpdating}>
+                        <Select
+                          value={primaryRole}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                          sx={{
+                            borderRadius: 1.5,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            height: 28,
+                            '.MuiSelect-select': { py: 0, px: 1, display: 'flex', alignItems: 'center' },
+                          }}
+                        >
+                          <MenuItem value="USER" sx={{ fontSize: '0.75rem' }}>USER</MenuItem>
+                          <MenuItem value="ADMIN" sx={{ fontSize: '0.75rem' }}>ADMIN</MenuItem>
+                          <MenuItem value="SUPER_ADMIN" sx={{ fontSize: '0.75rem' }}>SUPER_ADMIN</MenuItem>
+                        </Select>
+                      </FormControl>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 1 }}>
                       <FormControl size="small" disabled={isUpdating}>
                         <Select
                           value={user.status || 'ACTIVE'}
                           onChange={(e) => handleStatusChange(user.id, e.target.value as UserStatus)}
                           sx={{
-                            borderRadius: 2,
-                            fontSize: '0.8125rem',
+                            borderRadius: 1.5,
+                            fontSize: '0.75rem',
                             fontWeight: 700,
+                            height: 28,
                             bgcolor: cfg.bg,
                             color: cfg.color,
-                            '.MuiSelect-select': { py: 0.75, px: 1.5, display: 'flex', alignItems: 'center', gap: 1 },
+                            '.MuiSelect-select': { py: 0, px: 1, display: 'flex', alignItems: 'center', gap: 0.5 },
                             '& fieldset': { border: 'none' },
                           }}
                         >
                           {(Object.keys(STATUS_CONFIG) as UserStatus[]).map((st) => {
                             const conf = STATUS_CONFIG[st];
                             return (
-                              <MenuItem key={st} value={st} sx={{ fontSize: '0.875rem', fontWeight: 600, display: 'flex', gap: 1 }}>
+                              <MenuItem key={st} value={st} sx={{ fontSize: '0.75rem', fontWeight: 600, display: 'flex', gap: 1 }}>
                                 <span>{conf.icon}</span>
                                 <span>{conf.label}</span>
                               </MenuItem>
@@ -213,15 +251,12 @@ export default function AdminUsers() {
                         </Select>
                       </FormControl>
                     </TableCell>
-                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem', py: 1 }}>
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
-                      {user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never'}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton component={Link} href={`/admin/chat?userId=${user.id}`} color="primary">
-                        <ChatIcon />
+                    <TableCell sx={{ py: 1 }}>
+                      <IconButton size="small" component={Link} href={`/admin/chat?userId=${user.id}`} color="primary">
+                        <ChatIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
                   </TableRow>
