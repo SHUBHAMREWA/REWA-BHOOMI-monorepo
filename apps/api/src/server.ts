@@ -135,6 +135,13 @@ async function start() {
     const { runMigrations } = await import('./database/migrate');
     await runMigrations(false);
     
+    // Automatically run seed script and admin creation (without closing pool)
+    const { runSeed } = await import('./database/seed');
+    await runSeed(false);
+
+    const { createAdminUser } = await import('./database/create-admin');
+    await createAdminUser(false);
+    
     httpServer.listen(env.PORT, '0.0.0.0', () => {
       logger.info(`🚀 API server running on http://127.0.0.1:${env.PORT} and http://localhost:${env.PORT}`);
       logger.info(`📝 Environment: ${env.NODE_ENV}`);
