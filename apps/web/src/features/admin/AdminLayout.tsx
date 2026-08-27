@@ -34,8 +34,8 @@ const menuItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { logout } = useAuth();
-  const { data: conversations = [] } = useConversations();
+  const { logout, isAuthenticated } = useAuth();
+  const { data: conversations = [] } = useConversations(isAuthenticated);
   const { socket } = useSocket();
   const queryClient = useQueryClient();
 

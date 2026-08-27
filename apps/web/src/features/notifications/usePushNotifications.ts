@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { apiGet, apiPost } from '@/lib/api';
 
@@ -19,48 +19,71 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+/**
+ * Manages Web Push subscription lifecycle.
+ * - If the user has already granted permission, subscribes automatically after login.
+ * - Exposes `requestPermission()` to be called from a user gesture (button click)
+ *   to prompt for permission without browser blocking it.
+ */
 export function usePushNotifications() {
   const { isAuthenticated, user } = useAuth();
   const subscribedRef = useRef(false);
 
-  useEffect(() => {
-    if (!isAuthenticated || !user || subscribedRef.current) return;
+  const subscribeWithPermission = useCallback(async (permission: NotificationPermission) => {
+    if (permission !== 'granted') return;
     if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    const registerPush = async () => {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        if (!registration) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if (!registration) return;
 
-        // Fetch VAPID public key
-        const response: any = await apiGet('/notifications/vapid-key');
-        const vapidPublicKey = response?.data?.publicKey;
-        if (!vapidPublicKey) return;
+      const response: any = await apiGet('/notifications/vapid-key');
+      const vapidPublicKey = response?.publicKey ?? response?.data?.publicKey;
+      if (!vapidPublicKey) return;
 
-        let subscription = await registration.pushManager.getSubscription();
+      let subscription = await registration.pushManager.getSubscription();
 
-        if (!subscription) {
-          // If permission is default, ask for permission when appropriate
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') return;
-
-          const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: convertedVapidKey
-          });
-        }
-
-        if (subscription) {
-          // Send subscription to backend
-          await apiPost('/notifications/subscribe', subscription.toJSON());
-          subscribedRef.current = true;
-        }
-      } catch (error) {
-        console.warn('Push notification subscription skipped or failed:', error);
+      if (!subscription) {
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey
+        });
       }
-    };
 
-    registerPush();
-  }, [isAuthenticated, user]);
+      if (subscription) {
+        await apiPost('/notifications/subscribe', subscription.toJSON());
+        subscribedRef.current = true;
+      }
+    } catch (error) {
+      console.warn('Push notification subscription failed:', error);
+    }
+  }, []);
+
+  // Auto-subscribe if user has ALREADY granted permission (no prompt needed)
+  useEffect(() => {
+    if (!isAuthenticated || !user || subscribedRef.current) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      subscribeWithPermission('granted');
+    }
+  }, [isAuthenticated, user, subscribeWithPermission]);
+
+  /**
+   * Call this from a button click handler.
+   * Browsers require a user gesture to show the permission prompt.
+   */
+  const requestPermission = useCallback(async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+
+    try {
+      const permission = await Notification.requestPermission();
+      await subscribeWithPermission(permission);
+    } catch (error) {
+      console.warn('Permission request failed:', error);
+    }
+  }, [subscribeWithPermission]);
+
+  return { requestPermission };
 }

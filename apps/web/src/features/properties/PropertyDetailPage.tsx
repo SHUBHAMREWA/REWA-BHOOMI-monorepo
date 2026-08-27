@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Container, Grid, Typography, Button, Chip, Divider, Avatar, Paper, Breadcrumbs, IconButton, Dialog, Alert, CircularProgress } from '@mui/material';
+import { Box, Container, Grid, Typography, Button, Chip, Divider, Avatar, Paper, Breadcrumbs, IconButton, Dialog, Alert, CircularProgress, Stack } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import PersonIcon from '@mui/icons-material/Person';
 import ShareIcon from '@mui/icons-material/Share';
 import PhoneIcon from '@mui/icons-material/Phone';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
@@ -39,6 +40,8 @@ import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/features/auth/AuthContext';
 import { apiPost, apiDelete } from '@/lib/api';
+import { PROPERTY_CATEGORIES, PROPERTY_TYPES } from '@/config/propertyFormConfig';
+import { PropertyCategoryType } from '@rewa-bhoomi/types';
 
 interface PropertyImage {
   id: string;
@@ -393,25 +396,35 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     }
   };
 
-  const PROPERTY_TYPE_LABEL_MAP: Record<string, string> = {
-    FLAT_APARTMENT: 'Flat / Apartment', INDEPENDENT_HOUSE_VILLA: 'House / Villa',
-    ROOM: 'Single Room', PG: 'PG Accommodation', HOSTEL: 'Hostel Room', BUILDER_FLOOR: 'Builder Floor',
-    STUDIO: 'Studio Apartment', SHOP: 'Dukaan / Shop', OFFICE: 'Office Space', SHOWROOM: 'Showroom',
-    WAREHOUSE: 'Warehouse / Godown', COMMERCIAL_BUILDING: 'Commercial Building', CO_WORKING: 'Co-Working Space',
-    INDUSTRIAL_PROPERTY: 'Industrial Property', RESIDENTIAL_PLOT: 'Residential Plot (Basti Plot)',
-    COMMERCIAL_PLOT: 'Commercial Plot', AGRICULTURAL_LAND: 'Kheti ki Zameen (Agricultural Land)',
-    FARM_LAND: 'Farm Land', INDUSTRIAL_LAND: 'Industrial Land', LAND_PARCEL: 'Badi Zameen (Large Land Parcel)',
-    HALL: 'Hall', MARRIAGE_HALL: 'Marriage / Banquet Hall', GUEST_HOUSE: 'Guest House',
-    HOTEL: 'Hotel / Resort', SCHOOL: 'School / Institute', OTHER: 'Other',
+  // ─── DYNAMIC CATEGORY & SUBCATEGORY RESOLUTION FOR BREADCRUMBS ───
+  const subTypeConfig = PROPERTY_TYPES.find(pt => pt.key === property.property_type);
+  const rawCatType = (property.category_type || (subTypeConfig ? subTypeConfig.category : '')) as PropertyCategoryType | '';
+  const resolvedCategoryType: PropertyCategoryType = rawCatType
+    ? rawCatType
+    : property.landDetails ? 'LAND'
+    : property.commercialDetails ? 'COMMERCIAL'
+    : property.hallDetails ? 'SPECIAL'
+    : 'RESIDENTIAL';
+
+  const categoryConfig = PROPERTY_CATEGORIES.find(c => c.key === resolvedCategoryType);
+  const categoryTitle = categoryConfig ? categoryConfig.title : 'Properties';
+  const categoryHref = `/properties?categoryType=${resolvedCategoryType}`;
+
+  const rawSubcategoryLabel = subTypeConfig
+    ? subTypeConfig.label
+    : (property.category_name || (property.property_type ? property.property_type.replace(/_/g, ' ') : ''));
+
+  const formatSubcategoryLabel = (lbl: string) => {
+    if (!lbl) return '';
+    return lbl.split('(')[0].trim();
   };
 
-  const formattedPropertyType = property.property_type 
-    ? (PROPERTY_TYPE_LABEL_MAP[property.property_type] || property.property_type.replace(/_/g, ' '))
-    : property.category_type 
-      ? property.category_type.replace(/_/g, ' ') 
-      : property.category_name;
+  const subcategoryTitle = formatSubcategoryLabel(rawSubcategoryLabel);
+  const subcategoryHref = property.property_type
+    ? `/properties?categoryType=${resolvedCategoryType}&propertyType=${property.property_type}`
+    : categoryHref;
 
-  const categoryLabel = formattedPropertyType || (property.category_name || (property.property_type === 'PLOT' ? 'Plot' : 'Property'));
+  const categoryLabel = subcategoryTitle || categoryTitle || 'Property';
   const stateLabel = property.state || 'Madhya Pradesh';
   const cityLabel = property.city || 'Rewa';
   const addressLabel = property.address || cityLabel;
@@ -607,22 +620,28 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               aria-label="breadcrumb"
               sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' }, color: '#64748B' }}
             >
-              <Link href="/" style={{ color: '#475569', textDecoration: 'none' }}>
+              <Link href="/" style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
                 Home
               </Link>
-              <Link href="/properties" style={{ color: '#475569', textDecoration: 'none' }}>
-                Properties
+              <Link href={categoryHref} style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
+                {categoryTitle}
               </Link>
-              <Link href={`/properties?category=${property.category_slug || ''}`} style={{ color: '#475569', textDecoration: 'none' }}>
-                {categoryLabel}
-              </Link>
-              <Link href={`/properties?state=${encodeURIComponent(stateLabel)}`} style={{ color: '#475569', textDecoration: 'none' }}>
-                {categoryLabel} in {stateLabel}
-              </Link>
-              <Link href={`/properties?city=${encodeURIComponent(cityLabel)}`} style={{ color: '#475569', textDecoration: 'none' }}>
-                {categoryLabel} in {cityLabel}
-              </Link>
-              <Typography sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' }, color: '#0F172A', fontWeight: 600, maxWidth: { xs: 150, sm: 300 }, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {subcategoryTitle && subcategoryTitle.toLowerCase() !== categoryTitle.toLowerCase() && (
+                <Link href={subcategoryHref} style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
+                  {subcategoryTitle}
+                </Link>
+              )}
+              <Typography
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  color: '#0F172A',
+                  fontWeight: 600,
+                  maxWidth: { xs: 180, sm: 320 },
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {property.title}
               </Typography>
             </Breadcrumbs>
@@ -1129,64 +1148,94 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   bgcolor: '#FFFFFF',
                 }}
               >
-                {/* Seller Header Row */}
-                <Box 
-                  component={property.owner_username ? Link : 'div'}
-                  href={property.owner_username ? `/u/${property.owner_username}` : '#'}
-                  sx={{ 
-                    display: 'flex', alignItems: 'center', gap: 2,
-                    textDecoration: 'none', color: 'inherit',
-                    '&:hover': property.owner_username ? { opacity: 0.8 } : {}
-                  }}
-                >
-                  <Avatar
-                    src={property.owner_avatar || undefined}
-                    sx={{ width: 56, height: 56, bgcolor: '#1B4FD8', fontWeight: 700, fontSize: '1.2rem' }}
-                  >
-                    {(property.owner_name || 'Owner').charAt(0).toUpperCase()}
-                  </Avatar>
+                {/* Seller Header Row & Action Buttons */}
+                {(() => {
+                  const ownerProfileHref = property.owner_username 
+                    ? `/u/${property.owner_username}` 
+                    : property.owner_id 
+                      ? `/u/${property.owner_id}` 
+                      : '#';
 
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body1" fontWeight={700} sx={{ color: '#0F172A', fontSize: '0.98rem' }}>
-                      Posted By {property.owner_name || 'Satish Pandey'}
-                    </Typography>
-                    {property.owner_username ? (
-                      <Typography variant="caption" sx={{ color: '#1B4FD8', display: 'block', fontWeight: 600 }}>
-                        See profile of {property.owner_name}
-                      </Typography>
-                    ) : (
-                      <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>
-                        Member since Aug 2020
-                      </Typography>
-                    )}
-                  </Box>
+                  return (
+                    <>
+                      <Box 
+                        component={Link}
+                        href={ownerProfileHref}
+                        sx={{ 
+                          display: 'flex', alignItems: 'center', gap: 2,
+                          textDecoration: 'none', color: 'inherit',
+                          '&:hover': { opacity: 0.85 }
+                        }}
+                      >
+                        <Avatar
+                          src={property.owner_avatar || undefined}
+                          sx={{ width: 56, height: 56, bgcolor: '#1B4FD8', fontWeight: 700, fontSize: '1.2rem' }}
+                        >
+                          {(property.owner_name || 'Owner').charAt(0).toUpperCase()}
+                        </Avatar>
 
-                  {property.owner_username && <ChevronRightIcon sx={{ color: '#94A3B8' }} />}
-                </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body1" fontWeight={700} sx={{ color: '#0F172A', fontSize: '0.98rem' }}>
+                            Posted By {property.owner_name || 'Satish Pandey'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#1B4FD8', display: 'flex', alignItems: 'center', gap: 0.4, fontWeight: 600 }}>
+                            See profile of {property.owner_name || 'Seller'}
+                          </Typography>
+                        </Box>
 
-                {/* Chat Action Button */}
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<ChatBubbleOutlineIcon />}
-                  onClick={() => {
-                    if (property.owner_id) {
-                      window.dispatchEvent(new CustomEvent('open-chat', { detail: { userId: property.owner_id } }));
-                    }
-                  }}
-                  sx={{
-                    mt: 2.5,
-                    bgcolor: '#1B4FD8',
-                    color: '#FFFFFF',
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    borderRadius: 2,
-                    py: 1.1,
-                    '&:hover': { bgcolor: '#1640B0' },
-                  }}
-                >
-                  Chat with Owner
-                </Button>
+                        <ChevronRightIcon sx={{ color: '#94A3B8' }} />
+                      </Box>
+
+                      {/* Seller Action Buttons (See Profile & Chat with Owner) */}
+                      <Stack direction="row" spacing={1.5} sx={{ mt: 2.5 }}>
+                        <Button
+                          fullWidth
+                          component={Link}
+                          href={ownerProfileHref}
+                          variant="outlined"
+                          startIcon={<PersonIcon />}
+                          sx={{
+                            borderColor: '#1B4FD8',
+                            color: '#1B4FD8',
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            borderRadius: 2,
+                            py: 1,
+                            fontSize: { xs: '0.78rem', sm: '0.85rem' },
+                            whiteSpace: 'nowrap',
+                            '&:hover': { bgcolor: '#F0F4FF', borderColor: '#1541B5' },
+                          }}
+                        >
+                          See Profile
+                        </Button>
+
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          startIcon={<ChatBubbleOutlineIcon />}
+                          onClick={() => {
+                            if (property.owner_id) {
+                              window.dispatchEvent(new CustomEvent('open-chat', { detail: { userId: property.owner_id } }));
+                            }
+                          }}
+                          sx={{
+                            bgcolor: '#1B4FD8',
+                            color: '#FFFFFF',
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            borderRadius: 2,
+                            py: 1,
+                            fontSize: { xs: '0.78rem', sm: '0.85rem' },
+                            whiteSpace: 'nowrap',
+                            '&:hover': { bgcolor: '#1640B0' },
+                          }}
+                        >
+                          Chat with Owner
+                        </Button>
+                      </Stack>
+                    </>
+                  );
+                })()}
               </Paper>
 
               {/* Embedded Google Map */}

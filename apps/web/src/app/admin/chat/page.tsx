@@ -34,7 +34,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminChatPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   
@@ -46,7 +46,7 @@ export default function AdminChatPage() {
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [impersonateAs, setImpersonateAs] = useState<string>('ADMIN');
   
-  const { data: conversations = [], isLoading: loadingConvs } = useConversations();
+  const { data: conversations = [], isLoading: loadingConvs } = useConversations(isAuthenticated);
   const { data: messages = [], isLoading: loadingMsgs } = useMessages(activeConvId || undefined);
   const { data: settingsData } = useChatSettings();
   const updateSettingsMutation = useUpdateChatSettings();
@@ -70,11 +70,15 @@ export default function AdminChatPage() {
     }
   }, [activeConvId, activeConv?.type, activeConv?.recipient_id]);
 
-  // Auto-create/open conversation if userId is passed in URL
+  // Auto-create/open conversation if userId or conversationId is passed in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const targetUserId = params.get('userId');
-    if (targetUserId) {
+    const targetConvId = params.get('conversationId');
+    if (targetConvId) {
+      setActiveConvId(targetConvId);
+      window.history.replaceState(null, '', '/admin/chat');
+    } else if (targetUserId) {
       getOrCreateMutation.mutate(targetUserId, {
         onSuccess: (id) => {
           setActiveConvId(id);
