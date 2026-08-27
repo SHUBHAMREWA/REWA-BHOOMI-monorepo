@@ -17,7 +17,7 @@ const COOKIE_NAME = 'refresh_token';
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: process.env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const),
   maxAge: REFRESH_TOKEN_EXPIRY_MS,
   path: '/',
 };
@@ -121,7 +121,8 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   const token = req.cookies[COOKIE_NAME];
   if (token) await logoutUser(token);
 
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  const { maxAge, ...clearOptions } = COOKIE_OPTIONS;
+  res.clearCookie(COOKIE_NAME, clearOptions);
   return successResponse(res, null, 'Logged out successfully');
 });
 
@@ -129,7 +130,8 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 
 export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
   await logoutAllDevices(req.user!.userId);
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  const { maxAge, ...clearOptions } = COOKIE_OPTIONS;
+  res.clearCookie(COOKIE_NAME, clearOptions);
   return successResponse(res, null, 'Logged out from all devices');
 });
 
