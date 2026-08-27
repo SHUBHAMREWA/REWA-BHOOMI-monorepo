@@ -29,8 +29,8 @@ const s3 = new S3Client({
     accessKeyId,
     secretAccessKey,
   },
-  forcePathStyle: false, // Cloudflare R2 uses virtual-hosted style
-  // @ts-ignore — requestChecksumCalculation is valid in @aws-sdk/client-s3 v3.x
+  forcePathStyle: true, // Cloudflare R2 requires path-style URLs to prevent SSL handshake errors on sub-subdomains
+  // @ts-ignore
   requestChecksumCalculation: 'WHEN_REQUIRED',
   requestHandler: new NodeHttpHandler({
     httpsAgent,

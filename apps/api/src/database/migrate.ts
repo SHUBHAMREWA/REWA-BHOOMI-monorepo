@@ -1083,6 +1083,19 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         ADD COLUMN IF NOT EXISTS actual_sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
         ADD COLUMN IF NOT EXISTS is_admin_override BOOLEAN NOT NULL DEFAULT FALSE;
     `
+  },
+  {
+    name: '026_populate_null_chat_initiators',
+    sql: `
+      UPDATE conversations c
+      SET initiator_id = (
+        SELECT user_id 
+        FROM conversation_members 
+        WHERE conversation_id = c.id 
+        LIMIT 1
+      )
+      WHERE c.type = 'SUPPORT' AND c.initiator_id IS NULL;
+    `
   }
 ];
 

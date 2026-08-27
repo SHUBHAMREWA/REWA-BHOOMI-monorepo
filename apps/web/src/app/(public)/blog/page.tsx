@@ -333,7 +333,7 @@ export default function BlogListingPage() {
               }}
             >
               <Grid container>
-                <Grid item xs={12} md={7} sx={{ position: 'relative', overflow: 'hidden', minHeight: { xs: 240, md: 360 }, bgcolor: '#0F172A' }}>
+                <Grid item xs={12} sx={{ position: 'relative', overflow: 'hidden', height: { xs: 240, md: 320 }, bgcolor: '#0F172A' }}>
                   <CardMedia
                     className="featured-cover"
                     component="img"
@@ -361,7 +361,7 @@ export default function BlogListingPage() {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} md={5} sx={{ p: { xs: 3, md: 4.5 }, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Grid item xs={12} sx={{ p: { xs: 3, md: 4.5 }, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5, color: '#64748B' }}>
                     <Typography variant="caption" fontWeight={600}>
                       {featuredBlog.publishedAt
