@@ -33,6 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAuth = useCallback(async () => {
     try {
       const user = await apiGet<User & { roles: UserRole[] }>('/auth/me');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user_session', JSON.stringify(user));
+      }
       setState({
         user,
         accessToken: getAccessToken(),
@@ -41,11 +44,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch {
       setAccessToken(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user_session');
+      }
       setState({ user: null, accessToken: null, isLoading: false, isAuthenticated: false });
     }
   }, []);
 
   useEffect(() => {
+    // Attempt instant hydration from localStorage to prevent profile flickering
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('user_session');
+      if (cached) {
+        try {
+          const parsedUser = JSON.parse(cached);
+          setState(prev => ({
+            ...prev,
+            user: parsedUser,
+            isAuthenticated: true,
+            isLoading: false,
+          }));
+        } catch {
+          localStorage.removeItem('user_session');
+        }
+      }
+    }
     refreshAuth();
   }, [refreshAuth]);
 
@@ -74,6 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await apiPost('/auth/logout');
     } finally {
       setAccessToken(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user_session');
+      }
       setState({ user: null, accessToken: null, isLoading: false, isAuthenticated: false });
     }
   }, []);

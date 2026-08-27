@@ -8,6 +8,7 @@ import { Blog } from '@rewa-bhoomi/types';
 import { APP_URL, APP_NAME } from '@rewa-bhoomi/config';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TranslateIcon from '@mui/icons-material/Translate';
+import ShareButtons from '@/features/blogs/components/ShareButtons';
 
 // ─── Server-side data fetch ──────────────────────────────────────────────────
 
@@ -255,7 +256,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   alt={blog.featuredImageAlt || blog.title}
                   sx={{
                     width: '100%',
-                    height: 'auto',
+                    height: { xs: 220, sm: 350, md: 'auto' }, // Small rectangular on mobile
                     maxHeight: 500,
                     objectFit: 'cover',
                     borderRadius: 3,
@@ -406,6 +407,9 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </Box>
               </Box>
             )}
+
+            {/* Share Buttons */}
+            <ShareButtons url={blogUrl} title={blog.title} />
 
             {/* Author Box */}
             <Paper variant="outlined" sx={{ mt: 6, p: 3, borderRadius: 3, display: 'flex', alignItems: 'flex-start', gap: 2 }}>

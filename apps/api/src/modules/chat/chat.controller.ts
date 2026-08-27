@@ -103,6 +103,29 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
       return res.status(201).json({ success: true, data: { id: newSupport.id } });
     }
 
+    if (isAdmin && !targetIsAdmin) {
+      // Admin is initiating chat with a regular user -> Find or create the user's SUPPORT conversation
+      const existingSupport = await query(
+        `SELECT c.id FROM conversations c
+         WHERE c.type = 'SUPPORT' AND c.initiator_id = $1 LIMIT 1`,
+        [targetUserId]
+      );
+      if (existingSupport.length > 0) {
+        return res.json({ success: true, data: { id: existingSupport[0].id } });
+      }
+
+      const [newSupport] = await query(
+        `INSERT INTO conversations (id, type, initiator_id, is_approved_for_recipient)
+         VALUES (gen_random_uuid(), 'SUPPORT', $1, true) RETURNING id`,
+        [targetUserId]
+      );
+      await query(
+        `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2)`,
+        [newSupport.id, targetUserId]
+      );
+      return res.status(201).json({ success: true, data: { id: newSupport.id } });
+    }
+
     // Direct P2P chat between two users (or Admin starting direct chat with a user)
     const initiatorId = userId;
     const recipientId = targetUserId;
