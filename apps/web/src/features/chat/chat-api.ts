@@ -48,12 +48,15 @@ export interface Message {
   reactions?: Reaction[];
 }
 
-export const useConversations = () => {
+export const useConversations = (enabled = true) => {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
       return await apiGet<Conversation[]>('/chat');
     },
+    enabled,
+    retry: 2,
+    staleTime: 30_000,
   });
 };
 

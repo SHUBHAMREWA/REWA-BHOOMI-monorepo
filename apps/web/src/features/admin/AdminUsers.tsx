@@ -167,7 +167,13 @@ export default function AdminUsers() {
               users.map((user) => {
                 const cfg = STATUS_CONFIG[user.status || 'ACTIVE'];
                 const isUpdating = updatingId === user.id;
-                const primaryRole = user.roles?.[0] || 'USER';
+                let primaryRole = 'USER';
+                if (Array.isArray(user.roles) && user.roles.length > 0) {
+                  primaryRole = user.roles[0];
+                } else if (typeof user.roles === 'string') {
+                  const cleaned = (user.roles as string).replace(/[{}]/g, '').split(',');
+                  if (cleaned[0] && cleaned[0].trim()) primaryRole = cleaned[0].trim();
+                }
 
                 return (
                   <TableRow key={user.id} hover>

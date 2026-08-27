@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, IconButton, Paper, Typography, TextField, 
   Divider, Fade, Fab, CircularProgress, ClickAwayListener,
-  List, ListItem, ListItemText, ListItemAvatar, Avatar, Chip, Tooltip, InputAdornment
+  List, ListItem, ListItemText, ListItemAvatar, Avatar, Chip, Tooltip, InputAdornment,
+  Snackbar, Alert, Button
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
@@ -15,9 +16,8 @@ import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import PersonIcon from '@mui/icons-material/Person';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import SearchIcon from '@mui/icons-material/Search';
-import AddCommentIcon from '@mui/icons-material/AddComment';
 import Badge from '@mui/material/Badge';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSocket } from '@/lib/SocketProvider';
@@ -37,13 +37,15 @@ export default function UserChatWidget() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Register Web Push notification subscription
-  usePushNotifications();
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
+
+  // usePushNotifications exposes a manual requestPermission function
+  const { requestPermission } = usePushNotifications();
 
   const queryClient = useQueryClient();
   const getOrCreateMutation = useGetOrCreateConversation();
-  const { data: conversations = [], isLoading: loadingConvs } = useConversations();
+  // Only fetch conversations when authenticated — avoids empty cache before token is restored
+  const { data: conversations = [], isLoading: loadingConvs } = useConversations(isAuthenticated);
   const { data: messages = [], isLoading } = useMessages(conversationId || undefined);
   const sendMessageMutation = useSendMessage(conversationId || '');
   const toggleReactionMutation = useToggleReaction(conversationId || '');
@@ -59,6 +61,35 @@ export default function UserChatWidget() {
       setConversationId(conversations[0].id);
     }
   }, [conversations, conversationId]);
+
+  // When auth token is refreshed (e.g. after page reload), invalidate conversations
+  // so the list re-fetches with the valid token
+  useEffect(() => {
+    const handleAuthRefreshed = () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    };
+    window.addEventListener('auth:refreshed', handleAuthRefreshed);
+    return () => window.removeEventListener('auth:refreshed', handleAuthRefreshed);
+  }, [queryClient]);
+
+  // Refetch conversations whenever the widget opens (catches missed updates while closed)
+  useEffect(() => {
+    if (isOpen && isAuthenticated) {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    }
+  }, [isOpen, isAuthenticated, queryClient]);
+
+  // Show notification permission banner once per session when chat first opens
+  useEffect(() => {
+    if (!isOpen || !isAuthenticated) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    const bannerDismissed = sessionStorage.getItem('notif_banner_dismissed');
+    if (Notification.permission === 'default' && !bannerDismissed) {
+      // Small delay so chat animation settles first
+      const t = setTimeout(() => setShowNotifBanner(true), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, isAuthenticated]);
 
   // Handle URL openChat parameter (e.g. from push notification click)
   useEffect(() => {
@@ -476,6 +507,38 @@ export default function UserChatWidget() {
 
   return (
     <>
+      {/* Notification Permission Banner */}
+      <Snackbar
+        open={showNotifBanner}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ bottom: { xs: 150, sm: 100 }, zIndex: 1500 }}
+      >
+        <Alert
+          severity="info"
+          icon={<NotificationsNoneIcon />}
+          onClose={() => {
+            setShowNotifBanner(false);
+            sessionStorage.setItem('notif_banner_dismissed', '1');
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              sx={{ fontWeight: 700 }}
+              onClick={async () => {
+                setShowNotifBanner(false);
+                sessionStorage.setItem('notif_banner_dismissed', '1');
+                await requestPermission();
+              }}
+            >
+              Enable
+            </Button>
+          }
+          sx={{ fontWeight: 600, fontSize: '0.82rem', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', borderRadius: 2 }}
+        >
+          Get notified when you receive a reply — even when the app is closed.
+        </Alert>
+      </Snackbar>
       <Fade in={!isOpen}>
         <Fab
           className="chat-fab-trigger"

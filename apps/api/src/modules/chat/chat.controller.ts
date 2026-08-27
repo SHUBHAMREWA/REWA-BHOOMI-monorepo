@@ -324,7 +324,8 @@ export const sendMessage = async (req: Request, res: Response) => {
       initiatorId: conv.initiator_id,
       recipientId: conv.recipient_id,
       isApproved: conv.is_approved_for_recipient,
-      senderId,
+      // Use actualSenderId for routing decisions — senderId may be impersonated user
+      senderId: actualSenderId,
       senderName: (populatedMessage as any)?.sender_name || 'User',
       content
     }).catch(() => {});

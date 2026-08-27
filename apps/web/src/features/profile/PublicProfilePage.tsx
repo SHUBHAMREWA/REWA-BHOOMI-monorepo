@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Box, Container, Typography, Avatar, Grid, Paper, CircularProgress, Chip, Button } from '@mui/material';
-import { Person, CalendarToday, Chat } from '@mui/icons-material';
+import { Person, CalendarToday, Chat, Share } from '@mui/icons-material';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { apiClient } from '@/lib/api';
 import PropertyCard from '@/features/properties/PropertyCard';
@@ -20,6 +21,20 @@ export default function PublicProfilePage({ username }: PublicProfilePageProps) 
   const [properties, setProperties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleShare = () => {
+    const profileUrl = typeof window !== 'undefined' ? window.location.href : '';
+    if (navigator.share) {
+      navigator.share({
+        title: `${user?.name || 'User'} - Rewa Bhoomi Profile`,
+        text: `Check out ${user?.name || 'this profile'} on Rewa Bhoomi!`,
+        url: profileUrl,
+      }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(profileUrl);
+      toast.success('Profile link copied to clipboard!');
+    }
+  };
 
   useEffect(() => {
     async function fetchProfileData() {
@@ -129,6 +144,24 @@ export default function PublicProfilePage({ username }: PublicProfilePageProps) 
                   Chat with {user.name.split(' ')[0]}
                 </Button>
               )}
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Share sx={{ fontSize: 16 }} />}
+                onClick={handleShare}
+                sx={{
+                  borderColor: '#1B4FD8',
+                  color: '#1B4FD8',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: 2,
+                  py: 0.6,
+                  '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.08)', borderColor: '#1640B0' }
+                }}
+              >
+                Share
+              </Button>
             </Box>
           </Box>
         </Paper>

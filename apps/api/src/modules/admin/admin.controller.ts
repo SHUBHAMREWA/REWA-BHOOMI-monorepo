@@ -39,10 +39,10 @@ export const listUsers = async (req: Request, res: Response) => {
       COALESCE(pc.total_properties, 0)::int AS total_properties,
       COALESCE(pc.published_properties, 0)::int AS published_properties,
       COALESCE(pc.pending_properties, 0)::int AS pending_properties,
-      COALESCE(ur.roles, '{"USER"}') AS roles
+      COALESCE(ur.roles, ARRAY['USER']::text[]) AS roles
     FROM users u
     LEFT JOIN (
-      SELECT ur.user_id, array_agg(r.name) as roles
+      SELECT ur.user_id, array_agg(r.name::text) as roles
       FROM user_roles ur
       JOIN roles r ON ur.role_id = r.id
       GROUP BY ur.user_id

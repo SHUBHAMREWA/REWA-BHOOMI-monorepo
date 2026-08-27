@@ -42,6 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading: false,
         isAuthenticated: true,
       });
+      // Notify query clients (e.g. UserChatWidget) to re-fetch after token is restored
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:refreshed'));
+      }
     } catch {
       setAccessToken(null);
       if (typeof window !== 'undefined') {

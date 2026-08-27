@@ -121,3 +121,7 @@ export function getFilteredPropertyTypes(purpose: ListingPurpose, category: Prop
     pt => pt.category === category && pt.allowedPurposes.includes(purpose)
   );
 }
+
+export function getPropertyTypesByCategory(category: PropertyCategoryType): PropertyTypeOption[] {
+  return PROPERTY_TYPES.filter(pt => pt.category === category);
+}
