@@ -1,7 +1,7 @@
 import { pool, connectDatabase } from './connection';
 import { logger } from '../config/logger';
 
-async function seed() {
+export async function runSeed(closePool = true) {
   await connectDatabase();
   const client = await pool.connect();
 
@@ -101,14 +101,19 @@ async function seed() {
   } catch (err) {
     await client.query('ROLLBACK');
     logger.error({ err }, '❌ Seed failed');
-    process.exit(1);
+    if (closePool) process.exit(1);
   } finally {
     client.release();
-    await pool.end();
+    if (closePool) await pool.end();
   }
 }
 
-seed().catch((err) => {
-  logger.error({ err }, 'Seed runner failed');
-  process.exit(1);
-});
+const isDirectRun = require.main === module || 
+  (process.argv[1] && (process.argv[1].endsWith('seed.ts') || process.argv[1].endsWith('seed.js')));
+
+if (isDirectRun) {
+  runSeed().catch((err) => {
+    logger.error({ err }, 'Seed runner failed');
+    process.exit(1);
+  });
+}

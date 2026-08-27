@@ -3,13 +3,14 @@ import { pool, connectDatabase } from './connection';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
-async function createAdmin() {
+export async function createAdminUser(closePool = true) {
   const email = env.INITIAL_ADMIN_EMAIL;
   const password = env.INITIAL_ADMIN_PASSWORD;
 
   if (!email || !password) {
-    logger.error('INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD must be provided in .env');
-    process.exit(1);
+    logger.warn('INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD not found in .env, skipping create admin script');
+    if (closePool) process.exit(0);
+    return;
   }
 
   await connectDatabase();
@@ -66,8 +67,13 @@ async function createAdmin() {
     logger.error('Failed to setup admin user:', error);
   } finally {
     client.release();
-    process.exit(0);
+    if (closePool) process.exit(0);
   }
 }
 
-createAdmin();
+const isDirectRun = require.main === module || 
+  (process.argv[1] && (process.argv[1].endsWith('create-admin.ts') || process.argv[1].endsWith('create-admin.js')));
+
+if (isDirectRun) {
+  createAdminUser();
+}
