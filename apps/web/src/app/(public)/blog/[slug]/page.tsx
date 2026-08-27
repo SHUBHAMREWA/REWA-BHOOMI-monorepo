@@ -244,6 +244,8 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                     sx={{ ml: { xs: 0, sm: 'auto' } }}
                   />
                 )}
+                
+                <ShareButtons url={blogUrl} title={blog.title} compact={true} />
               </Box>
             </Box>
 

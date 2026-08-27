@@ -38,8 +38,15 @@ export const listUsers = async (req: Request, res: Response) => {
       u.last_login_at,
       COALESCE(pc.total_properties, 0)::int AS total_properties,
       COALESCE(pc.published_properties, 0)::int AS published_properties,
-      COALESCE(pc.pending_properties, 0)::int AS pending_properties
+      COALESCE(pc.pending_properties, 0)::int AS pending_properties,
+      COALESCE(ur.roles, '{"USER"}') AS roles
     FROM users u
+    LEFT JOIN (
+      SELECT ur.user_id, array_agg(r.name) as roles
+      FROM user_roles ur
+      JOIN roles r ON ur.role_id = r.id
+      GROUP BY ur.user_id
+    ) ur ON ur.user_id = u.id
     LEFT JOIN (
       SELECT 
         owner_id,
@@ -106,6 +113,49 @@ export const updateUserStatus = async (req: Request, res: Response) => {
   res.json({
     success: true,
     message: `User status updated to ${status}`,
+  });
+};
+
+// ─── Update User Role ───────────────────────────────────────────────────────
+export const updateUserRole = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { role } = req.body; // e.g. 'ADMIN' or 'USER'
+
+  const validRoles = ['USER', 'ADMIN', 'SUPER_ADMIN'];
+  if (!validRoles.includes(role)) {
+    throw new BadRequestError(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+  }
+
+  const user = await queryOne<{ id: string }>('SELECT id FROM users WHERE id = $1', [id]);
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  // Clear existing roles
+  await query('DELETE FROM user_roles WHERE user_id = $1', [id]);
+  
+  // Insert new role
+  await query(
+    `INSERT INTO user_roles (user_id, role_id)
+     SELECT $1, id FROM roles WHERE name = $2`,
+    [id, role]
+  );
+
+  // Log audit
+  await query(
+    'INSERT INTO audit_logs (id, actor_id, action, resource_type, resource_id, after_data) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)',
+    [
+      req.user?.userId,
+      'USER_ROLE_UPDATED',
+      'user',
+      id,
+      JSON.stringify({ role }),
+    ]
+  );
+
+  res.json({
+    success: true,
+    message: `User role updated to ${role}`,
   });
 };
 

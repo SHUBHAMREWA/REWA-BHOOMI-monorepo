@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDashboardStats, listUsers, updateUserStatus, moderateProperty, getAuditLogs, listPropertiesAdmin, listProjectsAdmin, togglePropertyPopular, deletePropertyAdmin, bulkDeletePropertiesAdmin } from './admin.controller';
+import { getDashboardStats, listUsers, updateUserStatus, updateUserRole, moderateProperty, getAuditLogs, listPropertiesAdmin, listProjectsAdmin, togglePropertyPopular, deletePropertyAdmin, bulkDeletePropertiesAdmin } from './admin.controller';
 import { createProject, updateProject, deleteProject, createPlot, deletePlot, getProjectByIdAdmin, updatePlot, createPhase, updatePhase, deletePhase, createMapObject, updateMapObject, deleteMapObject, createCluster, updateCluster, deleteCluster, saveMapVersion, publishMapVersion, listMapVersions, bulkSaveMapData } from '../projects/project.controller';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { asyncHandler } from '../../middleware/errorHandler';
@@ -12,6 +12,7 @@ router.use(authenticate, requireRole('ADMIN', 'SUPER_ADMIN'));
 router.get('/stats', asyncHandler(getDashboardStats));
 router.get('/users', asyncHandler(listUsers));
 router.patch('/users/:id/status', asyncHandler(updateUserStatus));
+router.patch('/users/:id/role', asyncHandler(updateUserRole));
 router.get('/properties', asyncHandler(listPropertiesAdmin));
 router.patch('/properties/:id/moderate', asyncHandler(moderateProperty));
 router.patch('/properties/:id/popular', asyncHandler(togglePropertyPopular));

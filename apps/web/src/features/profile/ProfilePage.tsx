@@ -8,7 +8,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip,
   useTheme, useMediaQuery
 } from '@mui/material';
-import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout, Share } from '@mui/icons-material';
+import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout, Share, WhatsApp, Facebook, Twitter, LinkedIn, Telegram, ContentCopy } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -267,14 +267,73 @@ export default function ProfilePage() {
     }
   };
 
-  const handleShareProfile = () => {
+  const [shareMenuAnchor, setShareMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const handleShareProfile = async (event?: React.MouseEvent<HTMLElement>) => {
     if (!user?.username) {
       toast.error('Please set and save a username first!');
       return;
     }
     const profileLink = `${window.location.origin}/u/${user.username}`;
-    navigator.clipboard.writeText(profileLink);
-    toast.success('Profile link copied to clipboard!');
+    const shareData = {
+      title: `${user.name}'s Profile | Rewa Bhoomi`,
+      text: `Check out ${user.name}'s profile on Rewa Bhoomi!`,
+      url: profileLink,
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err.name !== 'AbortError' && event) {
+          setShareMenuAnchor(event.currentTarget);
+        }
+        return;
+      }
+    }
+
+    if (event) {
+      setShareMenuAnchor(event.currentTarget);
+    } else {
+      navigator.clipboard.writeText(profileLink);
+      toast.success('Profile link copied to clipboard!');
+    }
+  };
+
+  const handleSocialShare = (platform: string) => {
+    if (!user?.username) return;
+    const profileLink = `${window.location.origin}/u/${user.username}`;
+    const text = `Check out ${user.name}'s profile on Rewa Bhoomi!`;
+
+    let url = '';
+    switch (platform) {
+      case 'whatsapp':
+        url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + profileLink)}`;
+        break;
+      case 'telegram':
+        url = `https://t.me/share/url?url=${encodeURIComponent(profileLink)}&text=${encodeURIComponent(text)}`;
+        break;
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileLink)}`;
+        break;
+      case 'twitter':
+        url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(profileLink)}&text=${encodeURIComponent(text)}`;
+        break;
+      case 'linkedin':
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(profileLink)}`;
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(profileLink);
+        toast.success('Profile link copied to clipboard!');
+        setShareMenuAnchor(null);
+        return;
+    }
+
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setShareMenuAnchor(null);
+    }
   };
 
   if (!user) {
@@ -303,7 +362,7 @@ export default function ProfilePage() {
               color="primary"
               size={isMobile ? "small" : "medium"}
               startIcon={<Share />}
-              onClick={handleShareProfile}
+              onClick={(e) => handleShareProfile(e)}
               sx={{ fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
             >
               {isMobile ? 'Share' : 'Share Profile'}
@@ -679,6 +738,41 @@ export default function ProfilePage() {
                   </Button>
                 </DialogActions>
               </Dialog>
+
+              {/* Share Profile Menu Fallback */}
+              <Menu
+                anchorEl={shareMenuAnchor}
+                open={Boolean(shareMenuAnchor)}
+                onClose={() => setShareMenuAnchor(null)}
+                PaperProps={{
+                  elevation: 4,
+                  sx: { borderRadius: 3, minWidth: 220, p: 1, border: '1px solid #E2E8F0' }
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ px: 2, py: 1, fontWeight: 700, color: '#0F172A' }}>
+                  Share Profile
+                </Typography>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem onClick={() => handleSocialShare('whatsapp')} sx={{ borderRadius: 1.5, py: 1, gap: 1.5, fontSize: '0.9rem' }}>
+                  <WhatsApp sx={{ color: '#25D366' }} /> WhatsApp
+                </MenuItem>
+                <MenuItem onClick={() => handleSocialShare('telegram')} sx={{ borderRadius: 1.5, py: 1, gap: 1.5, fontSize: '0.9rem' }}>
+                  <Telegram sx={{ color: '#0088cc' }} /> Telegram
+                </MenuItem>
+                <MenuItem onClick={() => handleSocialShare('facebook')} sx={{ borderRadius: 1.5, py: 1, gap: 1.5, fontSize: '0.9rem' }}>
+                  <Facebook sx={{ color: '#1877F2' }} /> Facebook
+                </MenuItem>
+                <MenuItem onClick={() => handleSocialShare('twitter')} sx={{ borderRadius: 1.5, py: 1, gap: 1.5, fontSize: '0.9rem' }}>
+                  <Twitter sx={{ color: '#1DA1F2' }} /> Twitter / X
+                </MenuItem>
+                <MenuItem onClick={() => handleSocialShare('linkedin')} sx={{ borderRadius: 1.5, py: 1, gap: 1.5, fontSize: '0.9rem' }}>
+                  <LinkedIn sx={{ color: '#0A66C2' }} /> LinkedIn
+                </MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem onClick={() => handleSocialShare('copy')} sx={{ borderRadius: 1.5, py: 1, gap: 1.5, fontSize: '0.9rem' }}>
+                  <ContentCopy sx={{ color: '#64748B' }} /> Copy Link
+                </MenuItem>
+              </Menu>
 
             </Paper>
         </Box>

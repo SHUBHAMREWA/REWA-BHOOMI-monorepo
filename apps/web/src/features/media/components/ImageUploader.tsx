@@ -13,6 +13,7 @@ interface ImageUploaderProps {
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, label = 'Upload Image' }) => {
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { mutateAsync: uploadMedia, isPending: isUploading } = useUploadMedia();
@@ -25,7 +26,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, l
       img.onload = () => {
         URL.revokeObjectURL(img.src);
         
-        // Calculate new dimensions (max 1920x1080)
         let { width, height } = img;
         const maxW = 1920;
         const maxH = 1080;
@@ -52,16 +52,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, l
             lastModified: Date.now(),
           });
           resolve(webpFile);
-        }, 'image/webp', 0.85); // 85% quality
+        }, 'image/webp', 0.85);
       };
       img.onerror = (err) => reject(err);
     });
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file');
+      return;
+    }
     try {
       setIsCompressing(true);
       const webpFile = await compressToWebP(file);
@@ -79,15 +80,74 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, l
     }
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    // 1. Check for standard file drop (from computer)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      await processFile(file);
+      return;
+    }
+
+    // 2. Check for dragged image from another browser tab
+    const html = e.dataTransfer.getData('text/html');
+    const uri = e.dataTransfer.getData('text/uri-list');
+    
+    let imageUrl = '';
+    if (html) {
+      const srcMatch = html.match(/src\s*=\s*"([^"]+)"/i);
+      if (srcMatch && srcMatch[1]) imageUrl = srcMatch[1];
+    }
+    if (!imageUrl && uri) {
+      imageUrl = uri;
+    }
+
+    if (imageUrl) {
+      try {
+        setIsCompressing(true);
+        const res = await fetch(imageUrl);
+        if (!res.ok) throw new Error('Failed to fetch image');
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) throw new Error('Not an image');
+        
+        const file = new File([blob], 'dragged-image.jpg', { type: blob.type });
+        setIsCompressing(false);
+        await processFile(file);
+      } catch (err) {
+        setIsCompressing(false);
+        toast.error('CORS blocked cross-tab image drag. Please save it to your PC first.');
+      }
+    }
+  };
+
   const handleRemove = async () => {
     if (!value) return;
     try {
       await deleteMedia(value);
       onChange('');
       toast.success('Image removed');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     } catch (error) {
       console.error('Delete failed:', error);
       toast.error('Failed to remove image');
@@ -97,11 +157,28 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, l
   const isLoading = isCompressing || isUploading || isDeleting;
 
   return (
-    <Box sx={{ border: '1px dashed #ccc', borderRadius: 2, p: 2, textAlign: 'center' }}>
-      <Typography variant="subtitle2" mb={2} color="text.secondary">{label}</Typography>
+    <Box 
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      sx={{ 
+        border: '2px dashed', 
+        borderColor: isDragging ? 'primary.main' : '#ccc', 
+        bgcolor: isDragging ? 'rgba(27, 79, 216, 0.05)' : 'transparent',
+        borderRadius: 2, 
+        p: 3, 
+        textAlign: 'center',
+        transition: 'all 0.2s ease',
+        cursor: value ? 'default' : 'pointer'
+      }}
+      onClick={() => !value && !isLoading && fileInputRef.current?.click()}
+    >
+      <Typography variant="subtitle2" mb={2} color={isDragging ? 'primary.main' : 'text.secondary'}>
+        {label}
+      </Typography>
       
       {value ? (
-        <Box position="relative" display="inline-block">
+        <Box position="relative" display="inline-block" onClick={(e) => e.stopPropagation()}>
           <Box 
             component="img" 
             src={value} 
@@ -128,14 +205,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, l
           />
           <Button
             variant="outlined"
-            onClick={() => fileInputRef.current?.click()}
+            component="span"
             disabled={isLoading}
             startIcon={isLoading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+            sx={{ pointerEvents: 'none' }}
           >
-            {isCompressing ? 'Compressing...' : isUploading ? 'Uploading...' : 'Select Image'}
+            {isCompressing ? 'Compressing...' : isUploading ? 'Uploading...' : 'Drag & Drop or Select Image'}
           </Button>
-          <Typography variant="caption" display="block" mt={1} color="text.secondary">
-            Images will be automatically compressed and converted to WebP
+          <Typography variant="caption" display="block" mt={1.5} color="text.secondary">
+            Drag an image file here, or drop from another tab
           </Typography>
         </Box>
       )}
