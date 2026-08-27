@@ -8,7 +8,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Chip,
   useTheme, useMediaQuery
 } from '@mui/material';
-import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout } from '@mui/icons-material';
+import { PhotoCamera, Security, Person, MapsHomeWork, Favorite, Edit, Delete, MoreVert, Logout, Share } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -267,6 +267,16 @@ export default function ProfilePage() {
     }
   };
 
+  const handleShareProfile = () => {
+    if (!user?.username) {
+      toast.error('Please set and save a username first!');
+      return;
+    }
+    const profileLink = `${window.location.origin}/u/${user.username}`;
+    navigator.clipboard.writeText(profileLink);
+    toast.success('Profile link copied to clipboard!');
+  };
+
   if (!user) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -280,75 +290,126 @@ export default function ProfilePage() {
       <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 3 } }}>
         <Box sx={{ mb: { xs: 2, md: 4 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography variant="h5" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.3rem', md: '1.6rem' } }}>
+            <Typography variant="h5" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', md: '1.6rem' } }}>
               Account Dashboard
             </Typography>
-            <Typography color="#64748B" sx={{ mt: { xs: 0.3, md: 0.5 }, fontSize: { xs: '0.8rem', md: '0.9rem' }, display: { xs: 'none', sm: 'block' } }}>
+            <Typography color="#64748B" sx={{ mt: { xs: 0.2, md: 0.5 }, fontSize: { xs: '0.75rem', md: '0.9rem' }, display: { xs: 'none', sm: 'block' } }}>
               Manage your saved properties, active listings, and personal profile.
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            color="error"
-            size={isMobile ? "small" : "medium"}
-            startIcon={<Logout />}
-            onClick={() => {
-              logout().then(() => router.push('/'));
-            }}
-            sx={{ fontWeight: 600, borderRadius: 2 }}
-          >
-            {isMobile ? 'Logout' : 'Sign Out'}
-          </Button>
+          <Box sx={{ display: 'flex', gap: { xs: 1, md: 1.5 } }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              size={isMobile ? "small" : "medium"}
+              startIcon={<Share />}
+              onClick={handleShareProfile}
+              sx={{ fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
+            >
+              {isMobile ? 'Share' : 'Share Profile'}
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              size={isMobile ? "small" : "medium"}
+              startIcon={<Logout />}
+              onClick={() => {
+                logout().then(() => router.push('/'));
+              }}
+              sx={{ fontWeight: 600, borderRadius: 2 }}
+            >
+              {isMobile ? 'Logout' : 'Sign Out'}
+            </Button>
+          </Box>
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, md: 2 } }}>
           <Paper elevation={0} sx={{ pt: { xs: 2, md: 3 }, px: { xs: 2, md: 3 }, pb: 0, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0' }}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', textAlign: { xs: 'center', md: 'left' }, gap: { xs: 2, md: 3 } }}>
-              <Box sx={{ position: 'relative', flexShrink: 0 }}>
-                <Avatar
-                  src={currentAvatarUrl || undefined}
-                  sx={{ width: { xs: 64, md: 80 }, height: { xs: 64, md: 80 }, border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                >
-                  {!currentAvatarUrl && user.name.charAt(0).toUpperCase()}
-                </Avatar>
-                <input
-                  accept="image/*"
-                  type="file"
-                  id="avatar-upload"
-                  style={{ display: 'none' }}
-                  onChange={handleAvatarUpload}
-                />
-                <label htmlFor="avatar-upload">
-                  <IconButton
-                    component="span"
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      bgcolor: '#1B4FD8',
-                      color: 'white',
-                      p: { xs: 0.4, md: 0.6 },
-                      '&:hover': { bgcolor: '#1D4ED8' },
-                      boxShadow: '0 4px 10px rgba(27, 79, 216, 0.4)'
-                    }}
-                    disabled={isUploading}
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'stretch', md: 'flex-start' }, textAlign: 'left', gap: { xs: 2, md: 3 }, justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: { xs: 2, md: 3 } }}>
+                <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                  <Avatar
+                    src={currentAvatarUrl || undefined}
+                    sx={{ width: { xs: 60, md: 80 }, height: { xs: 60, md: 80 }, border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   >
-                    {isUploading ? <CircularProgress size={14} color="inherit" /> : <PhotoCamera sx={{ fontSize: { xs: 14, md: 16 } }} />}
-                  </IconButton>
-                </label>
-              </Box>
-              
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' }, mb: 0.25 }}>
-                  {user.name}
-                </Typography>
-                <Typography variant="body2" color="#64748B" sx={{ mb: 1, fontSize: { xs: '0.8rem', md: '0.85rem' } }}>
-                  {user.email}
-                </Typography>
-                <Box sx={{ display: 'inline-flex', px: 1.2, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.65rem', fontWeight: 700 }}>
-                  {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
+                    {!currentAvatarUrl && user.name.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <input
+                    accept="image/*"
+                    type="file"
+                    id="avatar-upload"
+                    style={{ display: 'none' }}
+                    onChange={handleAvatarUpload}
+                  />
+                  <label htmlFor="avatar-upload">
+                    <IconButton
+                      component="span"
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        bgcolor: '#1B4FD8',
+                        color: 'white',
+                        p: { xs: 0.3, md: 0.6 },
+                        '&:hover': { bgcolor: '#1D4ED8' },
+                        boxShadow: '0 4px 10px rgba(27, 79, 216, 0.4)'
+                      }}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? <CircularProgress size={12} color="inherit" /> : <PhotoCamera sx={{ fontSize: { xs: 12, md: 16 } }} />}
+                    </IconButton>
+                  </label>
                 </Box>
+                
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {user.name}
+                  </Typography>
+                  <Typography variant="body2" color="#64748B" sx={{ mb: 1, fontSize: { xs: '0.75rem', md: '0.85rem' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {user.email}
+                  </Typography>
+                  <Box sx={{ display: 'inline-flex', px: 1, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.6rem', fontWeight: 700 }}>
+                    {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
+                  </Box>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-end' }, width: { xs: '100%', md: '250px' }, mt: { xs: 1, md: 0 } }}>
+                <Typography variant="caption" fontWeight={600} color="#64748B" sx={{ alignSelf: { xs: 'center', md: 'flex-start' }, mb: 0.5, ml: 1 }}>
+                  Username
+                </Typography>
+                <TextField
+                  size="small"
+                  fullWidth
+                  {...register('username')}
+                  error={!!errors.username || usernameStatus === 'taken'}
+                  helperText={
+                    errors.username?.message ||
+                    (usernameStatus === 'checking' && 'Checking...') ||
+                    (usernameStatus === 'available' && '✓ Available') ||
+                    (usernameStatus === 'taken' && 'Taken') ||
+                    ''
+                  }
+                  FormHelperTextProps={{
+                    sx: { color: usernameStatus === 'available' ? 'success.main' : undefined, mx: 0 }
+                  }}
+                  InputProps={{
+                    endAdornment: usernameStatus === 'checking' ? <CircularProgress size={16} /> : null
+                  }}
+                  sx={{
+                    '& .MuiInputBase-root': { bgcolor: '#F8FAFC', borderRadius: 2 }
+                  }}
+                />
+                <Button 
+                  size="small" 
+                  variant="outlined" 
+                  disabled={isSaving}
+                  onClick={handleSubmit(onSubmit)}
+                  sx={{ mt: 1, alignSelf: { xs: 'center', md: 'flex-end' }, textTransform: 'none', borderRadius: 2 }}
+                >
+                  Update Username
+                </Button>
               </Box>
             </Box>
 
@@ -356,9 +417,7 @@ export default function ProfilePage() {
             
             <Tabs
               orientation="horizontal"
-              variant={isMobile ? 'scrollable' : 'fullWidth'}
-              scrollButtons="auto"
-              allowScrollButtonsMobile
+              variant="fullWidth"
               value={tabValue}
               onChange={handleTabChange}
               sx={{
@@ -367,15 +426,16 @@ export default function ProfilePage() {
                 '& .MuiTab-root': {
                   alignItems: 'center',
                   justifyContent: 'center',
-                  py: { xs: 1, md: 1.5 },
-                  px: { xs: 1.5, md: 2 },
+                  py: { xs: 0.5, md: 1.5 },
+                  px: { xs: 0.5, md: 2 },
                   borderRadius: 0,
-                  fontSize: { xs: '0.75rem', md: '0.85rem' },
-                  minHeight: { xs: 40, md: 48 },
+                  fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.85rem' },
+                  minHeight: { xs: 48, md: 48 },
+                  minWidth: { xs: 0, md: 90 },
                   whiteSpace: 'nowrap',
                   borderBottom: '3px solid transparent',
-                  flexDirection: 'row',
-                  gap: 1,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 0.5, sm: 1 },
                   color: '#64748B',
                   fontWeight: 600
                 },
@@ -385,10 +445,10 @@ export default function ProfilePage() {
                 }
               }}
             >
-              <Tab icon={<Person sx={{ fontSize: { xs: 18, md: 20 } }} />} label="Profile Details" />
+              <Tab icon={<Person sx={{ fontSize: { xs: 18, md: 20 } }} />} label={isMobile ? "Profile" : "Profile Details"} />
               <Tab icon={<Security sx={{ fontSize: { xs: 18, md: 20 } }} />} label="Security" />
-              <Tab icon={<MapsHomeWork sx={{ fontSize: { xs: 18, md: 20 } }} />} label="My Properties" />
-              <Tab icon={<Favorite sx={{ color: '#EF4444', fontSize: { xs: 18, md: 20 } }} />} label="Saved Properties" />
+              <Tab icon={<MapsHomeWork sx={{ fontSize: { xs: 18, md: 20 } }} />} label={isMobile ? "Properties" : "My Properties"} />
+              <Tab icon={<Favorite sx={{ color: '#EF4444', fontSize: { xs: 18, md: 20 } }} />} label={isMobile ? "Saved" : "Saved Properties"} />
             </Tabs>
           </Paper>
 
@@ -418,27 +478,7 @@ export default function ProfilePage() {
                           helperText="Email address cannot be changed."
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Username"
-                          fullWidth
-                          {...register('username')}
-                          error={!!errors.username || usernameStatus === 'taken'}
-                          helperText={
-                            errors.username?.message ||
-                            (usernameStatus === 'checking' && 'Checking availability...') ||
-                            (usernameStatus === 'available' && '✓ Username is available!') ||
-                            (usernameStatus === 'taken' && 'Username is already taken.') ||
-                            'Unique profile URL: /u/username'
-                          }
-                          FormHelperTextProps={{
-                            sx: { color: usernameStatus === 'available' ? 'success.main' : undefined }
-                          }}
-                          InputProps={{
-                            endAdornment: usernameStatus === 'checking' ? <CircularProgress size={20} /> : null
-                          }}
-                        />
-                      </Grid>
+
                       <Grid item xs={12} sm={6}>
                         <TextField
                           label="Phone Number"

@@ -7,6 +7,10 @@ import IconButton from '@mui/material/IconButton';
 import Collapse from '@mui/material/Collapse';
 import Tooltip from '@mui/material/Tooltip';
 import Link from 'next/link';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
 
 // Icons
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -15,6 +19,8 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import ShareIcon from '@mui/icons-material/Share';
 import EditIcon from '@mui/icons-material/Edit';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CloseIcon from '@mui/icons-material/Close';
 import SquareFootIcon from '@mui/icons-material/SquareFoot';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import HomeWorkOutlinedIcon from '@mui/icons-material/HomeWorkOutlined';
@@ -64,6 +70,7 @@ export interface PropertyCardData {
   listing_purpose?: string;
   category_type?: string;
   property_type?: string;
+  video_url?: string | null;
 }
 
 interface PropertyCardProps {
@@ -118,6 +125,106 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
   const { isAuthenticated, user: authUser } = useAuth();
   const [isFavorited, setIsFavorited] = useState(!!property.is_favorited);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+
+  const getEmbedUrl = (url: string) => {
+    let embedUrl = '';
+    try {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let videoId = '';
+        if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+        else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+        else if (url.includes('/shorts/')) videoId = url.split('/shorts/')[1].split('?')[0];
+        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      } 
+      else if (url.includes('facebook.com') || url.includes('fb.watch')) {
+        embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
+      }
+      else if (url.includes('instagram.com')) {
+        let baseUrl = url.split('?')[0];
+        if (!baseUrl.endsWith('/')) baseUrl += '/';
+        embedUrl = `${baseUrl}embed`;
+      }
+    } catch (e) {
+      console.error('Error parsing video URL', e);
+    }
+    return embedUrl;
+  };
+
+  const renderVideoDialog = () => {
+    if (!property.video_url) return null;
+    return (
+      <Dialog
+        open={videoOpen}
+        onClose={(e: any) => {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          setVideoOpen(false);
+        }}
+        maxWidth="md"
+        fullWidth
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden',
+            bgcolor: '#0F172A',
+          }
+        }}
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <Typography variant="h6" fontWeight={700}>Property Video Walkthrough</Typography>
+          <IconButton
+            aria-label="close"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setVideoOpen(false);
+            }}
+            sx={{
+              color: '#94A3B8',
+              '&:hover': { color: '#FFF' }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, bgcolor: '#000' }}>
+          {getEmbedUrl(property.video_url) ? (
+            <Box sx={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+              <iframe
+                src={getEmbedUrl(property.video_url)}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </Box>
+          ) : (
+            <Box sx={{ p: 4, textAlign: 'center', color: '#fff' }}>
+              <Typography mb={2}>Video URL: {property.video_url}</Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                href={property.video_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                Watch Video Externally
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   // Prepare images array for auto slideshow
   const filteredImages = (property.images || []).filter((img): img is string => typeof img === 'string' && img.trim() !== '');
@@ -318,11 +425,20 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
 
           {/* Badges */}
-          <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1 }}>
+          <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1, zIndex: 2 }}>
             <Box sx={{ bgcolor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4 }}>
               <PhotoCameraIcon sx={{ fontSize: 13 }} />
               {photoCount}+ Photos
             </Box>
+            {property.video_url && (
+              <Box 
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVideoOpen(true); }}
+                sx={{ bgcolor: '#EF4444', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4, cursor: 'pointer', '&:hover': { bgcolor: '#DC2626' } }}
+              >
+                <PlayArrowIcon sx={{ fontSize: 13 }} />
+                Video
+              </Box>
+            )}
             {showStatusBadge && property.status && (
               <Box sx={{ bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                 {property.status === 'PUBLISHED' ? 'APPROVED' : property.status.replace('_', ' ')}
@@ -430,6 +546,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             </Box>
           </Box>
         </Box>
+        {renderVideoDialog()}
       </Box>
     );
   }
@@ -506,7 +623,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
 
             {/* Photo count top left */}
-            <Box sx={{ position: 'absolute', top: 6, left: 6, display: 'flex', gap: 1 }}>
+            <Box sx={{ position: 'absolute', top: 6, left: 6, display: 'flex', gap: 1, zIndex: 2 }}>
               <Box
                 sx={{
                   bgcolor: 'rgba(15, 23, 42, 0.75)',
@@ -524,6 +641,15 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 <PhotoCameraIcon sx={{ fontSize: 12 }} />
                 {photoCount}+
               </Box>
+              {property.video_url && (
+                <Box 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVideoOpen(true); }}
+                  sx={{ bgcolor: '#EF4444', color: 'white', px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4, cursor: 'pointer', '&:hover': { bgcolor: '#DC2626' } }}
+                >
+                  <PlayArrowIcon sx={{ fontSize: 12 }} />
+                  Video
+                </Box>
+              )}
               {showStatusBadge && property.status && (
                 <Box sx={{ bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main', color: 'white', px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                   {property.status === 'PUBLISHED' ? 'APPROVED' : property.status.replace('_', ' ')}
@@ -768,7 +894,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
 
             {/* Top Left Badge: Photos count */}
-            <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1 }}>
+            <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1, zIndex: 2 }}>
               <Box
                 sx={{
                   bgcolor: 'rgba(15, 23, 42, 0.75)',
@@ -787,6 +913,15 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 <PhotoCameraIcon sx={{ fontSize: 14 }} />
                 {photoCount}+ Photos
               </Box>
+              {property.video_url && (
+                <Box 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVideoOpen(true); }}
+                  sx={{ bgcolor: '#EF4444', color: 'white', px: 1.2, py: 0.4, borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', '&:hover': { bgcolor: '#DC2626' } }}
+                >
+                  <PlayArrowIcon sx={{ fontSize: 14 }} />
+                  Video
+                </Box>
+              )}
               {showStatusBadge && property.status && (
                 <Box
                   sx={{
@@ -1103,6 +1238,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               </Typography>
             </Box>
           </Box>
+          {renderVideoDialog()}
         </Box>
       </Box>
     </Box>

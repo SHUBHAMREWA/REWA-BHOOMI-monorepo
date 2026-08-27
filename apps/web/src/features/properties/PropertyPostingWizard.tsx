@@ -217,6 +217,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [imageStorageKeys, setImageStorageKeys] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
 
   // Submitting
   const [submitting, setSubmitting] = useState(false);
@@ -384,6 +385,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             });
           }
 
+          if (prop.video_url) setVideoUrl(prop.video_url);
           if (prop.images) {
             setImageUrls(prop.images.map((i: any) => i.url));
             setImageStorageKeys(prop.images.map((i: any) => i.storage_key).filter(Boolean));
@@ -545,6 +547,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         },
         amenityIds: validAmenityIds,
         customAmenities: customAmenities,
+        videoUrl: videoUrl.trim() || undefined,
         imageUrls: imageUrls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0),
         imageStorageKeys: imageStorageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0),
         residentialDetails: category === 'RESIDENTIAL' ? cleanDetailObj(resDetails) : undefined,
@@ -1301,6 +1304,25 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 <Typography variant="caption">Uploading to Cloudflare R2...</Typography>
               </Box>
             )}
+          
+            {/* Property Video */}
+            <Box sx={{ mt: 5 }}>
+              <Typography variant="h6" fontWeight={700} mb={1}>
+                Property Video (Optional)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                Add a YouTube, Facebook, or Instagram video link to showcase your property.
+              </Typography>
+              <TextField
+                fullWidth
+                label="Video URL (e.g., https://youtube.com/watch?v=...)"
+                variant="outlined"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="Paste video link here"
+              />
+            </Box>
+
           </Paper>
         )}
 

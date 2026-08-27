@@ -1,8 +1,10 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 import crypto from 'crypto';
 import sharp from 'sharp';
 import path from 'path';
+import https from 'https';
 
 import { env } from '../../config/env';
 
@@ -12,6 +14,14 @@ const bucketName = env.CLOUDFLARE_R2_BUCKET_NAME || 'rewa-bhoomi-media';
 const publicUrl = env.CLOUDFLARE_R2_PUBLIC_URL || 'http://localhost';
 const endpoint = env.CLOUDFLARE_R2_ENDPOINT || 'https://dummy.r2.cloudflarestorage.com';
 
+// Custom HTTPS agent that forces TLSv1.2 — fixes EPROTO sslv3 handshake
+// failures seen on some Render/Linux environments with Cloudflare R2
+const httpsAgent = new https.Agent({
+  minVersion: 'TLSv1.2',
+  maxVersion: 'TLSv1.3',
+  rejectUnauthorized: true,
+});
+
 const s3 = new S3Client({
   region: 'auto',
   endpoint: endpoint,
@@ -19,7 +29,16 @@ const s3 = new S3Client({
     accessKeyId,
     secretAccessKey,
   },
+  forcePathStyle: false, // Cloudflare R2 uses virtual-hosted style
+  // @ts-ignore — requestChecksumCalculation is valid in @aws-sdk/client-s3 v3.x
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  requestHandler: new NodeHttpHandler({
+    httpsAgent,
+    connectionTimeout: 15_000,
+    requestTimeout: 60_000,
+  }),
 });
+
 
 export const processImage = async (buffer: Buffer): Promise<Buffer> => {
   return sharp(buffer)

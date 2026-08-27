@@ -143,6 +143,7 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         rejection_reason    TEXT,
         published_at        TIMESTAMPTZ,
         custom_amenities    TEXT[] DEFAULT '{}',
+        video_url           VARCHAR(500),
         created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         deleted_at          TIMESTAMPTZ
@@ -160,6 +161,8 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE INDEX idx_properties_deleted_at ON properties(deleted_at) WHERE deleted_at IS NULL;
       CREATE INDEX idx_properties_fts ON properties
         USING GIN(to_tsvector('english', title || ' ' || COALESCE(description, '') || ' ' || city || ' ' || state));
+
+      ALTER TABLE properties ADD COLUMN IF NOT EXISTS video_url VARCHAR(500);
 
       CREATE TABLE property_images (
         id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -1048,6 +1051,39 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
     `,
   },
+  {
+    name: '024_add_video_url_to_properties',
+    sql: `ALTER TABLE properties ADD COLUMN IF NOT EXISTS video_url VARCHAR(500);`
+  },
+  {
+    name: '025_advanced_chat_moderation',
+    sql: `
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      INSERT INTO system_settings (key, value)
+      VALUES ('auto_approve_p2p_chat', '{"enabled": false}'::jsonb)
+      ON CONFLICT (key) DO NOTHING;
+
+      ALTER TABLE conversations
+        ADD COLUMN IF NOT EXISTS type VARCHAR(20) NOT NULL DEFAULT 'SUPPORT',
+        ADD COLUMN IF NOT EXISTS initiator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        ADD COLUMN IF NOT EXISTS recipient_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        ADD COLUMN IF NOT EXISTS is_approved_for_recipient BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+      CREATE INDEX IF NOT EXISTS idx_conversations_type ON conversations(type);
+      CREATE INDEX IF NOT EXISTS idx_conversations_initiator ON conversations(initiator_id);
+      CREATE INDEX IF NOT EXISTS idx_conversations_recipient ON conversations(recipient_id);
+
+      ALTER TABLE messages
+        ADD COLUMN IF NOT EXISTS actual_sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        ADD COLUMN IF NOT EXISTS is_admin_override BOOLEAN NOT NULL DEFAULT FALSE;
+    `
+  }
 ];
 
 // ─── Migration runner ────────────────────────────────────────────────────────────

@@ -178,7 +178,7 @@ export async function listProperties(filters: PropertyFiltersInput, requestingUs
       COALESCE(pl.latitude, p.latitude) AS latitude,
       COALESCE(pl.longitude, p.longitude) AS longitude,
       p.area, p.area_unit,
-      p.bedrooms, p.bathrooms, p.is_popular, p.created_at,
+      p.bedrooms, p.bathrooms, p.is_popular, p.created_at, p.video_url,
       pc.id AS category_id, pc.name AS category_name, pc.slug AS category_slug,
       u.id AS owner_id, u.name AS owner_name, u.avatar_url AS owner_avatar,
       (SELECT url FROM property_images WHERE property_id = p.id ORDER BY sort_order ASC LIMIT 1) AS thumbnail,
@@ -318,10 +318,10 @@ export async function createProperty(
         is_price_negotiable, price_per_sqft, listing_purpose, category_type, property_type,
         listing_type, owner_id, created_by, created_by_role,
         city, state, country, address, pincode, latitude, longitude,
-        status, videos, category_id, custom_amenities,
+        status, videos, video_url, category_id, custom_amenities,
         area, area_unit, bedrooms, bathrooms
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32
       ) RETURNING id, slug`,
       [
         slug, input.title, input.description, input.priceAmount, input.priceAmount, input.priceType ?? 'TOTAL_PRICE', input.billingPeriod ?? null,
@@ -330,7 +330,7 @@ export async function createProperty(
         ownerId, ownerId, createdByRole,
         input.location.city, input.location.state, input.location.country ?? 'India', input.location.address ?? null,
         input.location.pincode ?? null, input.location.latitude ?? null, input.location.longitude ?? null,
-        status, input.videos ?? [], categoryId, input.customAmenities ?? [],
+        status, input.videos ?? [], input.videoUrl ?? null, categoryId, input.customAmenities ?? [],
         area, areaUnit, bedrooms, bathrooms
       ],
     );
@@ -514,6 +514,9 @@ export async function updateProperty(
 
   if (input.customAmenities !== undefined) {
     fields.push(['custom_amenities', input.customAmenities]);
+  }
+  if (input.videoUrl !== undefined) {
+    fields.push(['video_url', input.videoUrl]);
   }
 
   if (input.location) {
@@ -780,7 +783,7 @@ export async function getUserFavorites(userId: string, cursor?: string, limit = 
   const rows = await query<Record<string, unknown>>(
     `SELECT
       p.id, p.slug, p.title, p.description, p.price, p.listing_type, p.city, p.state,
-      p.area, p.area_unit, p.bedrooms, p.bathrooms, p.created_at,
+      p.area, p.area_unit, p.bedrooms, p.bathrooms, p.created_at, p.video_url,
       pc.name AS category_name,
       u.name AS owner_name, u.avatar_url AS owner_avatar,
       (SELECT url FROM property_images WHERE property_id = p.id ORDER BY sort_order LIMIT 1) AS thumbnail,

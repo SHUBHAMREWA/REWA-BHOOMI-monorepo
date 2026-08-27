@@ -20,7 +20,22 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloseIcon from '@mui/icons-material/Close';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import CategoryIcon from '@mui/icons-material/Category';
+import AspectRatioIcon from '@mui/icons-material/AspectRatio';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import HotelIcon from '@mui/icons-material/Hotel';
+import BathtubIcon from '@mui/icons-material/Bathtub';
+import ExploreIcon from '@mui/icons-material/Explore';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import LayersIcon from '@mui/icons-material/Layers';
+import GroupIcon from '@mui/icons-material/Group';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import GrassIcon from '@mui/icons-material/Grass';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/features/auth/AuthContext';
 import { apiPost, apiDelete } from '@/lib/api';
@@ -43,6 +58,7 @@ interface PropertyData {
   title: string;
   description: string;
   price: number;
+  video_url?: string | null;
   created_at?: string;
   listing_type?: string;
   listing_purpose?: string;
@@ -116,6 +132,8 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const [showPhone, setShowPhone] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
     if (property) {
@@ -176,28 +194,171 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const validImages = (property.images || []).filter((img) => img && typeof img.url === 'string' && img.url.trim() !== '');
   const fallbackPlaceholder = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80';
 
-  const imagesList = validImages.length > 0
-    ? validImages
-    : [{ id: 'placeholder', url: fallbackPlaceholder, sort_order: 0 }];
+  // Construct combined media list
+  interface MediaItem {
+    type: 'image' | 'video';
+    url: string;
+    id: string;
+  }
 
-  const activeImageUrl = imagesList[activeImgIdx]?.url || fallbackPlaceholder;
+  const mediaList: MediaItem[] = [];
 
-  const priceFormatted = property.price?.toLocaleString('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
-  }) || '₹ 0';
+  if (property.video_url && property.video_url.trim() !== '') {
+    mediaList.push({
+      type: 'video',
+      url: property.video_url,
+      id: 'video-0'
+    });
+  }
+
+  validImages.forEach((img, idx) => {
+    mediaList.push({
+      type: 'image',
+      url: img.url,
+      id: img.id || `img-${idx}`
+    });
+  });
+
+  if (mediaList.length === 0) {
+    mediaList.push({
+      type: 'image',
+      url: fallbackPlaceholder,
+      id: 'placeholder'
+    });
+  }
+
+  const activeMedia = mediaList[activeImgIdx] || { type: 'image', url: fallbackPlaceholder, id: 'placeholder' };
+
+  // Swipe handlers for mobile touch
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      handleNextImg();
+    } else if (isRightSwipe) {
+      handlePrevImg();
+    }
+  };
+
+  const getEmbedUrl = (url: string) => {
+    let embedUrl = '';
+    try {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let videoId = '';
+        if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+        else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+        else if (url.includes('/shorts/')) videoId = url.split('/shorts/')[1].split('?')[0];
+        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}`;
+      } 
+      else if (url.includes('facebook.com') || url.includes('fb.watch')) {
+        embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&autoplay=1&mute=1`;
+      }
+      else if (url.includes('instagram.com')) {
+        let baseUrl = url.split('?')[0];
+        if (!baseUrl.endsWith('/')) baseUrl += '/';
+        embedUrl = `${baseUrl}embed`;
+      }
+    } catch (e) {
+      console.error('Error parsing video URL', e);
+    }
+    return embedUrl;
+  };
+
+  const renderVideoInGallery = (url: string) => {
+    const embedUrl = getEmbedUrl(url);
+    const isVertical = url.includes('/shorts/') || url.includes('/reel/') || url.includes('instagram.com');
+
+    if (!embedUrl) {
+      return (
+        <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', bgcolor: '#0F172A', color: '#fff', width: '100%' }}>
+          <Typography mb={2}>Video Link is available</Typography>
+          <Button variant="contained" color="primary" href={url} target="_blank" rel="noopener noreferrer">
+            Watch Video
+          </Button>
+        </Box>
+      );
+    }
+
+    const playerWidth = isVertical
+      ? { xs: '180px', sm: '236px', md: '270px' }
+      : '100%';
+
+    return (
+      <Box sx={{ width: playerWidth, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#000', mx: 'auto' }}>
+        <iframe
+          src={embedUrl}
+          style={{ width: '100%', height: '100%', border: 0 }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </Box>
+    );
+  };
+
+  const renderDetailCard = (label: string, value: React.ReactNode, icon?: React.ReactNode) => {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: '#64748B',
+            fontWeight: 650,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            fontSize: '0.72rem',
+            lineHeight: 1.2,
+          }}
+        >
+          {label}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: 700,
+            color: '#0F172A',
+            fontSize: '0.84rem',
+            mt: 0.35,
+            lineHeight: 1.3,
+            wordBreak: 'break-word',
+          }}
+        >
+          {value}
+        </Typography>
+      </Box>
+    );
+  };
+
+  const priceFormatted = property.price 
+    ? Number(property.price).toLocaleString('en-IN', {
+        style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+      }) 
+    : '₹ 0';
 
   const dateFormatted = property.created_at
     ? new Date(property.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
     : 'Recently';
 
   const handlePrevImg = () => {
-    if (imagesList.length <= 1) return;
-    setActiveImgIdx((prev) => (prev - 1 + imagesList.length) % imagesList.length);
+    if (mediaList.length <= 1) return;
+    setActiveImgIdx((prev) => (prev - 1 + mediaList.length) % mediaList.length);
   };
 
   const handleNextImg = () => {
-    if (imagesList.length <= 1) return;
-    setActiveImgIdx((prev) => (prev + 1) % imagesList.length);
+    if (mediaList.length <= 1) return;
+    setActiveImgIdx((prev) => (prev + 1) % mediaList.length);
   };
 
   const handleToggleFavorite = async () => {
@@ -266,15 +427,15 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     <Paper
       elevation={0}
       sx={{
-        p: { xs: 2.5, sm: 3 },
+        p: { xs: 1.5, sm: 3 },
         borderRadius: '8px',
         border: '1px solid #E2E8F0',
         bgcolor: '#FFFFFF',
         ...displayProps,
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-        <Typography variant="h4" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.6rem', sm: '2rem' } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.8 }}>
+        <Typography variant="h4" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
           {priceFormatted}
         </Typography>
 
@@ -293,15 +454,15 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
         fontWeight={600}
         sx={{
           color: '#334155',
-          fontSize: '1rem',
-          lineHeight: 1.45,
-          mb: 2.5,
+          fontSize: { xs: '0.85rem', sm: '1rem' },
+          lineHeight: 1.4,
+          mb: 0.5,
         }}
       >
         {property.title}
       </Typography>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 1.5, borderTop: '1px solid #F1F5F9' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 0.8, borderTop: '1px solid #F1F5F9' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.3 }}>
             <LocationOnIcon sx={{ fontSize: 14, color: '#94A3B8' }} />
@@ -509,7 +670,14 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             {/* 1. Large Image Viewer Box (Click opens Zoom Modal) */}
             <Paper
               elevation={0}
-              onClick={handleOpenModal}
+              onClick={() => {
+                if (activeMedia.type !== 'video') {
+                  handleOpenModal();
+                }
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               sx={{
                 borderRadius: '8px',
                 overflow: 'hidden',
@@ -520,15 +688,17 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 alignItems: 'center',
                 justify: 'center',
                 mb: 1.5,
-                cursor: 'pointer',
+                cursor: activeMedia.type === 'video' ? 'default' : 'pointer',
                 '&:hover .zoom-badge': { opacity: 1, transform: 'scale(1.05)' },
               }}
             >
-              {activeImageUrl ? (
+              {activeMedia.type === 'video' ? (
+                renderVideoInGallery(activeMedia.url)
+              ) : activeMedia.url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={activeImgIdx}
-                  src={activeImageUrl}
+                  src={activeMedia.url}
                   alt={property.title}
                   style={{
                     width: '100%',
@@ -542,36 +712,41 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               )}
 
               {/* Top Right Zoom Hint Badge */}
-              <Box
-                className="zoom-badge"
-                sx={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  bgcolor: 'rgba(15, 23, 42, 0.75)',
-                  backdropFilter: 'blur(4px)',
-                  color: 'white',
-                  px: 1.2,
-                  py: 0.5,
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  opacity: 0.85,
-                  transition: 'all 0.25s ease',
-                  zIndex: 2,
-                }}
-              >
-                <ZoomInIcon sx={{ fontSize: 16 }} />
-                Click to Zoom
-              </Box>
+              {activeMedia.type !== 'video' && (
+                <Box
+                  className="zoom-badge"
+                  sx={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    bgcolor: 'rgba(15, 23, 42, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    color: 'white',
+                    px: 1.2,
+                    py: 0.5,
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    opacity: 0.85,
+                    transition: 'all 0.25s ease',
+                    zIndex: 2,
+                  }}
+                >
+                  <ZoomInIcon sx={{ fontSize: 16 }} />
+                  Click to Zoom
+                </Box>
+              )}
 
               {/* Navigation Left Arrow */}
-              {imagesList.length > 1 && (
+              {mediaList.length > 1 && (
                 <IconButton
-                  onClick={handlePrevImg}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrevImg();
+                  }}
                   sx={{
                     position: 'absolute',
                     left: 12,
@@ -588,9 +763,12 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               )}
 
               {/* Navigation Right Arrow */}
-              {imagesList.length > 1 && (
+              {mediaList.length > 1 && (
                 <IconButton
-                  onClick={handleNextImg}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNextImg();
+                  }}
                   sx={{
                     position: 'absolute',
                     right: 12,
@@ -621,16 +799,16 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   fontWeight: 600,
                 }}
               >
-                {activeImgIdx + 1} / {imagesList.length} Photos
+                {activeImgIdx + 1} / {mediaList.length} {activeMedia.type === 'video' ? 'Video/Photos' : 'Photos'}
               </Box>
             </Paper>
 
             {/* Thumbnails Row */}
-            {imagesList.length > 1 && (
+            {mediaList.length > 1 && (
               <Box sx={{ display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1, mb: 3 }}>
-                {imagesList.map((img, idx) => (
+                {mediaList.map((item, idx) => (
                   <Box
-                    key={img.id || idx}
+                    key={item.id || idx}
                     onClick={() => setActiveImgIdx(idx)}
                     sx={{
                       width: 90,
@@ -643,10 +821,17 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                       opacity: activeImgIdx === idx ? 1 : 0.65,
                       transition: 'all 0.2s ease',
                       '&:hover': { opacity: 1 },
+                      position: 'relative',
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.url} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {item.type === 'video' ? (
+                      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#475569' }}>
+                        <PlayArrowIcon sx={{ fontSize: 24, color: '#fff' }} />
+                      </Box>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.url} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
                   </Box>
                 ))}
               </Box>
@@ -658,59 +843,52 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 Overview & Details
               </Typography>
 
-              <Grid container spacing={{ xs: 2, sm: 2.5 }} sx={{ mb: 1 }}>
-                <Grid item xs={6} sm={4}>
-                  <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Type / Purpose</Typography>
-                  <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{property.listing_purpose || property.listing_type || 'SALE'}</Typography>
-                </Grid>
-                <Grid item xs={6} sm={4}>
-                  <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Category</Typography>
-                  <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{categoryLabel}</Typography>
-                </Grid>
-                {(() => {
-                  const displayArea = property.area || (land && land.total_land_area) || (res && (res.carpet_area || res.built_up_area)) || (comm && (comm.carpet_area || comm.built_up_area));
-                  const displayUnit = property.area_unit || (land && land.area_unit) || 'ft²';
-                  
-                  if (!displayArea) return null;
-                  
-                  return (
-                    <Grid item xs={6} sm={4}>
-                      <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Plot / Built Area</Typography>
-                      <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{displayArea} {displayUnit}</Typography>
-                    </Grid>
-                  );
-                })()}
+               <Grid container spacing={{ xs: 1.5, sm: 2.5 }} sx={{ mb: 1 }}>
+                 <Grid item xs={6} sm={4}>
+                   {renderDetailCard('Type / Purpose', property.listing_purpose || property.listing_type || 'SALE', <LocalOfferIcon sx={{ fontSize: 18 }} />)}
+                 </Grid>
+                 <Grid item xs={6} sm={4}>
+                   {renderDetailCard('Category', categoryLabel, <CategoryIcon sx={{ fontSize: 18 }} />)}
+                 </Grid>
+                 {(() => {
+                   const displayArea = property.area || (land && land.total_land_area) || (res && (res.carpet_area || res.built_up_area)) || (comm && (comm.carpet_area || comm.built_up_area));
+                   const displayUnit = property.area_unit || (land && land.area_unit) || 'ft²';
+                   
+                   if (!displayArea) return null;
+                   
+                   return (
+                     <Grid item xs={6} sm={4}>
+                       {renderDetailCard('Plot / Built Area', `${displayArea} ${displayUnit}`, <AspectRatioIcon sx={{ fontSize: 18 }} />)}
+                     </Grid>
+                   );
+                 })()}
 
                 {/* 🌾 Land Specific Details */}
                 {land && (
                   <>
                     {(land.plot_length || land.plot_width) && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Dimensions (L x W)</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>
-                          {land.plot_length || '?'} x {land.plot_width || '?'}
-                        </Typography>
+                        {renderDetailCard('Dimensions (L x W)', `${land.plot_length || '?'} x ${land.plot_width || '?'}`, <StraightenIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(property.property_type || '') && (
                       <>
                         {land.soil_type && (
                           <Grid item xs={6} sm={4}>
-                            <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Soil Type</Typography>
-                            <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{land.soil_type}</Typography>
+                            {renderDetailCard('Soil Type', land.soil_type, <GrassIcon sx={{ fontSize: 18 }} />)}
                           </Grid>
                         )}
                         {land.current_crop && (
                           <Grid item xs={6} sm={4}>
-                            <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Current Crop</Typography>
-                            <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{land.current_crop}</Typography>
+                            {renderDetailCard('Current Crop', land.current_crop, <GrassIcon sx={{ fontSize: 18 }} />)}
                           </Grid>
                         )}
                         <Grid item xs={6} sm={4}>
-                          <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Irrigation Facility</Typography>
-                          <Typography fontWeight={700} color={land.irrigation_available ? '#16A34A' : '#DC2626'} sx={{ mt: 0.3 }}>
-                            {land.irrigation_available ? 'Available' : 'Not Available'}
-                          </Typography>
+                          {renderDetailCard(
+                            'Irrigation Facility',
+                            land.irrigation_available ? 'Available' : 'Not Available',
+                            <WaterDropIcon sx={{ fontSize: 18, color: land.irrigation_available ? '#16A34A' : '#DC2626' }} />
+                          )}
                         </Grid>
                       </>
                     )}
@@ -722,66 +900,62 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <>
                     {res.bedrooms && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Bedrooms</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.bedrooms} BHK</Typography>
+                        {renderDetailCard('Bedrooms', `${res.bedrooms} BHK`, <HotelIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {res.bathrooms && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Bathrooms</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.bathrooms}</Typography>
+                        {renderDetailCard('Bathrooms', res.bathrooms, <BathtubIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {res.carpet_area && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Carpet Area</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.carpet_area} sqft</Typography>
+                        {renderDetailCard('Carpet Area', `${res.carpet_area} sqft`, <AspectRatioIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {res.built_up_area && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Built-up Area</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.built_up_area} sqft</Typography>
+                        {renderDetailCard('Built-up Area', `${res.built_up_area} sqft`, <AspectRatioIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {res.furnished_status && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Furnished</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.furnished_status.replace('_', ' ')}</Typography>
+                        {renderDetailCard('Furnished', res.furnished_status.replace('_', ' '), <LayersIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {res.facing && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Facing (प्रॉपर्टी की दिशा)</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>
-                          {(() => {
+                        {renderDetailCard(
+                          'Facing',
+                          (() => {
                             const map: Record<string, string> = {
                               'EAST': 'East (पूर्व)',
                               'WEST': 'West (पश्चिम)',
                               'NORTH': 'North (उत्तर)',
                               'SOUTH': 'South (दक्षिण)',
-                              'NORTH_EAST': 'North-East (उत्तर-पूर्व)',
-                              'NORTH_WEST': 'North-West (उत्तर-पश्चिम)',
-                              'SOUTH_EAST': 'South-East (दक्षिण-पूर्व)',
-                              'SOUTH_WEST': 'South-West (दक्षिण-पश्चिम)'
+                              'NORTH_EAST': 'North-East',
+                              'NORTH_WEST': 'North-West',
+                              'SOUTH_EAST': 'South-East',
+                              'SOUTH_WEST': 'South-West'
                             };
                             return map[String(res.facing).toUpperCase()] || res.facing;
-                          })()}
-                        </Typography>
+                          })(),
+                          <ExploreIcon sx={{ fontSize: 18 }} />
+                        )}
                       </Grid>
                     )}
                     {res.possession_status && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Possession</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{res.possession_status}</Typography>
+                        {renderDetailCard('Possession', res.possession_status, <EventAvailableIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {property.listing_purpose === 'RENT' && res.tenant_preference && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Tenant Preference (किरायेदार की प्राथमिकता)</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>
-                          {res.tenant_preference === 'ANY' ? 'Any (कोई भी)' : res.tenant_preference === 'BOTH' ? 'Both Allowed (दोनों)' : res.tenant_preference === 'BACHELORS' ? 'Bachelors Allowed (बैचलर्स)' : 'Family Allowed (परिवार)'}
-                        </Typography>
+                        {renderDetailCard(
+                          'Tenant Preference',
+                          res.tenant_preference === 'ANY' ? 'Any' : res.tenant_preference === 'BOTH' ? 'Both' : res.tenant_preference === 'BACHELORS' ? 'Bachelors' : 'Family',
+                          <GroupIcon sx={{ fontSize: 18 }} />
+                        )}
                       </Grid>
                     )}
                   </>
@@ -792,38 +966,32 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <>
                     {comm.carpet_area && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Carpet Area</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.carpet_area} sqft</Typography>
+                        {renderDetailCard('Carpet Area', `${comm.carpet_area} sqft`, <AspectRatioIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {comm.built_up_area && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Built-up Area</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.built_up_area} sqft</Typography>
+                        {renderDetailCard('Built-up Area', `${comm.built_up_area} sqft`, <AspectRatioIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {comm.frontage && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Width (ft)</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.frontage}</Typography>
+                        {renderDetailCard('Width', `${comm.frontage} ft`, <StraightenIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {comm.depth && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Length (ft)</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.depth}</Typography>
+                        {renderDetailCard('Length', `${comm.depth} ft`, <StraightenIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {comm.washrooms && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Washrooms</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.washrooms}</Typography>
+                        {renderDetailCard('Washrooms', comm.washrooms, <BathtubIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {comm.floor !== undefined && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Floor</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{comm.floor} {comm.total_floors ? `out of ${comm.total_floors}` : ''}</Typography>
+                        {renderDetailCard('Floor', `${comm.floor} ${comm.total_floors ? `(of ${comm.total_floors})` : ''}`, <LayersIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                   </>
@@ -834,27 +1002,25 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <>
                     {pg.pg_name && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>PG Name</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{pg.pg_name}</Typography>
+                        {renderDetailCard('PG Name', pg.pg_name, <HotelIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {pg.room_type && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Room Type</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{pg.room_type.replace('_', ' ')}</Typography>
+                        {renderDetailCard('Room Type', pg.room_type.replace('_', ' '), <HotelIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {pg.gender_preference && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Gender</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{pg.gender_preference}</Typography>
+                        {renderDetailCard('Gender', pg.gender_preference, <GroupIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     <Grid item xs={6} sm={4}>
-                      <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Food Available</Typography>
-                      <Typography fontWeight={700} color={pg.food_available ? '#16A34A' : '#DC2626'} sx={{ mt: 0.3 }}>
-                        {pg.food_available ? '✅ Yes' : '❌ No'}
-                      </Typography>
+                      {renderDetailCard(
+                        'Food Available',
+                        pg.food_available ? 'Yes' : 'No',
+                        <CheckCircleIcon sx={{ fontSize: 18, color: pg.food_available ? '#16A34A' : '#DC2626' }} />
+                      )}
                     </Grid>
                   </>
                 )}
@@ -864,20 +1030,17 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <>
                     {lease.lease_duration_years && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Lease Duration</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{lease.lease_duration_years} Years</Typography>
+                        {renderDetailCard('Lease Duration', `${lease.lease_duration_years} Years`, <AccessTimeIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {lease.lock_in_period_months && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Lock-in Period</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{lease.lock_in_period_months} Months</Typography>
+                        {renderDetailCard('Lock-in Period', `${lease.lock_in_period_months} Months`, <AccessTimeIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {lease.security_deposit && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Security Deposit</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>₹{Number(lease.security_deposit).toLocaleString('en-IN')}</Typography>
+                        {renderDetailCard('Security Deposit', `₹${Number(lease.security_deposit).toLocaleString('en-IN')}`, <AccountBalanceWalletIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                   </>
@@ -888,21 +1051,20 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <>
                     {hall.hall_type && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Hall Type</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{hall.hall_type}</Typography>
+                        {renderDetailCard('Hall Type', hall.hall_type, <LayersIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {hall.capacity_people && (
                       <Grid item xs={6} sm={4}>
-                        <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Capacity</Typography>
-                        <Typography fontWeight={700} color="#0F172A" sx={{ mt: 0.3 }}>{hall.capacity_people} People</Typography>
+                        {renderDetailCard('Capacity', `${hall.capacity_people} People`, <GroupIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     <Grid item xs={6} sm={4}>
-                      <Typography color="text.secondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>AC / Non-AC</Typography>
-                      <Typography fontWeight={700} color={hall.ac_available ? '#16A34A' : '#DC2626'} sx={{ mt: 0.3 }}>
-                        {hall.ac_available ? '❄️ AC Available' : '🔥 Non-AC'}
-                      </Typography>
+                      {renderDetailCard(
+                        'AC / Non-AC',
+                        hall.ac_available ? 'AC Available' : 'Non-AC',
+                        <CheckCircleIcon sx={{ fontSize: 18, color: hall.ac_available ? '#16A34A' : '#DC2626' }} />
+                      )}
                     </Grid>
                   </>
                 )}
@@ -1001,6 +1163,30 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
                   {property.owner_username && <ChevronRightIcon sx={{ color: '#94A3B8' }} />}
                 </Box>
+
+                {/* Chat Action Button */}
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<ChatBubbleOutlineIcon />}
+                  onClick={() => {
+                    if (property.owner_id) {
+                      window.dispatchEvent(new CustomEvent('open-chat', { detail: { userId: property.owner_id } }));
+                    }
+                  }}
+                  sx={{
+                    mt: 2.5,
+                    bgcolor: '#1B4FD8',
+                    color: '#FFFFFF',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    borderRadius: 2,
+                    py: 1.1,
+                    '&:hover': { bgcolor: '#1640B0' },
+                  }}
+                >
+                  Chat with Owner
+                </Button>
               </Paper>
 
               {/* Embedded Google Map */}
@@ -1092,7 +1278,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             }}
           >
             <Typography variant="body2" sx={{ color: 'white', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-              {activeImgIdx + 1} / {imagesList.length} Photos
+              {activeImgIdx + 1} / {mediaList.length} Photos
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1136,7 +1322,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={activeImageUrl}
+              src={activeMedia.url}
               alt={property.title}
               style={{
                 maxWidth: '100%',
@@ -1150,7 +1336,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             />
 
             {/* Left Nav Arrow */}
-            {imagesList.length > 1 && (
+            {mediaList.length > 1 && (
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1173,7 +1359,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             )}
 
             {/* Right Nav Arrow */}
-            {imagesList.length > 1 && (
+            {mediaList.length > 1 && (
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();

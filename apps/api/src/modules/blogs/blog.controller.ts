@@ -694,14 +694,47 @@ export const deleteBlog = async (req: Request, res: Response) => {
 };
 
 // ─── Categories CRUD ──────────────────────────────────────────────────────────
+
+/** Default blog categories — seeded automatically if table is empty */
+const DEFAULT_BLOG_CATEGORIES = [
+  { name: 'Buying Guide',    slug: 'buying-guide' },
+  { name: 'Selling Tips',    slug: 'selling-tips' },
+  { name: 'Market Updates',  slug: 'market-updates' },
+  { name: 'Legal & Finance', slug: 'legal-finance' },
+  { name: 'Interior',        slug: 'interior' },
+  { name: 'News',            slug: 'news' },
+  { name: 'Investment',      slug: 'investment' },
+  { name: 'Rewa Updates',    slug: 'rewa-updates' },
+];
+
 export const listBlogCategories = async (req: Request, res: Response) => {
-  const categories = await query<any>(
+  let categories = await query<any>(
     `SELECT id, name, slug, description, seo_title as "seoTitle", seo_description as "seoDescription",
             created_at as "createdAt", updated_at as "updatedAt"
      FROM blog_categories ORDER BY name ASC`
   );
+
+  // Auto-seed default categories if table is empty (handles fresh production DBs)
+  if (categories.length === 0) {
+    for (const cat of DEFAULT_BLOG_CATEGORIES) {
+      await query(
+        `INSERT INTO blog_categories (id, name, slug)
+         VALUES (uuid_generate_v4(), $1, $2)
+         ON CONFLICT (slug) DO NOTHING`,
+        [cat.name, cat.slug]
+      );
+    }
+    // Fetch again after seeding
+    categories = await query<any>(
+      `SELECT id, name, slug, description, seo_title as "seoTitle", seo_description as "seoDescription",
+              created_at as "createdAt", updated_at as "updatedAt"
+       FROM blog_categories ORDER BY name ASC`
+    );
+  }
+
   res.json({ success: true, data: categories });
 };
+
 
 export const createBlogCategory = async (req: Request, res: Response) => {
   const validation = CreateBlogCategorySchema.safeParse(req.body);
