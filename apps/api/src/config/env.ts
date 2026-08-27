@@ -55,6 +55,11 @@ const EnvSchema = z.object({
   TURN_SERVER_URL: z.string().optional(),
   TURN_USERNAME: z.string().optional(),
   TURN_PASSWORD: z.string().optional(),
+
+  // Web Push (VAPID)
+  VAPID_PUBLIC_KEY: z.string().optional().default('BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIhbQFLXYp5Nksh8U'),
+  VAPID_PRIVATE_KEY: z.string().optional().default('UUxI2qszcqMkJ2nL1n9f7U_U11s7e9e5y8H0r_q2p3o'),
+  VAPID_SUBJECT: z.string().default('mailto:support@rewabhoomi.com'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

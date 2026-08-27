@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Container, Typography, Avatar, Grid, Paper, CircularProgress, Chip } from '@mui/material';
-import { Person, CalendarToday } from '@mui/icons-material';
+import { Box, Container, Typography, Avatar, Grid, Paper, CircularProgress, Chip, Button } from '@mui/material';
+import { Person, CalendarToday, Chat } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { apiClient } from '@/lib/api';
 import PropertyCard from '@/features/properties/PropertyCard';
@@ -90,7 +90,7 @@ export default function PublicProfilePage({ username }: PublicProfilePageProps) 
               </Typography>
             )}
             
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'center', md: 'flex-start' }, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'center', md: 'flex-start' }, alignItems: 'center', flexWrap: 'wrap' }}>
               <Chip 
                 icon={<CalendarToday sx={{ fontSize: 16 }} />} 
                 label={`Joined ${format(new Date(user.createdAt || (user as any).created_at || new Date()), 'MMMM yyyy')}`}
@@ -104,6 +104,31 @@ export default function PublicProfilePage({ username }: PublicProfilePageProps) 
                 size="small"
                 sx={{ borderRadius: 2, fontWeight: 600 }}
               />
+              {authUser?.id !== user.id && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<Chat sx={{ fontSize: 16 }} />}
+                  onClick={() => {
+                    if (isAdmin) {
+                      window.location.href = `/admin/chat?userId=${user.id}`;
+                    } else {
+                      window.dispatchEvent(new CustomEvent('open-chat', { detail: { userId: user.id } }));
+                    }
+                  }}
+                  sx={{
+                    bgcolor: '#1B4FD8',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    borderRadius: 2,
+                    px: 2,
+                    py: 0.6,
+                    '&:hover': { bgcolor: '#1640B0' }
+                  }}
+                >
+                  Chat with {user.name.split(' ')[0]}
+                </Button>
+              )}
             </Box>
           </Box>
         </Paper>
