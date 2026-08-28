@@ -17,46 +17,68 @@ export const listConversations = async (req: Request, res: Response) => {
               m.content as last_message, m.created_at as last_message_at,
               u_init.name as initiator_name, u_init.email as initiator_email, u_init.avatar_url as initiator_avatar,
               u_recip.name as recipient_name, u_recip.email as recipient_email, u_recip.avatar_url as recipient_avatar,
-              COALESCE(u_init.name, u_recip.name, 'Support User') as user_name,
-              COALESCE(u_init.email, u_recip.email) as user_email,
+              COALESCE(u_init.name, u_recip.name, u_msg.name, 'Support User') as user_name,
+              COALESCE(u_init.email, u_recip.email, u_msg.email) as user_email,
               (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND is_read = false) as unread_count
        FROM conversations c
        LEFT JOIN users u_init ON u_init.id = c.initiator_id
        LEFT JOIN users u_recip ON u_recip.id = c.recipient_id
-       LEFT JOIN messages m ON m.conversation_id = c.id 
-            AND m.id = (SELECT id FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1)
+       LEFT JOIN LATERAL (
+         SELECT u.name, u.email
+         FROM messages msg
+         JOIN users u ON u.id = msg.sender_id
+         WHERE msg.conversation_id = c.id AND u.id != $1
+         ORDER BY msg.created_at DESC
+         LIMIT 1
+       ) u_msg ON true
+       LEFT JOIN LATERAL (
+         SELECT content, created_at
+         FROM messages
+         WHERE conversation_id = c.id
+         ORDER BY created_at DESC
+         LIMIT 1
+       ) m ON true
        ORDER BY COALESCE(m.created_at, c.created_at) DESC`,
       [userId]
     );
   } else {
     conversations = await query(
-      `SELECT c.id, c.type, c.initiator_id, c.recipient_id, c.is_approved_for_recipient, c.created_at,
-              m.content as last_message, m.created_at as last_message_at,
-              CASE 
-                WHEN c.type = 'SUPPORT' THEN 'Rewa Bhoomi Support'
-                WHEN c.initiator_id = $1 THEN COALESCE(u_recip.name, 'User')
-                ELSE COALESCE(u_init.name, 'User')
-              END as other_user_name,
-              CASE 
-                WHEN c.type = 'SUPPORT' THEN NULL
-                WHEN c.initiator_id = $1 THEN u_recip.avatar_url
-                ELSE u_init.avatar_url
-              END as other_user_avatar,
-              CASE 
-                WHEN c.type = 'SUPPORT' THEN 'support@rewabhoomi.com'
-                WHEN c.initiator_id = $1 THEN u_recip.email
-                ELSE u_init.email
-              END as other_user_email,
-              (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND is_read = false) as unread_count
-       FROM conversations c
-       JOIN conversation_members cm ON cm.conversation_id = c.id
-       LEFT JOIN users u_init ON u_init.id = c.initiator_id
-       LEFT JOIN users u_recip ON u_recip.id = c.recipient_id
-       LEFT JOIN messages m ON m.conversation_id = c.id 
-            AND m.id = (SELECT id FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1)
-       WHERE cm.user_id = $1
-         AND (c.type = 'SUPPORT' OR c.initiator_id = $1 OR c.is_approved_for_recipient = true)
-       ORDER BY COALESCE(m.created_at, c.created_at) DESC`,
+      `SELECT * FROM (
+        SELECT DISTINCT ON (c.id)
+               c.id, c.type, c.initiator_id, c.recipient_id, c.is_approved_for_recipient, c.created_at,
+               m.content as last_message, m.created_at as last_message_at,
+               CASE 
+                 WHEN c.type = 'SUPPORT' THEN 'Rewa Bhoomi Support'
+                 WHEN c.initiator_id = $1 THEN COALESCE(u_recip.name, 'User')
+                 ELSE COALESCE(u_init.name, 'User')
+               END as other_user_name,
+               CASE 
+                 WHEN c.type = 'SUPPORT' THEN NULL
+                 WHEN c.initiator_id = $1 THEN u_recip.avatar_url
+                 ELSE u_init.avatar_url
+               END as other_user_avatar,
+               CASE 
+                 WHEN c.type = 'SUPPORT' THEN 'support@rewabhoomi.com'
+                 WHEN c.initiator_id = $1 THEN u_recip.email
+                 ELSE u_init.email
+               END as other_user_email,
+               (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND is_read = false) as unread_count
+        FROM conversations c
+        LEFT JOIN conversation_members cm ON cm.conversation_id = c.id
+        LEFT JOIN users u_init ON u_init.id = c.initiator_id
+        LEFT JOIN users u_recip ON u_recip.id = c.recipient_id
+        LEFT JOIN LATERAL (
+          SELECT content, created_at
+          FROM messages
+          WHERE conversation_id = c.id
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) m ON true
+        WHERE (cm.user_id = $1 OR c.initiator_id = $1 OR c.recipient_id = $1)
+          AND (c.type = 'SUPPORT' OR c.initiator_id = $1 OR c.is_approved_for_recipient = true)
+        ORDER BY c.id
+      ) sub
+      ORDER BY COALESCE(last_message_at, created_at) DESC`,
       [userId]
     );
   }
@@ -84,10 +106,15 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
       // User is chatting with platform support
       const existingSupport = await query(
         `SELECT c.id FROM conversations c
-         WHERE c.type = 'SUPPORT' AND c.initiator_id = $1 LIMIT 1`,
+         LEFT JOIN conversation_members cm ON cm.conversation_id = c.id
+         WHERE c.type = 'SUPPORT' AND (c.initiator_id = $1 OR cm.user_id = $1) LIMIT 1`,
         [userId]
       );
       if (existingSupport.length > 0) {
+        await query(
+          `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [existingSupport[0].id, userId]
+        );
         return res.json({ success: true, data: { id: existingSupport[0].id } });
       }
 
@@ -97,7 +124,7 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
         [userId]
       );
       await query(
-        `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2)`,
+        `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
         [newSupport.id, userId]
       );
       return res.status(201).json({ success: true, data: { id: newSupport.id } });
@@ -107,10 +134,15 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
       // Admin is initiating chat with a regular user -> Find or create the user's SUPPORT conversation
       const existingSupport = await query(
         `SELECT c.id FROM conversations c
-         WHERE c.type = 'SUPPORT' AND c.initiator_id = $1 LIMIT 1`,
+         LEFT JOIN conversation_members cm ON cm.conversation_id = c.id
+         WHERE c.type = 'SUPPORT' AND (c.initiator_id = $1 OR cm.user_id = $1) LIMIT 1`,
         [targetUserId]
       );
       if (existingSupport.length > 0) {
+        await query(
+          `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [existingSupport[0].id, targetUserId]
+        );
         return res.json({ success: true, data: { id: existingSupport[0].id } });
       }
 
@@ -120,7 +152,7 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
         [targetUserId]
       );
       await query(
-        `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2)`,
+        `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
         [newSupport.id, targetUserId]
       );
       return res.status(201).json({ success: true, data: { id: newSupport.id } });
@@ -141,6 +173,10 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
     );
 
     if (existing.length > 0) {
+      await query(
+        `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2), ($1, $3) ON CONFLICT DO NOTHING`,
+        [existing[0].id, initiatorId, recipientId]
+      );
       return res.json({ success: true, data: { id: existing[0].id } });
     }
 
@@ -169,12 +205,16 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
   // Case 2: Support chat (Default when no targetUserId provided)
   const existingConv = await query(
     `SELECT c.id FROM conversations c
-     JOIN conversation_members cm ON cm.conversation_id = c.id
-     WHERE cm.user_id = $1 AND c.type = 'SUPPORT' LIMIT 1`,
+     LEFT JOIN conversation_members cm ON cm.conversation_id = c.id
+     WHERE c.type = 'SUPPORT' AND (c.initiator_id = $1 OR cm.user_id = $1) LIMIT 1`,
     [userId]
   );
 
   if (existingConv.length > 0) {
+    await query(
+      `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [existingConv[0].id, userId]
+    );
     return res.json({ success: true, data: { id: existingConv[0].id } });
   }
 
@@ -185,7 +225,7 @@ export const getOrCreateConversation = async (req: Request, res: Response) => {
   );
 
   await query(
-    `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2)`,
+    `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [newConv.id, userId]
   );
 

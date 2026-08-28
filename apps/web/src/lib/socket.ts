@@ -14,8 +14,11 @@ export const initSocket = (token: string): Socket => {
     auth: {
       token
     },
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     autoConnect: true,
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
   });
 
   return socket;
