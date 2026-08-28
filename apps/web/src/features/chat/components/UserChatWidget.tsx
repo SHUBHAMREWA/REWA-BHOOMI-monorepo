@@ -172,9 +172,8 @@ export default function UserChatWidget() {
       });
       if (isOpen && activeView === 'CHAT') {
         markAsReadMutation.mutate();
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
       }
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     };
 
     const handleMessagesRead = () => {

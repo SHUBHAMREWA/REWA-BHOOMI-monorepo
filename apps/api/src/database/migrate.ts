@@ -1096,6 +1096,30 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       )
       WHERE c.type = 'SUPPORT' AND c.initiator_id IS NULL;
     `
+  },
+  {
+    name: '027_sync_all_conversation_members',
+    sql: `
+      -- Ensure all SUPPORT conversations have their initiator in conversation_members
+      INSERT INTO conversation_members (conversation_id, user_id)
+      SELECT c.id, c.initiator_id
+      FROM conversations c
+      WHERE c.initiator_id IS NOT NULL
+      ON CONFLICT DO NOTHING;
+
+      -- Ensure all DIRECT conversations have both initiator and recipient in conversation_members
+      INSERT INTO conversation_members (conversation_id, user_id)
+      SELECT c.id, c.initiator_id
+      FROM conversations c
+      WHERE c.type = 'DIRECT' AND c.initiator_id IS NOT NULL
+      ON CONFLICT DO NOTHING;
+
+      INSERT INTO conversation_members (conversation_id, user_id)
+      SELECT c.id, c.recipient_id
+      FROM conversations c
+      WHERE c.type = 'DIRECT' AND c.recipient_id IS NOT NULL
+      ON CONFLICT DO NOTHING;
+    `
   }
 ];
 

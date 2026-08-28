@@ -56,7 +56,8 @@ export const useConversations = (enabled = true) => {
     },
     enabled,
     retry: 2,
-    staleTime: 30_000,
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -68,6 +69,8 @@ export const useMessages = (conversationId?: string) => {
       return await apiGet<Message[]>(`/chat/${conversationId}/messages`);
     },
     enabled: !!conversationId,
+    staleTime: 2000,
+    refetchOnWindowFocus: true,
   });
 };
 
