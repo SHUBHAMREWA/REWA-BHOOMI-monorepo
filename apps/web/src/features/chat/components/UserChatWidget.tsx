@@ -565,9 +565,13 @@ export default function UserChatWidget() {
           color="primary"
           sx={{ 
             position: 'fixed', 
-            bottom: { xs: 80, sm: 24 }, 
-            right: { xs: 16, sm: 24 }, 
+            bottom: { xs: 74, md: 28 }, 
+            right: { xs: 14, md: 28 }, 
+            width: { xs: 40, md: 52 },
+            height: { xs: 40, md: 52 },
+            minHeight: 'unset',
             zIndex: 1000,
+            boxShadow: '0 4px 14px rgba(27, 79, 216, 0.4)',
             animation: unreadCount > 0 ? 'pulseBlink 2s ease-in-out infinite' : 'none',
             '@keyframes pulseBlink': {
               '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(27, 79, 216, 0.7)' },
@@ -587,9 +591,10 @@ export default function UserChatWidget() {
           }}
         >
           <Badge badgeContent={unreadCount} color="error" max={99}>
-            <ChatIcon />
+            <ChatIcon sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />
           </Badge>
         </Fab>
+
       </Fade>
 
       {isOpen && (

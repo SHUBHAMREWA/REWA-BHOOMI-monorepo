@@ -5,15 +5,41 @@ import { BadRequestError } from '../../errors/AppError';
 import { env } from '../../config/env';
 
 export const uploadMediaHandler = async (req: Request, res: Response) => {
-  if (!req.file) {
-    throw new BadRequestError('No file provided');
+  let fileBuffer: Buffer;
+  let originalName = 'upload.jpg';
+
+  if (req.file) {
+    fileBuffer = req.file.buffer;
+    originalName = req.file.originalname;
+  } else if (req.body.imageUrl) {
+    const imageUrlStr = String(req.body.imageUrl).trim();
+    if (imageUrlStr.startsWith('data:image/')) {
+      const base64Data = imageUrlStr.split(',')[1];
+      fileBuffer = Buffer.from(base64Data, 'base64');
+      originalName = 'dragged-image.png';
+    } else if (imageUrlStr.startsWith('http://') || imageUrlStr.startsWith('https://')) {
+      const response = await fetch(imageUrlStr);
+      if (!response.ok) {
+        throw new BadRequestError(`Failed to download dragged image (${response.statusText})`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      fileBuffer = Buffer.from(arrayBuffer);
+      const urlParts = imageUrlStr.split('/');
+      originalName = urlParts[urlParts.length - 1].split('?')[0] || 'dragged-image.jpg';
+    } else {
+      throw new BadRequestError('Invalid image URL format');
+    }
+  } else {
+    throw new BadRequestError('No file or imageUrl provided');
   }
 
+
   // 1. Process and compress the image
-  const processedBuffer = await processImage(req.file.buffer);
+  const processedBuffer = await processImage(fileBuffer);
 
   // 2. Generate unique key
-  const fileName = generateUniqueFileName(req.file.originalname);
+  const fileName = generateUniqueFileName(originalName);
+
   const key = `uploads/${new Date().getFullYear()}/${new Date().getMonth() + 1}/${fileName}`;
 
   // 3. Upload to Cloudflare R2

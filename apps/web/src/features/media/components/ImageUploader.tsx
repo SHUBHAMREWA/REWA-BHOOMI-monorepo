@@ -127,20 +127,37 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, l
     if (imageUrl) {
       try {
         setIsCompressing(true);
-        const res = await fetch(imageUrl);
-        if (!res.ok) throw new Error('Failed to fetch image');
-        const blob = await res.blob();
-        if (!blob.type.startsWith('image/')) throw new Error('Not an image');
-        
-        const file = new File([blob], 'dragged-image.jpg', { type: blob.type });
+        // First try client side fetch & canvas compression
+        try {
+          const res = await fetch(imageUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            if (blob.type.startsWith('image/')) {
+              const file = new File([blob], 'dragged-image.jpg', { type: blob.type });
+              setIsCompressing(false);
+              await processFile(file);
+              return;
+            }
+          }
+        } catch {
+          // If client fetch is blocked by CORS, proceed to direct server-side download & WebP compression
+        }
+
+        // Server-side download + WebP conversion + Cloudflare R2 upload
+        const data = await uploadMedia({ imageUrl });
         setIsCompressing(false);
-        await processFile(file);
+        if (data && data.url) {
+          onChange(data.url);
+          toast.success('Image imported, converted to WebP, and uploaded to Cloudflare R2!');
+        }
       } catch (err) {
         setIsCompressing(false);
-        toast.error('CORS blocked cross-tab image drag. Please save it to your PC first.');
+        console.error('Cross-tab import failed:', err);
+        toast.error('Failed to import image from dragged source.');
       }
     }
   };
+
 
   const handleRemove = async () => {
     if (!value) return;

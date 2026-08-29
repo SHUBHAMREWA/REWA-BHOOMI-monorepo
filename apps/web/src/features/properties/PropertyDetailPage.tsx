@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, Container, Grid, Typography, Button, Chip, Divider, Avatar, Paper, Breadcrumbs, IconButton, Dialog, Alert, CircularProgress, Stack } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -139,6 +139,17 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const [showPhone, setShowPhone] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPinching, setIsPinching] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const pinchStartDistanceRef = useRef<number | null>(null);
+  const initialScaleRef = useRef<number>(1);
+  const modalTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const initialPanOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const mouseDragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastTapRef = useRef<number>(0);
+
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -173,29 +184,43 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     }
   };
 
-  const handleOpenModal = () => {
+  const resetZoomAndPan = () => {
     setZoomScale(1);
+    setPanOffset({ x: 0, y: 0 });
+    setIsPinching(false);
+    setIsDragging(false);
+    pinchStartDistanceRef.current = null;
+    modalTouchStartRef.current = null;
+    mouseDragStartRef.current = null;
+  };
+
+  const handleOpenModal = () => {
+    resetZoomAndPan();
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setZoomScale(1);
+    resetZoomAndPan();
   };
 
   const handleZoomIn = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setZoomScale((prev) => Math.min(prev + 0.5, 3));
+    setZoomScale((prev) => Math.min(prev + 0.5, 4));
   };
 
   const handleZoomOut = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setZoomScale((prev) => Math.max(prev - 0.5, 0.5));
+    setZoomScale((prev) => {
+      const next = Math.max(prev - 0.5, 1);
+      if (next === 1) setPanOffset({ x: 0, y: 0 });
+      return next;
+    });
   };
 
-  const handleResetZoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setZoomScale(1);
+  const handleResetZoom = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    resetZoomAndPan();
   };
 
   const validImages = (property.images || []).filter((img) => img && typeof img.url === 'string' && img.url.trim() !== '');
@@ -257,6 +282,131 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
       handleNextImg();
     } else if (isRightSwipe) {
       handlePrevImg();
+    }
+  };
+
+  // Lightbox Modal: 2-Finger Pinch Zoom & Pan handlers
+  const getTouchDistance = (touches: React.TouchList): number => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const handleModalTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // 2-Finger Pinch Zoom Start
+      const dist = getTouchDistance(e.touches);
+      pinchStartDistanceRef.current = dist;
+      initialScaleRef.current = zoomScale;
+      setIsPinching(true);
+    } else if (e.touches.length === 1) {
+      // 1-Finger Touch Start (Pan or Swipe or Double Tap)
+      const touch = e.touches[0];
+      modalTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      initialPanOffsetRef.current = { ...panOffset };
+
+      // Double-Tap to Toggle Zoom
+      const now = Date.now();
+      if (now - lastTapRef.current < 300) {
+        if (zoomScale > 1) {
+          resetZoomAndPan();
+        } else {
+          setZoomScale(2.2);
+        }
+      }
+      lastTapRef.current = now;
+    }
+  };
+
+  const handleModalTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDistanceRef.current && pinchStartDistanceRef.current > 0) {
+      // 2-Finger Pinch Zooming
+      const currentDist = getTouchDistance(e.touches);
+      const ratio = currentDist / pinchStartDistanceRef.current;
+      const newScale = Math.min(Math.max(initialScaleRef.current * ratio, 0.8), 4.5);
+      setZoomScale(newScale);
+    } else if (e.touches.length === 1 && modalTouchStartRef.current) {
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - modalTouchStartRef.current.x;
+      const deltaY = touch.clientY - modalTouchStartRef.current.y;
+
+      if (zoomScale > 1.05) {
+        // Pan image when zoomed in
+        setPanOffset({
+          x: initialPanOffsetRef.current.x + deltaX,
+          y: initialPanOffsetRef.current.y + deltaY,
+        });
+      }
+    }
+  };
+
+  const handleModalTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchStartDistanceRef.current = null;
+      setIsPinching(false);
+      // Snap back if pinched below 1
+      if (zoomScale < 1) {
+        resetZoomAndPan();
+      }
+    }
+
+    if (e.touches.length === 0) {
+      // If 1-finger swipe on normal scale (<= 1.05), navigate image
+      if (modalTouchStartRef.current && zoomScale <= 1.05 && e.changedTouches.length > 0) {
+        const touchEnd = e.changedTouches[0];
+        const distanceX = modalTouchStartRef.current.x - touchEnd.clientX;
+        const distanceY = Math.abs(modalTouchStartRef.current.y - touchEnd.clientY);
+        if (Math.abs(distanceX) > 50 && distanceY < 80) {
+          if (distanceX > 0) {
+            handleNextImg();
+          } else {
+            handlePrevImg();
+          }
+          resetZoomAndPan();
+        }
+      }
+      modalTouchStartRef.current = null;
+      if (zoomScale <= 1) {
+        setPanOffset({ x: 0, y: 0 });
+      }
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomScale > 1) {
+      setIsDragging(true);
+      mouseDragStartRef.current = { x: e.clientX, y: e.clientY };
+      initialPanOffsetRef.current = { ...panOffset };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && mouseDragStartRef.current && zoomScale > 1) {
+      const deltaX = e.clientX - mouseDragStartRef.current.x;
+      const deltaY = e.clientY - mouseDragStartRef.current.y;
+      setPanOffset({
+        x: initialPanOffsetRef.current.x + deltaX,
+        y: initialPanOffsetRef.current.y + deltaY,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    mouseDragStartRef.current = null;
+  };
+
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    e.stopPropagation();
+    if (e.deltaY < 0) {
+      setZoomScale((prev) => Math.min(prev + 0.25, 4));
+    } else {
+      setZoomScale((prev) => {
+        const next = Math.max(prev - 0.25, 1);
+        if (next === 1) setPanOffset({ x: 0, y: 0 });
+        return next;
+      });
     }
   };
 
@@ -1312,7 +1462,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justify: 'center',
+            justifyContent: 'center',
           }}
         >
           {/* Top Floating Controls */}
@@ -1321,84 +1471,165 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justify: 'space-between',
+              justifyContent: 'space-between',
               width: '100%',
               maxWidth: 900,
               mb: 1.5,
-              px: 1,
+              px: { xs: 0.5, sm: 1.5 },
               zIndex: 10,
               position: 'relative',
+              gap: { xs: 0.5, sm: 1 },
+              flexWrap: 'nowrap',
             }}
           >
-            <Typography variant="body2" sx={{ color: 'white', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'white',
+                fontWeight: 700,
+                textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                whiteSpace: 'nowrap',
+                fontSize: { xs: '0.75rem', sm: '0.9rem' },
+                flexShrink: 0,
+              }}
+            >
               {activeImgIdx + 1} / {mediaList.length} Photos
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton onClick={handleZoomOut} disabled={zoomScale <= 0.5} size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.4, sm: 1 }, flexShrink: 0 }}>
+              <IconButton
+                onClick={handleZoomOut}
+                disabled={zoomScale <= 1}
+                size="small"
+                sx={{
+                  color: 'white',
+                  bgcolor: 'rgba(0,0,0,0.5)',
+                  p: { xs: 0.5, sm: 0.8 },
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.3)', bgcolor: 'rgba(0,0,0,0.2)' },
+                }}
+              >
                 <ZoomOutIcon fontSize="small" />
               </IconButton>
-              <Typography variant="caption" sx={{ color: 'white', fontWeight: 700 }}>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'white',
+                  fontWeight: 700,
+                  minWidth: { xs: 32, sm: 42 },
+                  textAlign: 'center',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                }}
+              >
                 {Math.round(zoomScale * 100)}%
               </Typography>
-              <IconButton onClick={handleZoomIn} disabled={zoomScale >= 3} size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+
+              <IconButton
+                onClick={handleZoomIn}
+                disabled={zoomScale >= 4}
+                size="small"
+                sx={{
+                  color: 'white',
+                  bgcolor: 'rgba(0,0,0,0.5)',
+                  p: { xs: 0.5, sm: 0.8 },
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                  '&.Mui-disabled': { color: 'rgba(255,255,255,0.3)', bgcolor: 'rgba(0,0,0,0.2)' },
+                }}
+              >
                 <ZoomInIcon fontSize="small" />
               </IconButton>
-              <IconButton onClick={handleResetZoom} size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+
+              <IconButton
+                onClick={handleResetZoom}
+                size="small"
+                title="Reset Zoom"
+                sx={{
+                  color: 'white',
+                  bgcolor: 'rgba(0,0,0,0.5)',
+                  p: { xs: 0.5, sm: 0.8 },
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                }}
+              >
                 <RestartAltIcon fontSize="small" />
               </IconButton>
-              <IconButton onClick={handleCloseModal} size="small" sx={{ color: 'white', bgcolor: '#EF4444', ml: 1, '&:hover': { bgcolor: '#DC2626' } }}>
+
+              <IconButton
+                onClick={handleCloseModal}
+                size="small"
+                title="Close"
+                sx={{
+                  color: 'white',
+                  bgcolor: '#EF4444',
+                  p: { xs: 0.5, sm: 0.8 },
+                  ml: { xs: 0.3, sm: 1 },
+                  '&:hover': { bgcolor: '#DC2626' },
+                }}
+              >
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Box>
           </Box>
 
-          {/* Main Floating Image Container */}
+          {/* Main Floating Image Container with Pinch-to-Zoom & Pan */}
           <Box
-            onClick={(e) => {
-              e.stopPropagation();
-              setZoomScale((prev) => (prev === 1 ? 1.8 : 1));
-            }}
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleModalTouchStart}
+            onTouchMove={handleModalTouchMove}
+            onTouchEnd={handleModalTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={handleWheelZoom}
             sx={{
               position: 'relative',
               width: '100%',
               maxWidth: 900,
-              maxHeight: '75vh',
+              maxHeight: { xs: '70vh', sm: '75vh' },
+              height: { xs: '65vh', sm: '75vh' },
               borderRadius: '8px',
               boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
               bgcolor: '#000000',
               display: 'flex',
               alignItems: 'center',
-              justify: 'center',
-              cursor: zoomScale > 1 ? 'zoom-out' : 'zoom-in',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              touchAction: 'none',
+              userSelect: 'none',
+              cursor: zoomScale > 1.05 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in',
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={activeMedia.url}
               alt={property.title}
+              draggable={false}
               style={{
                 maxWidth: '100%',
-                maxHeight: '75vh',
+                maxHeight: '100%',
                 objectFit: 'contain',
-                transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                transform: `scale(${zoomScale})`,
+                transition: isPinching || isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) scale(${zoomScale})`,
+                transformOrigin: 'center center',
                 position: 'relative',
                 zIndex: 1,
+                userSelect: 'none',
+                pointerEvents: 'none',
               }}
             />
 
             {/* Left Nav Arrow */}
-            {mediaList.length > 1 && (
+            {mediaList.length > 1 && zoomScale <= 1.05 && (
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();
                   handlePrevImg();
-                  setZoomScale(1);
+                  resetZoomAndPan();
                 }}
                 sx={{
                   position: 'absolute',
-                  left: 12,
+                  left: { xs: 6, sm: 12 },
                   top: '50%',
                   transform: 'translateY(-50%)',
                   bgcolor: 'rgba(0,0,0,0.6)',
@@ -1412,16 +1643,16 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             )}
 
             {/* Right Nav Arrow */}
-            {mediaList.length > 1 && (
+            {mediaList.length > 1 && zoomScale <= 1.05 && (
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNextImg();
-                  setZoomScale(1);
+                  resetZoomAndPan();
                 }}
                 sx={{
                   position: 'absolute',
-                  right: 12,
+                  right: { xs: 6, sm: 12 },
                   top: '50%',
                   transform: 'translateY(-50%)',
                   bgcolor: 'rgba(0,0,0,0.6)',
