@@ -2,8 +2,8 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
-const DEFAULT_API_HOST = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'http://127.0.0.1:4000';
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_HOST;
+// Must match NEXT_PUBLIC_API_URL set in your production environment variables.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export const initSocket = (token: string): Socket => {
   if (socket) {
