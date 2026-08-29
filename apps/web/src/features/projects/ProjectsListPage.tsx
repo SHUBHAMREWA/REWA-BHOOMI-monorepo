@@ -7,6 +7,8 @@ import { apiGet } from '@/lib/api';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import ShareIcon from '@mui/icons-material/Share';
+import toast from 'react-hot-toast';
 
 export default function ProjectsListPage() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -29,6 +31,21 @@ export default function ProjectsListPage() {
       (project.developer && project.developer.toLowerCase().includes(term))
     );
   });
+
+  const handleShare = (e: React.MouseEvent, project: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/projects/${project.slug}`;
+    const title = project.name;
+    const text = project.description || `Check out ${project.name}`;
+
+    if (navigator.share) {
+      navigator.share({ title, text, url }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      toast.success('Link copied to clipboard!');
+    }
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pb: 10 }}>
@@ -115,6 +132,7 @@ export default function ProjectsListPage() {
                     border: '1px solid #E2E8F0',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
                     overflow: 'hidden',
+                    position: 'relative',
                     '&:hover': {
                       transform: 'translateY(-6px)',
                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
@@ -129,6 +147,23 @@ export default function ProjectsListPage() {
                     }
                   }}
                 >
+                  <IconButton 
+                    onClick={(e) => handleShare(e, project)}
+                    sx={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      zIndex: 4,
+                      bgcolor: 'rgba(255,255,255,0.85)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#0F172A',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      '&:hover': { bgcolor: '#1B4FD8', color: 'white' }
+                    }}
+                    size="small"
+                  >
+                    <ShareIcon fontSize="small" />
+                  </IconButton>
                   <Box sx={{ position: 'relative', overflow: 'hidden' }}>
                     <CardMedia
                       component="div"
