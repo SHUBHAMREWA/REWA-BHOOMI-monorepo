@@ -897,7 +897,7 @@ export async function getCategories() {
 
 export async function getAmenities() {
   return query<{ id: string; name: string; icon: string }>(
-    'SELECT id, name, icon FROM property_amenities ORDER BY name',
+    'SELECT DISTINCT ON (name) id, name, icon FROM property_amenities ORDER BY name, created_at ASC',
   );
 }
 

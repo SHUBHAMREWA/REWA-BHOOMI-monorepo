@@ -22,6 +22,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '@/features/auth/AuthContext';
 
@@ -218,6 +220,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   const [imageStorageKeys, setImageStorageKeys] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
+  const [previewImageIndex, setPreviewImageIndex] = useState(0);
 
   // Submitting
   const [submitting, setSubmitting] = useState(false);
@@ -404,7 +407,12 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
   useEffect(() => {
     apiGet<any[]>('/properties/amenities')
-      .then(res => setAvailableAmenities(res || []))
+      .then(res => {
+        const unique = Array.from(
+          new Map((res || []).map((a: any) => [a.name?.trim().toLowerCase(), a])).values()
+        );
+        setAvailableAmenities(unique);
+      })
       .catch(() => {});
   }, []);
 
@@ -413,7 +421,6 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
   useEffect(() => {
     if (propertyType && filteredTypes.length > 0) {
-      // If the currently selected propertyType is not valid for the new purpose/category, clear it
       if (!filteredTypes.some(t => t.key === propertyType)) {
         setPropertyType(null);
       }
@@ -1392,32 +1399,170 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 : ' Property submit karne ke baad admin approval ke baad hi ye listing public hogi. Koi bhi galti ho toh neeche "Back" karke fix kar lo.'}
             </Alert>
 
-            {/* Property Images Preview */}
-            {imageUrls.length > 0 && (
-              <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', mb: 3, border: '1px solid #E2E8F0' }}>
-                <Box sx={{ position: 'relative', height: { xs: 200, sm: 300 }, bgcolor: '#0F172A' }}>
+            {/* Property Images Preview Gallery */}
+            {imageUrls.length > 0 && (() => {
+              const currentImgIndex = Math.min(previewImageIndex, Math.max(0, imageUrls.length - 1));
+              return (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    mb: 3,
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                  }}
+                >
+                  {/* Main Active Preview Image Display */}
                   <Box
-                    component="img"
-                    src={imageUrls[0]}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.95 }}
-                  />
-                  {imageUrls.length > 1 && (
-                    <Chip
-                      label={`+${imageUrls.length - 1} aur photos`}
-                      size="small"
-                      sx={{ position: 'absolute', bottom: 12, right: 12, bgcolor: 'rgba(0,0,0,0.7)', color: 'white', fontWeight: 600 }}
+                    sx={{
+                      position: 'relative',
+                      height: { xs: 240, sm: 360, md: 420 },
+                      bgcolor: '#0F172A',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={imageUrls[currentImgIndex] || imageUrls[0]}
+                      alt={`Property Photo ${currentImgIndex + 1}`}
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        bgcolor: '#0B1120',
+                        transition: 'all 0.2s ease-in-out',
+                      }}
                     />
-                  )}
-                </Box>
-                {imageUrls.length > 1 && (
-                  <Box display="flex" gap={1} p={1.5} overflow="auto" sx={{ bgcolor: '#F8FAFC' }}>
-                    {imageUrls.slice(1).map((url, i) => (
-                      <Box key={i} component="img" src={url} sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1.5, flexShrink: 0, border: '2px solid #E2E8F0' }} />
-                    ))}
+
+                    {/* Left Previous Arrow */}
+                    {imageUrls.length > 1 && (
+                      <IconButton
+                        onClick={() =>
+                          setPreviewImageIndex((prev) =>
+                            prev === 0 ? imageUrls.length - 1 : prev - 1
+                          )
+                        }
+                        sx={{
+                          position: 'absolute',
+                          left: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          bgcolor: 'rgba(15, 23, 42, 0.75)',
+                          color: '#FFFFFF',
+                          backdropFilter: 'blur(4px)',
+                          '&:hover': {
+                            bgcolor: 'rgba(15, 23, 42, 0.95)',
+                            transform: 'translateY(-50%) scale(1.08)',
+                          },
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        }}
+                        size="small"
+                        aria-label="Previous Image"
+                      >
+                        <NavigateBeforeIcon fontSize="medium" />
+                      </IconButton>
+                    )}
+
+                    {/* Right Next Arrow */}
+                    {imageUrls.length > 1 && (
+                      <IconButton
+                        onClick={() =>
+                          setPreviewImageIndex((prev) =>
+                            prev === imageUrls.length - 1 ? 0 : prev + 1
+                          )
+                        }
+                        sx={{
+                          position: 'absolute',
+                          right: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          bgcolor: 'rgba(15, 23, 42, 0.75)',
+                          color: '#FFFFFF',
+                          backdropFilter: 'blur(4px)',
+                          '&:hover': {
+                            bgcolor: 'rgba(15, 23, 42, 0.95)',
+                            transform: 'translateY(-50%) scale(1.08)',
+                          },
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        }}
+                        size="small"
+                        aria-label="Next Image"
+                      >
+                        <NavigateNextIcon fontSize="medium" />
+                      </IconButton>
+                    )}
+
+                    {/* Photo Counter Badge */}
+                    <Chip
+                      label={`${currentImgIndex + 1} / ${imageUrls.length} Photos`}
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 12,
+                        right: 12,
+                        bgcolor: 'rgba(15, 23, 42, 0.85)',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        backdropFilter: 'blur(4px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                      }}
+                    />
                   </Box>
-                )}
-              </Paper>
-            )}
+
+                  {/* Thumbnails Row (All Uploaded Images) */}
+                  {imageUrls.length > 1 && (
+                    <Box
+                      display="flex"
+                      gap={1.2}
+                      p={1.5}
+                      overflow="auto"
+                      sx={{
+                        bgcolor: '#F8FAFC',
+                        borderTop: '1px solid #E2E8F0',
+                        '&::-webkit-scrollbar': { height: 6 },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: 3 },
+                      }}
+                    >
+                      {imageUrls.map((url, i) => {
+                        const isSelected = currentImgIndex === i;
+                        return (
+                          <Box
+                            key={i}
+                            component="img"
+                            src={url}
+                            alt={`Thumbnail ${i + 1}`}
+                            onClick={() => setPreviewImageIndex(i)}
+                            sx={{
+                              width: { xs: 70, sm: 84 },
+                              height: { xs: 52, sm: 62 },
+                              objectFit: 'cover',
+                              borderRadius: 2,
+                              flexShrink: 0,
+                              cursor: 'pointer',
+                              border: isSelected ? '2.5px solid #1B4FD8' : '2px solid #E2E8F0',
+                              opacity: isSelected ? 1 : 0.65,
+                              transform: isSelected ? 'scale(1.04)' : 'scale(1)',
+                              transition: 'all 0.15s ease',
+                              boxShadow: isSelected ? '0 2px 8px rgba(27, 79, 216, 0.3)' : 'none',
+                              '&:hover': {
+                                opacity: 1,
+                                borderColor: isSelected ? '#1B4FD8' : '#94A3B8',
+                                transform: 'scale(1.04)',
+                              },
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Paper>
+              );
+            })()}
 
             {/* Main Info Card */}
             <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 3, border: '1px solid #E2E8F0', bgcolor: '#fff', mb: 3 }}>

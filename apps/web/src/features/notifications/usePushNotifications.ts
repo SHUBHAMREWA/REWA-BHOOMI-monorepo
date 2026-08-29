@@ -105,8 +105,12 @@ export function usePushNotifications() {
 
     try {
       const permission = await Notification.requestPermission();
+      if (permission === 'denied') {
+        toast.error('Notifications blocked by browser. Click the lock icon 🔒 near URL to allow them, then try again.', { duration: 6000 });
+        return;
+      }
       if (permission !== 'granted') {
-        toast.error('Permission denied for notifications');
+        toast.error('Permission not granted for notifications.');
         return;
       }
       const sub = await subscribeWithPermission(permission);
