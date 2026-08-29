@@ -11,6 +11,7 @@ import { SocketProvider } from '@/lib/SocketProvider';
 import UserChatWidget from '@/features/chat/components/UserChatWidget';
 import NotificationPrompt from '@/features/notifications/NotificationPrompt';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import ScrollRestoration from './ScrollRestoration';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ export default function Providers({ children }: { children: ReactNode }) {
           <CssBaseline />
           <AuthProvider>
             <SocketProvider>
+              <ScrollRestoration />
               {children}
               <UserChatWidget />
               <NotificationPrompt />

@@ -563,7 +563,18 @@ export default function UserChatWidget() {
           className="chat-fab-trigger"
           data-chat-trigger="true"
           color="primary"
-          sx={{ position: 'fixed', bottom: { xs: 80, sm: 24 }, right: { xs: 16, sm: 24 }, zIndex: 1000 }}
+          sx={{ 
+            position: 'fixed', 
+            bottom: { xs: 80, sm: 24 }, 
+            right: { xs: 16, sm: 24 }, 
+            zIndex: 1000,
+            animation: unreadCount > 0 ? 'pulseBlink 2s ease-in-out infinite' : 'none',
+            '@keyframes pulseBlink': {
+              '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(27, 79, 216, 0.7)' },
+              '50%': { transform: 'scale(1.1)', boxShadow: '0 0 0 15px rgba(27, 79, 216, 0)' },
+              '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(27, 79, 216, 0)' }
+            }
+          }}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -575,7 +586,7 @@ export default function UserChatWidget() {
             setIsOpen(true);
           }}
         >
-          <Badge badgeContent={unreadCount} color="error">
+          <Badge badgeContent={unreadCount} color="error" max={99}>
             <ChatIcon />
           </Badge>
         </Fab>

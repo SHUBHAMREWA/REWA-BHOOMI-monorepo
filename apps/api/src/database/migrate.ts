@@ -1127,6 +1127,56 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       ALTER TABLE messages
         ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT false;
     `
+  },
+  {
+    name: '029_fix_amenities_dedup_and_property_columns',
+    sql: `
+      -- 1. Deduplicate property_amenities and re-map references
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'property_amenity_mapping') THEN
+          WITH ranked_amenities AS (
+            SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY created_at ASC, id ASC) as rn
+            FROM property_amenities
+          ),
+          duplicates AS (
+            SELECT id, name FROM ranked_amenities WHERE rn > 1
+          ),
+          primaries AS (
+            SELECT id, name FROM ranked_amenities WHERE rn = 1
+          )
+          UPDATE property_amenity_mapping pam
+          SET amenity_id = p.id
+          FROM duplicates d
+          JOIN primaries p ON p.name = d.name
+          WHERE pam.amenity_id = d.id;
+        END IF;
+      END $$;
+
+      -- Remove duplicate amenities
+      WITH ranked_amenities AS (
+        SELECT id, ROW_NUMBER() OVER (PARTITION BY name ORDER BY created_at ASC, id ASC) as rn
+        FROM property_amenities
+      )
+      DELETE FROM property_amenities
+      WHERE id IN (SELECT id FROM ranked_amenities WHERE rn > 1);
+
+      -- Add unique constraint on name if not exists
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'property_amenities_name_key'
+        ) THEN
+          ALTER TABLE property_amenities ADD CONSTRAINT property_amenities_name_key UNIQUE (name);
+        END IF;
+      END $$;
+
+      -- 2. Add missing property columns safely
+      ALTER TABLE property_residential_details ADD COLUMN IF NOT EXISTS tenant_preference VARCHAR(50);
+      ALTER TABLE property_locations ADD COLUMN IF NOT EXISTS google_maps_link TEXT;
+      ALTER TABLE properties ADD COLUMN IF NOT EXISTS video_url TEXT;
+      ALTER TABLE properties ADD COLUMN IF NOT EXISTS custom_amenities TEXT[] DEFAULT '{}';
+    `
   }
 ];
 

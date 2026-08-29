@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton } from '@mui/material';
+import { usePathname, useRouter } from 'next/navigation';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, CircularProgress, Button } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
@@ -13,6 +13,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ArticleIcon from '@mui/icons-material/Article';
 import ChatIcon from '@mui/icons-material/Chat';
+import BlockIcon from '@mui/icons-material/Block';
 import Badge from '@mui/material/Badge';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useConversations } from '@/features/chat/chat-api';
@@ -34,10 +35,19 @@ const menuItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { logout, isAuthenticated, accessToken } = useAuth();
+  const router = useRouter();
+  const { logout, isAuthenticated, accessToken, user, isLoading } = useAuth();
   const { data: conversations = [] } = useConversations(!!accessToken);
   const { socket } = useSocket();
   const queryClient = useQueryClient();
+
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN');
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!socket) return;
@@ -49,6 +59,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       socket.off('admin_new_message', handleAdminNewMessage);
     };
   }, [socket, queryClient]);
+
+  if (isLoading) {
+    return (
+      <Box sx={{ minHeight: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  if (!isAdmin) {
+    return (
+      <Box sx={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', p: 3 }}>
+        <BlockIcon sx={{ fontSize: 64, color: '#EF4444', mb: 2 }} />
+        <Typography variant="h4" fontWeight={800} color="#0F172A" mb={1}>
+          403 — Access Denied
+        </Typography>
+        <Typography variant="body1" color="#64748B" mb={3} sx={{ maxWidth: 450 }}>
+          Aapke paas Admin Panel access karne ke permissions nahi hain. Sirf authorized admins hi is page ko dekh sakte hain.
+        </Typography>
+        <Button
+          variant="contained"
+          component={Link}
+          href="/"
+          sx={{
+            bgcolor: '#1B4FD8',
+            textTransform: 'none',
+            fontWeight: 700,
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            '&:hover': { bgcolor: '#1640B0' },
+          }}
+        >
+          Go to Homepage
+        </Button>
+      </Box>
+    );
+  }
   
   const unreadCount = conversations.reduce((acc, conv) => acc + parseInt(conv.unread_count || '0', 10), 0);
 

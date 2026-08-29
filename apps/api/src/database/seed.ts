@@ -51,7 +51,7 @@ export async function runSeed(closePool = true) {
         ('Hospital Nearby', 'local_hospital'),
         ('School Nearby',   'school'),
         ('Market Nearby',   'shopping_cart')
-      ON CONFLICT DO NOTHING
+      ON CONFLICT (name) DO NOTHING
     `);
 
     // ─── Blog Categories ────────────────────────────────────────────────────────
