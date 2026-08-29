@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-const DEFAULT_API_HOST = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'http://127.0.0.1:4000';
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_HOST;
+// NEXT_PUBLIC_API_URL must be set in production environment variables on Render/Vercel.
+// In local dev, fallback to localhost:4000.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // In-memory access token storage (never localStorage)
 let accessToken: string | null = null;
@@ -56,19 +57,9 @@ apiClient.interceptors.response.use(
       error.message?.includes('Network Error') ||
       error.message?.includes('ERR_CONNECTION_REFUSED');
 
-    if (isNetworkOrConnectionRefused && originalRequest && (!originalRequest._networkRetryCount || originalRequest._networkRetryCount < 3)) {
+    if (isNetworkOrConnectionRefused && originalRequest && (!originalRequest._networkRetryCount || originalRequest._networkRetryCount < 2)) {
       originalRequest._networkRetryCount = (originalRequest._networkRetryCount || 0) + 1;
-
-      // Swap between localhost <-> 127.0.0.1 if connection is refused
-      if (originalRequest.baseURL) {
-        if (originalRequest.baseURL.includes('localhost')) {
-          originalRequest.baseURL = originalRequest.baseURL.replace('localhost', '127.0.0.1');
-        } else if (originalRequest.baseURL.includes('127.0.0.1')) {
-          originalRequest.baseURL = originalRequest.baseURL.replace('127.0.0.1', 'localhost');
-        }
-      }
-
-      const delay = originalRequest._networkRetryCount * 300;
+      const delay = originalRequest._networkRetryCount * 500;
       await new Promise((res) => setTimeout(res, delay));
       return apiClient(originalRequest);
     }

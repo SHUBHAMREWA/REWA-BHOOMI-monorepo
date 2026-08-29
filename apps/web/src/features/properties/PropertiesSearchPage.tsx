@@ -23,22 +23,28 @@ import {
   Divider,
   FormControl,
   Stack,
+  Radio,
+  InputAdornment,
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import GridViewIcon from '@mui/icons-material/GridView';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import LandscapeIcon from '@mui/icons-material/Landscape';
 import HomeIcon from '@mui/icons-material/Home';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import TuneIcon from '@mui/icons-material/Tune';
+import CheckIcon from '@mui/icons-material/Check';
 
 import PropertyCard, { PropertyCardData } from './PropertyCard';
 import { apiGet } from '@/lib/api';
 import {
   PROPERTY_CATEGORIES,
+  PROPERTY_TYPES,
   getPropertyTypesByCategory,
 } from '@/config/propertyFormConfig';
 import { PropertyCategoryType, PropertyTypeEnum } from '@rewa-bhoomi/types';
@@ -252,7 +258,6 @@ export default function PropertiesSearchPage() {
     setCategoryType(newCat);
     if (!newCat) {
       setPropertyType('');
-      handleApplyFilters({ categoryType: '', propertyType: '' });
       return;
     }
     // Check if current propertyType belongs to new Category
@@ -260,11 +265,66 @@ export default function PropertiesSearchPage() {
     const isValidForNewCat = availableSubtypes.some(st => st.key === propertyType);
     const newPropType = isValidForNewCat ? propertyType : '';
     setPropertyType(newPropType);
-    handleApplyFilters({ categoryType: newCat, propertyType: newPropType });
   };
 
   // Subcategories available for selected category
   const activeSubcategories = categoryType ? getPropertyTypesByCategory(categoryType) : [];
+
+  // Active filter tab for Flipkart two-column drawer
+  const [activeFilterTab, setActiveFilterTab] = useState<'category' | 'subcategory' | 'purpose' | 'budget' | 'bedrooms' | 'furnishing' | 'area' | 'sortBy'>('category');
+  const [subcategorySearch, setSubcategorySearch] = useState('');
+
+  // Filter tabs definition with dynamic selection indicators
+  const FILTER_TABS = [
+    {
+      key: 'category' as const,
+      label: 'Category',
+      hasValue: Boolean(categoryType),
+      preview: categoryType ? PROPERTY_CATEGORIES.find(c => c.key === categoryType)?.title : undefined,
+    },
+    {
+      key: 'subcategory' as const,
+      label: 'Subcategory',
+      hasValue: Boolean(propertyType),
+      preview: propertyType ? PROPERTY_TYPES.find(pt => pt.key === propertyType)?.label.split('(')[0].trim() : undefined,
+    },
+    {
+      key: 'purpose' as const,
+      label: 'Purpose',
+      hasValue: Boolean(listingPurpose),
+      preview: listingPurpose === 'SALE' ? 'Buy / Sell' : listingPurpose === 'RENT' ? 'Rent' : listingPurpose === 'LEASE' ? 'Lease' : listingPurpose === 'PG' ? 'PG' : listingPurpose === 'COMMERCIAL_LEASE' ? 'Commercial Lease' : undefined,
+    },
+    {
+      key: 'budget' as const,
+      label: 'Price & Budget',
+      hasValue: Boolean(minPrice || maxPrice),
+      preview: (minPrice || maxPrice) ? `${formatPriceLabel(Number(minPrice) || 300000)} - ${formatPriceLabel(Number(maxPrice) || 10000000)}` : undefined,
+    },
+    {
+      key: 'bedrooms' as const,
+      label: 'Bedrooms',
+      hasValue: Boolean(bedrooms),
+      preview: bedrooms ? (bedrooms === '4' ? '4+ BHK' : `${bedrooms} BHK`) : undefined,
+    },
+    {
+      key: 'furnishing' as const,
+      label: 'Furnishing',
+      hasValue: Boolean(furnishedStatus),
+      preview: furnishedStatus === 'FULLY_FURNISHED' ? 'Fully' : furnishedStatus === 'SEMI_FURNISHED' ? 'Semi' : furnishedStatus === 'UNFURNISHED' ? 'Unfurnished' : undefined,
+    },
+    {
+      key: 'area' as const,
+      label: 'Area (Sq. Ft.)',
+      hasValue: Boolean(minArea || maxArea),
+      preview: (minArea || maxArea) ? `${minArea || '0'} - ${maxArea || 'Max'}` : undefined,
+    },
+    {
+      key: 'sortBy' as const,
+      label: 'Sort By',
+      hasValue: Boolean(sortBy && sortBy !== 'newest'),
+      preview: sortBy === 'price_asc' ? 'Price Low-High' : sortBy === 'price_desc' ? 'Price High-Low' : sortBy === 'popular' ? 'Popular' : undefined,
+    },
+  ];
 
   // Active filters count for Badge
   const activeFiltersCount = [
@@ -290,136 +350,7 @@ export default function PropertiesSearchPage() {
           </Typography>
         </Box>
 
-        {/* ─── MAIN DYNAMIC CATEGORY BAR (Ultra-Compact) ─── */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 0.8, sm: 1 },
-            mb: 1,
-            borderRadius: '10px',
-            border: '1px solid #E2E8F0',
-            bgcolor: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.8,
-            overflowX: 'auto',
-            '&::-webkit-scrollbar': { display: 'none' },
-          }}
-        >
-          <Chip
-            size="small"
-            label="All Categories"
-            onClick={() => handleCategoryChange('')}
-            color={!categoryType ? 'primary' : 'default'}
-            variant={!categoryType ? 'filled' : 'outlined'}
-            sx={{
-              fontWeight: 700,
-              fontSize: '0.78rem',
-              py: 1.5,
-              px: 0.2,
-              bgcolor: !categoryType ? '#1B4FD8' : '#F1F5F9',
-              color: !categoryType ? '#FFFFFF' : '#475569',
-              border: !categoryType ? 'none' : '1px solid #CBD5E1',
-              '&:hover': { bgcolor: !categoryType ? '#1541B5' : '#E2E8F0' },
-            }}
-          />
-          {PROPERTY_CATEGORIES.map(cat => {
-            const isSelected = categoryType === cat.key;
-            return (
-              <Chip
-                key={cat.key}
-                size="small"
-                icon={CATEGORY_ICONS[cat.key] ? (CATEGORY_ICONS[cat.key] as any) : undefined}
-                label={cat.title}
-                onClick={() => handleCategoryChange(isSelected ? '' : cat.key)}
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.78rem',
-                  py: 1.5,
-                  px: 0.2,
-                  bgcolor: isSelected ? '#1B4FD8' : '#FFFFFF',
-                  color: isSelected ? '#FFFFFF !important' : '#334155',
-                  border: isSelected ? 'none' : '1px solid #E2E8F0',
-                  '& .MuiChip-icon': {
-                    fontSize: '1rem',
-                    color: isSelected ? '#FFFFFF !important' : '#1B4FD8 !important',
-                  },
-                  '&:hover': {
-                    bgcolor: isSelected ? '#1541B5' : '#F8FAFC',
-                    borderColor: '#CBD5E1',
-                  },
-                }}
-              />
-            );
-          })}
-        </Paper>
-
-        {/* ─── DYNAMIC SUBCATEGORY DEPENDENT BAR (Clean & Compact) ─── */}
-        {categoryType && activeSubcategories.length > 0 && (
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 0.6, sm: 0.8 },
-              mb: 1,
-              borderRadius: '8px',
-              border: '1px dashed #CBD5E1',
-              bgcolor: '#F8FAFC',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.6,
-              overflowX: 'auto',
-              '&::-webkit-scrollbar': { display: 'none' },
-            }}
-          >
-            <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748B', whiteSpace: 'nowrap', mr: 0.3, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: '0.04em' }}>
-              Subcategory:
-            </Typography>
-            <Chip
-              size="small"
-              label="All Types"
-              onClick={() => {
-                setPropertyType('');
-                handleApplyFilters({ propertyType: '' });
-              }}
-              sx={{
-                fontWeight: 650,
-                fontSize: '0.72rem',
-                height: 24,
-                bgcolor: !propertyType ? '#0F172A' : '#FFFFFF',
-                color: !propertyType ? '#FFFFFF' : '#475569',
-                border: '1px solid #E2E8F0',
-              }}
-            />
-            {activeSubcategories.map(sub => {
-              const isSubSelected = propertyType === sub.key;
-              const cleanSubLabel = sub.label.split('(')[0].trim();
-              return (
-                <Chip
-                  key={sub.key}
-                  size="small"
-                  label={cleanSubLabel}
-                  onClick={() => {
-                    const newSub = isSubSelected ? '' : sub.key;
-                    setPropertyType(newSub);
-                    handleApplyFilters({ propertyType: newSub });
-                  }}
-                  sx={{
-                    fontWeight: 650,
-                    fontSize: '0.72rem',
-                    height: 24,
-                    bgcolor: isSubSelected ? '#0F172A' : '#FFFFFF',
-                    color: isSubSelected ? '#FFFFFF' : '#334155',
-                    border: isSubSelected ? 'none' : '1px solid #E2E8F0',
-                    '&:hover': {
-                      bgcolor: isSubSelected ? '#1E293B' : '#FFFFFF',
-                      borderColor: '#94A3B8',
-                    },
-                  }}
-                />
-              );
-            })}
-          </Paper>
-        )}
+        {/* Categories are now inside the Filters Drawer */}
 
         {/* ─── LISTING PURPOSE SELECTOR BAR (Separate & Clean) ─── */}
         <Paper
@@ -730,6 +661,86 @@ export default function PropertiesSearchPage() {
           </Box>
         </Paper>
 
+        {/* ─── ACTIVE FILTERS BREADCRUMBS ─── */}
+        {activeFiltersCount > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 2, px: 0.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase', mr: 0.5 }}>
+              Active Filters:
+            </Typography>
+            
+            {categoryType && (
+              <Chip 
+                label={PROPERTY_CATEGORIES.find(c => c.key === categoryType)?.title || categoryType} 
+                size="small" 
+                onDelete={() => { setCategoryType(''); setPropertyType(''); handleApplyFilters({ categoryType: '', propertyType: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+            
+            {propertyType && (
+              <Chip 
+                label={activeSubcategories.find(c => c.key === propertyType)?.label.split('(')[0].trim() || propertyType} 
+                size="small" 
+                onDelete={() => { setPropertyType(''); handleApplyFilters({ propertyType: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+            
+            {listingPurpose && (
+              <Chip 
+                label={listingPurpose === 'SALE' ? 'Buy / Sell' : listingPurpose === 'RENT' ? 'Rent' : listingPurpose === 'LEASE' ? 'Lease' : listingPurpose === 'PG' ? 'PG' : listingPurpose === 'COMMERCIAL_LEASE' ? 'Commercial Lease' : listingPurpose} 
+                size="small" 
+                onDelete={() => { setListingPurpose(''); handleApplyFilters({ listingPurpose: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+            
+            {(minPrice || maxPrice) && (
+              <Chip 
+                label={`₹${formatPriceLabel(Number(minPrice) || 300000)} - ₹${formatPriceLabel(Number(maxPrice) || 10000000)}`} 
+                size="small" 
+                onDelete={() => { setMinPrice(''); setMaxPrice(''); handleApplyFilters({ minPrice: '', maxPrice: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+
+            {bedrooms && (
+              <Chip 
+                label={bedrooms === '4' ? '4+ BHK' : `${bedrooms} BHK`} 
+                size="small" 
+                onDelete={() => { setBedrooms(''); handleApplyFilters({ bedrooms: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+            
+            {furnishedStatus && (
+              <Chip 
+                label={furnishedStatus === 'FURNISHED' ? 'Furnished' : furnishedStatus === 'SEMI_FURNISHED' ? 'Semi-Furnished' : 'Unfurnished'} 
+                size="small" 
+                onDelete={() => { setFurnishedStatus(''); handleApplyFilters({ furnishedStatus: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+
+            {(minArea || maxArea) && (
+              <Chip 
+                label={`Area: ${minArea || '0'} - ${maxArea || 'Any'} sq.ft`} 
+                size="small" 
+                onDelete={() => { setMinArea(''); setMaxArea(''); handleApplyFilters({ minArea: '', maxArea: '' }); }} 
+                sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
+              />
+            )}
+            
+            <Button 
+              size="small" 
+              sx={{ color: '#EF4444', fontSize: '0.75rem', fontWeight: 700, p: 0, minWidth: 'auto', ml: 1, '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' } }} 
+              onClick={handleClearFilters}
+            >
+              Reset All
+            </Button>
+          </Box>
+        )}
+
         {/* Results Count Bar & View Switcher */}
         {!loading && (() => {
           const hasFilter = Boolean(activeFiltersCount > 0 || keyword || city);
@@ -816,230 +827,753 @@ export default function PropertiesSearchPage() {
         )}
       </Container>
 
-      {/* ─── EXPANDABLE ADVANCED FILTERS DRAWER / MODAL ─── */}
+      {/* ─── FLIPKART STYLE TWO-COLUMN ADVANCED FILTERS DRAWER ─── */}
       <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
           sx: {
-            width: { xs: '100%', sm: 420 },
-            p: 3,
+            width: { xs: '100vw', sm: 540, md: 620 },
+            maxWidth: '100vw',
+            height: '100vh',
             bgcolor: '#FFFFFF',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           },
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-          <Typography variant="h6" fontWeight={800} color="#0F172A">
-            Advanced Search Filters
-          </Typography>
-          <IconButton onClick={() => setDrawerOpen(false)} size="small">
-            <CloseIcon fontSize="small" />
-          </IconButton>
+        {/* Flipkart Style Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: { xs: 1.5, sm: 2.5 },
+            py: 1.5,
+            borderBottom: '1px solid #E2E8F0',
+            bgcolor: '#FFFFFF',
+            zIndex: 10,
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={() => setDrawerOpen(false)} size="small" sx={{ color: '#0F172A' }}>
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+            <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: '1.05rem' }}>
+              Filters
+            </Typography>
+            {activeFiltersCount > 0 && (
+              <Chip
+                size="small"
+                label={`${activeFiltersCount} applied`}
+                sx={{
+                  bgcolor: '#E0E7FF',
+                  color: '#1B4FD8',
+                  fontWeight: 700,
+                  fontSize: '0.7rem',
+                  height: 22,
+                }}
+              />
+            )}
+          </Box>
+
+          {activeFiltersCount > 0 && (
+            <Button
+              size="small"
+              onClick={handleClearFilters}
+              sx={{
+                color: '#EF4444',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                textTransform: 'none',
+                p: 0,
+                minWidth: 'auto',
+                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+              }}
+            >
+              Clear All
+            </Button>
+          )}
         </Box>
 
-        <Divider sx={{ mb: 3 }} />
-
-        <Stack spacing={3} sx={{ overflowY: 'auto', pb: 8 }}>
-          {/* Major Category */}
-          <Box>
-            <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-              Property Category
-            </Typography>
-            <Grid container spacing={1}>
-              <Grid item xs={6}>
-                <Button
-                  fullWidth
-                  variant={!categoryType ? 'contained' : 'outlined'}
-                  size="small"
-                  onClick={() => handleCategoryChange('')}
-                  sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+        {/* Two-Column Flipkart Body */}
+        <Box sx={{ display: 'flex', flex: 1, height: 'calc(100vh - 125px)', overflow: 'hidden' }}>
+          {/* Left Column: Filter Tabs / Categories */}
+          <Box
+            sx={{
+              width: { xs: '38%', sm: '35%' },
+              minWidth: { xs: 125, sm: 160 },
+              maxWidth: { xs: 155, sm: 200 },
+              bgcolor: '#F1F5F9',
+              borderRight: '1px solid #E2E8F0',
+              overflowY: 'auto',
+              flexShrink: 0,
+              '&::-webkit-scrollbar': { width: '3px' },
+              '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1' },
+            }}
+          >
+            {FILTER_TABS.map((tab) => {
+              const isActive = activeFilterTab === tab.key;
+              const hasVal = tab.hasValue;
+              return (
+                <Box
+                  key={tab.key}
+                  onClick={() => setActiveFilterTab(tab.key)}
+                  sx={{
+                    py: 1.5,
+                    px: { xs: 1.2, sm: 2 },
+                    cursor: 'pointer',
+                    bgcolor: isActive ? '#FFFFFF' : 'transparent',
+                    borderLeft: isActive ? '3.5px solid #1B4FD8' : '3.5px solid transparent',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease',
+                    borderBottom: '1px solid #E2E8F0',
+                    '&:hover': {
+                      bgcolor: isActive ? '#FFFFFF' : '#E2E8F0',
+                    },
+                  }}
                 >
-                  All Categories
-                </Button>
-              </Grid>
-              {PROPERTY_CATEGORIES.map(cat => (
-                <Grid item xs={6} key={cat.key}>
-                  <Button
-                    fullWidth
-                    variant={categoryType === cat.key ? 'contained' : 'outlined'}
-                    size="small"
-                    onClick={() => handleCategoryChange(categoryType === cat.key ? '' : cat.key)}
-                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
-                  >
-                    {cat.title}
-                  </Button>
-                </Grid>
-              ))}
-            </Grid>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: isActive ? 800 : 600,
+                        fontSize: { xs: '0.78rem', sm: '0.84rem' },
+                        color: isActive ? '#1B4FD8' : '#334155',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {tab.label}
+                    </Typography>
+                    {hasVal && (
+                      <Box
+                        sx={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: '50%',
+                          bgcolor: '#1B4FD8',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                  </Box>
+                  {tab.preview && (
+                    <Typography
+                      variant="caption"
+                      noWrap
+                      sx={{
+                        fontSize: '0.68rem',
+                        color: isActive ? '#64748B' : '#94A3B8',
+                        mt: 0.3,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {tab.preview}
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })}
           </Box>
 
-          {/* Subcategory */}
-          {categoryType && activeSubcategories.length > 0 && (
-            <Box>
-              <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-                Subcategory ({PROPERTY_CATEGORIES.find(c => c.key === categoryType)?.title})
-              </Typography>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value as PropertyTypeEnum)}
-                  displayEmpty
-                >
-                  <MenuItem value="">All Subcategories</MenuItem>
-                  {activeSubcategories.map(sub => (
-                    <MenuItem key={sub.key} value={sub.key}>
-                      {sub.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
-
-          {/* Purpose */}
-          <Box>
-            <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-              Listing Purpose
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={listingPurpose}
-                onChange={(e) => setListingPurpose(e.target.value)}
-                displayEmpty
-              >
-                <MenuItem value="">All Purposes</MenuItem>
-                <MenuItem value="SALE">Buy / Sell</MenuItem>
-                <MenuItem value="RENT">Rent</MenuItem>
-                <MenuItem value="LEASE">Lease</MenuItem>
-                <MenuItem value="PG">PG Accommodation</MenuItem>
-                <MenuItem value="COMMERCIAL_LEASE">Commercial Lease</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Category-Specific: Residential Bedrooms & Furnished */}
-          {categoryType === 'RESIDENTIAL' && (
-            <>
+          {/* Right Column: Selected Tab Options */}
+          <Box
+            sx={{
+              flex: 1,
+              bgcolor: '#FFFFFF',
+              p: { xs: 1.5, sm: 2.5 },
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': { width: '4px' },
+              '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1' },
+            }}
+          >
+            {/* TAB: CATEGORY */}
+            {activeFilterTab === 'category' && (
               <Box>
-                <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-                  Bedrooms (BHK)
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Property Category
                 </Typography>
-                <Stack direction="row" spacing={1}>
-                  {['', '1', '2', '3', '4'].map(b => (
-                    <Chip
-                      key={b}
-                      label={b === '' ? 'Any' : b === '4' ? '4+ BHK' : `${b} BHK`}
-                      onClick={() => setBedrooms(b)}
-                      color={bedrooms === b ? 'primary' : 'default'}
-                      variant={bedrooms === b ? 'filled' : 'outlined'}
-                      sx={{ fontWeight: 700 }}
-                    />
-                  ))}
+                <Stack spacing={1}>
+                  <Box
+                    onClick={() => handleCategoryChange('')}
+                    sx={{
+                      p: 1.2,
+                      borderRadius: 2,
+                      border: !categoryType ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                      bgcolor: !categoryType ? '#F0F4FF' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      '&:hover': { bgcolor: !categoryType ? '#F0F4FF' : '#F8FAFC' },
+                    }}
+                  >
+                    <Radio checked={!categoryType} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                    <Typography fontWeight={!categoryType ? 750 : 600} fontSize="0.85rem" color={!categoryType ? '#1B4FD8' : '#0F172A'}>
+                      All Categories
+                    </Typography>
+                  </Box>
+
+                  {PROPERTY_CATEGORIES.map((cat) => {
+                    const isCatSelected = categoryType === cat.key;
+                    return (
+                      <Box
+                        key={cat.key}
+                        onClick={() => handleCategoryChange(isCatSelected ? '' : cat.key)}
+                        sx={{
+                          p: 1.2,
+                          borderRadius: 2,
+                          border: isCatSelected ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                          bgcolor: isCatSelected ? '#F0F4FF' : '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          '&:hover': { bgcolor: isCatSelected ? '#F0F4FF' : '#F8FAFC' },
+                        }}
+                      >
+                        <Radio checked={isCatSelected} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                        <Box sx={{ mr: 1, color: isCatSelected ? '#1B4FD8' : '#64748B', display: 'flex', alignItems: 'center' }}>
+                          {CATEGORY_ICONS[cat.key]}
+                        </Box>
+                        <Box>
+                          <Typography fontWeight={isCatSelected ? 750 : 600} fontSize="0.85rem" color={isCatSelected ? '#1B4FD8' : '#0F172A'}>
+                            {cat.title}
+                          </Typography>
+                          <Typography variant="caption" color="#64748B" fontSize="0.7rem" display="block">
+                            {cat.subtitle}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
                 </Stack>
               </Box>
+            )}
 
+            {/* TAB: SUBCATEGORY */}
+            {activeFilterTab === 'subcategory' && (
               <Box>
-                <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-                  Furnished Status
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1} fontSize="0.9rem">
+                  {categoryType ? `${PROPERTY_CATEGORIES.find(c => c.key === categoryType)?.title} Subcategories` : 'All Subcategories'}
                 </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={furnishedStatus}
-                    onChange={(e) => setFurnishedStatus(e.target.value)}
-                    displayEmpty
+
+                {/* Subcategory Search Input */}
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search subcategory..."
+                  value={subcategorySearch}
+                  onChange={(e) => setSubcategorySearch(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" sx={{ color: '#94A3B8' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    mb: 1.5,
+                    '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.82rem', bgcolor: '#F8FAFC' },
+                  }}
+                />
+
+                <Stack spacing={0.8}>
+                  <Box
+                    onClick={() => setPropertyType('')}
+                    sx={{
+                      p: 1.1,
+                      borderRadius: 2,
+                      border: !propertyType ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                      bgcolor: !propertyType ? '#F0F4FF' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: !propertyType ? '#F0F4FF' : '#F8FAFC' },
+                    }}
                   >
-                    <MenuItem value="">Any Furnished Status</MenuItem>
-                    <MenuItem value="UNFURNISHED">Unfurnished</MenuItem>
-                    <MenuItem value="SEMI_FURNISHED">Semi-Furnished</MenuItem>
-                    <MenuItem value="FULLY_FURNISHED">Fully-Furnished</MenuItem>
-                  </Select>
-                </FormControl>
+                    <Radio checked={!propertyType} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                    <Typography fontWeight={!propertyType ? 750 : 600} fontSize="0.84rem" color={!propertyType ? '#1B4FD8' : '#0F172A'}>
+                      All Subcategories
+                    </Typography>
+                  </Box>
+
+                  {/* Filter list */}
+                  {(categoryType ? activeSubcategories : PROPERTY_TYPES)
+                    .filter(sub => !subcategorySearch || sub.label.toLowerCase().includes(subcategorySearch.toLowerCase()))
+                    .map((sub) => {
+                      const isSubSelected = propertyType === sub.key;
+                      return (
+                        <Box
+                          key={sub.key}
+                          onClick={() => {
+                            const newSub = isSubSelected ? '' : sub.key;
+                            setPropertyType(newSub);
+                            if (!categoryType && sub.category) {
+                              setCategoryType(sub.category);
+                            }
+                          }}
+                          sx={{
+                            p: 1.1,
+                            borderRadius: 2,
+                            border: isSubSelected ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                            bgcolor: isSubSelected ? '#F0F4FF' : '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: isSubSelected ? '#F0F4FF' : '#F8FAFC' },
+                          }}
+                        >
+                          <Radio checked={isSubSelected} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography fontWeight={isSubSelected ? 750 : 600} fontSize="0.84rem" color={isSubSelected ? '#1B4FD8' : '#0F172A'}>
+                              {sub.label}
+                            </Typography>
+                            {!categoryType && (
+                              <Typography variant="caption" color="#64748B" fontSize="0.7rem">
+                                {PROPERTY_CATEGORIES.find(c => c.key === sub.category)?.title}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                </Stack>
               </Box>
-            </>
-          )}
+            )}
 
-          {/* Plot / Built Area Range */}
-          <Box>
-            <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-              Area Range (Sq. Ft.)
-            </Typography>
-            <Grid container spacing={1.5}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Min Area"
-                  value={minArea}
-                  onChange={(e) => setMinArea(e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Max Area"
-                  value={maxArea}
-                  onChange={(e) => setMaxArea(e.target.value)}
-                />
-              </Grid>
-            </Grid>
+            {/* TAB: PURPOSE */}
+            {activeFilterTab === 'purpose' && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Listing Purpose
+                </Typography>
+                <Stack spacing={1}>
+                  {[
+                    { label: 'All Purposes', value: '', desc: 'Show all properties regardless of purpose' },
+                    { label: 'Buy / Sell', value: 'SALE', desc: 'Properties available for sale or purchase' },
+                    { label: 'Rent', value: 'RENT', desc: 'Properties available for monthly rent' },
+                    { label: 'Lease', value: 'LEASE', desc: 'Long-term contractual lease properties' },
+                    { label: 'PG Accommodation', value: 'PG', desc: 'Paying guest & room sharing listings' },
+                    { label: 'Commercial Lease', value: 'COMMERCIAL_LEASE', desc: 'Commercial shops, offices, warehouses' },
+                  ].map((p) => {
+                    const isPurSelected = listingPurpose === p.value;
+                    return (
+                      <Box
+                        key={p.value}
+                        onClick={() => setListingPurpose(p.value)}
+                        sx={{
+                          p: 1.2,
+                          borderRadius: 2,
+                          border: isPurSelected ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                          bgcolor: isPurSelected ? '#F0F4FF' : '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: isPurSelected ? '#F0F4FF' : '#F8FAFC' },
+                        }}
+                      >
+                        <Radio checked={isPurSelected} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                        <Box>
+                          <Typography fontWeight={isPurSelected ? 750 : 600} fontSize="0.85rem" color={isPurSelected ? '#1B4FD8' : '#0F172A'}>
+                            {p.label}
+                          </Typography>
+                          <Typography variant="caption" color="#64748B" fontSize="0.7rem" display="block">
+                            {p.desc}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
+
+            {/* TAB: BUDGET */}
+            {activeFilterTab === 'budget' && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Price & Budget Range
+                </Typography>
+
+                {/* Min / Max Dropdowns */}
+                <Grid container spacing={1.5} mb={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" fontWeight={700} color="#475569" mb={0.5} display="block">
+                      Min Price
+                    </Typography>
+                    <Select
+                      fullWidth
+                      size="small"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      displayEmpty
+                      renderValue={(selected) => formatSelectLabel(selected, 'Min')}
+                      sx={{ borderRadius: 2, fontSize: '0.82rem' }}
+                    >
+                      {BUDGET_OPTIONS_MIN.map((opt) => (
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                      ))}
+                    </Select>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                    <Typography variant="caption" fontWeight={700} color="#475569" mb={0.5} display="block">
+                      Max Price
+                    </Typography>
+                    <Select
+                      fullWidth
+                      size="small"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      displayEmpty
+                      renderValue={(selected) => formatSelectLabel(selected, 'Max')}
+                      sx={{ borderRadius: 2, fontSize: '0.82rem' }}
+                    >
+                      {BUDGET_OPTIONS_MAX.map((opt) => (
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                      ))}
+                    </Select>
+                  </Grid>
+                </Grid>
+
+                {/* Slider */}
+                <Box sx={{ px: 1, py: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0', mb: 2 }}>
+                  <Typography variant="caption" fontWeight={700} color="#64748B" display="block" mb={0.5}>
+                    Drag Slider to Adjust Budget:
+                  </Typography>
+                  <Slider
+                    value={[Number(minPrice) || 300000, Number(maxPrice) || 10000000]}
+                    min={300000}
+                    max={10000000}
+                    step={100000}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={formatPriceLabel}
+                    onChange={(_, val) => {
+                      if (Array.isArray(val)) {
+                        setMinPrice(val[0] <= 300000 ? '' : String(val[0]));
+                        setMaxPrice(val[1] >= 10000000 ? '' : String(val[1]));
+                      }
+                    }}
+                    sx={{
+                      color: '#1B4FD8',
+                      height: 4,
+                      '& .MuiSlider-thumb': { height: 16, width: 16, backgroundColor: '#FFFFFF', border: '2px solid #1B4FD8' },
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                    <Typography variant="caption" color="#64748B" fontSize="0.7rem">₹3 Lac</Typography>
+                    <Typography variant="caption" color="#64748B" fontSize="0.7rem">₹1 Cr+</Typography>
+                  </Box>
+                </Box>
+
+                {/* Quick Presets */}
+                <Typography variant="caption" fontWeight={700} color="#475569" mb={1} display="block">
+                  Quick Budget Presets:
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" gap={0.8}>
+                  {[
+                    { label: 'Under ₹10 Lac', min: '', max: '1000000' },
+                    { label: '₹10L - ₹25L', min: '1000000', max: '2500000' },
+                    { label: '₹25L - ₹50L', min: '2500000', max: '5000000' },
+                    { label: '₹50L - ₹1 Cr', min: '5000000', max: '10000000' },
+                    { label: 'Above ₹1 Cr', min: '10000000', max: '' },
+                  ].map((p) => {
+                    const isPreset = minPrice === p.min && maxPrice === p.max;
+                    return (
+                      <Chip
+                        key={p.label}
+                        label={p.label}
+                        size="small"
+                        onClick={() => {
+                          setMinPrice(p.min);
+                          setMaxPrice(p.max);
+                        }}
+                        sx={{
+                          fontWeight: 650,
+                          fontSize: '0.74rem',
+                          bgcolor: isPreset ? '#1B4FD8' : '#F1F5F9',
+                          color: isPreset ? '#FFFFFF !important' : '#334155',
+                          border: isPreset ? 'none' : '1px solid #CBD5E1',
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
+
+            {/* TAB: BEDROOMS */}
+            {activeFilterTab === 'bedrooms' && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Bedrooms (BHK)
+                </Typography>
+                <Stack spacing={1}>
+                  {[
+                    { label: 'Any BHK', value: '' },
+                    { label: '1 BHK', value: '1' },
+                    { label: '2 BHK', value: '2' },
+                    { label: '3 BHK', value: '3' },
+                    { label: '4+ BHK', value: '4' },
+                  ].map((b) => {
+                    const isBhkSelected = bedrooms === b.value;
+                    return (
+                      <Box
+                        key={b.value}
+                        onClick={() => setBedrooms(b.value)}
+                        sx={{
+                          p: 1.2,
+                          borderRadius: 2,
+                          border: isBhkSelected ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                          bgcolor: isBhkSelected ? '#F0F4FF' : '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: isBhkSelected ? '#F0F4FF' : '#F8FAFC' },
+                        }}
+                      >
+                        <Radio checked={isBhkSelected} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                        <Typography fontWeight={isBhkSelected ? 750 : 600} fontSize="0.85rem" color={isBhkSelected ? '#1B4FD8' : '#0F172A'}>
+                          {b.label}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
+
+            {/* TAB: FURNISHING */}
+            {activeFilterTab === 'furnishing' && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Furnishing Status
+                </Typography>
+                <Stack spacing={1}>
+                  {[
+                    { label: 'Any Furnishing Status', value: '' },
+                    { label: 'Fully-Furnished', value: 'FULLY_FURNISHED' },
+                    { label: 'Semi-Furnished', value: 'SEMI_FURNISHED' },
+                    { label: 'Unfurnished', value: 'UNFURNISHED' },
+                  ].map((f) => {
+                    const isFurnSelected = furnishedStatus === f.value;
+                    return (
+                      <Box
+                        key={f.value}
+                        onClick={() => setFurnishedStatus(f.value)}
+                        sx={{
+                          p: 1.2,
+                          borderRadius: 2,
+                          border: isFurnSelected ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                          bgcolor: isFurnSelected ? '#F0F4FF' : '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: isFurnSelected ? '#F0F4FF' : '#F8FAFC' },
+                        }}
+                      >
+                        <Radio checked={isFurnSelected} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                        <Typography fontWeight={isFurnSelected ? 750 : 600} fontSize="0.85rem" color={isFurnSelected ? '#1B4FD8' : '#0F172A'}>
+                          {f.label}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
+
+            {/* TAB: AREA */}
+            {activeFilterTab === 'area' && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Area Range (Sq. Ft.)
+                </Typography>
+
+                <Grid container spacing={1.5} mb={2}>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label="Min Area"
+                      placeholder="e.g. 500"
+                      value={minArea}
+                      onChange={(e) => setMinArea(e.target.value)}
+                      InputProps={{ endAdornment: <InputAdornment position="end">sq.ft</InputAdornment> }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.82rem' } }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label="Max Area"
+                      placeholder="e.g. 2000"
+                      value={maxArea}
+                      onChange={(e) => setMaxArea(e.target.value)}
+                      InputProps={{ endAdornment: <InputAdornment position="end">sq.ft</InputAdornment> }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.82rem' } }}
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Quick Area Presets */}
+                <Typography variant="caption" fontWeight={700} color="#475569" mb={1} display="block">
+                  Quick Area Presets:
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" gap={0.8}>
+                  {[
+                    { label: 'Under 500 sq.ft', min: '', max: '500' },
+                    { label: '500 - 1,000 sq.ft', min: '500', max: '1000' },
+                    { label: '1,000 - 1,500 sq.ft', min: '1000', max: '1500' },
+                    { label: '1,500 - 2,500 sq.ft', min: '1500', max: '2500' },
+                    { label: '2,500+ sq.ft', min: '2500', max: '' },
+                  ].map((a) => {
+                    const isAreaPreset = minArea === a.min && maxArea === a.max;
+                    return (
+                      <Chip
+                        key={a.label}
+                        label={a.label}
+                        size="small"
+                        onClick={() => {
+                          setMinArea(a.min);
+                          setMaxArea(a.max);
+                        }}
+                        sx={{
+                          fontWeight: 650,
+                          fontSize: '0.74rem',
+                          bgcolor: isAreaPreset ? '#1B4FD8' : '#F1F5F9',
+                          color: isAreaPreset ? '#FFFFFF !important' : '#334155',
+                          border: isAreaPreset ? 'none' : '1px solid #CBD5E1',
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
+
+            {/* TAB: SORT BY */}
+            {activeFilterTab === 'sortBy' && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={800} color="#0F172A" mb={1.5} fontSize="0.9rem">
+                  Sort Results By
+                </Typography>
+                <Stack spacing={1}>
+                  {[
+                    { label: 'Newest First (Default)', value: 'newest' },
+                    { label: 'Price: Low to High', value: 'price_asc' },
+                    { label: 'Price: High to Low', value: 'price_desc' },
+                    { label: 'Area: Low to High', value: 'area_asc' },
+                    { label: 'Area: High to Low', value: 'area_desc' },
+                    { label: 'Most Popular', value: 'popular' },
+                    { label: 'Oldest First', value: 'oldest' },
+                  ].map((s) => {
+                    const isSortSelected = sortBy === s.value || (!sortBy && s.value === 'newest');
+                    return (
+                      <Box
+                        key={s.value}
+                        onClick={() => setSortBy(s.value)}
+                        sx={{
+                          p: 1.2,
+                          borderRadius: 2,
+                          border: isSortSelected ? '1.5px solid #1B4FD8' : '1px solid #E2E8F0',
+                          bgcolor: isSortSelected ? '#F0F4FF' : '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: isSortSelected ? '#F0F4FF' : '#F8FAFC' },
+                        }}
+                      >
+                        <Radio checked={isSortSelected} size="small" sx={{ p: 0, mr: 1.2, color: '#1B4FD8', '&.Mui-checked': { color: '#1B4FD8' } }} />
+                        <Typography fontWeight={isSortSelected ? 750 : 600} fontSize="0.85rem" color={isSortSelected ? '#1B4FD8' : '#0F172A'}>
+                          {s.label}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
           </Box>
+        </Box>
 
-          {/* Sort By */}
-          <Box>
-            <Typography variant="subtitle2" fontWeight={750} color="#0F172A" mb={1}>
-              Sort Results By
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <MenuItem value="newest">Newest First</MenuItem>
-                <MenuItem value="oldest">Oldest First</MenuItem>
-                <MenuItem value="price_asc">Price: Low to High</MenuItem>
-                <MenuItem value="price_desc">Price: High to Low</MenuItem>
-                <MenuItem value="area_asc">Area: Low to High</MenuItem>
-                <MenuItem value="area_desc">Area: High to Low</MenuItem>
-                <MenuItem value="popular">Most Popular</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Stack>
-
-        {/* Drawer Action Footer */}
+        {/* Flipkart Style Footer */}
         <Box
           sx={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            p: 2.5,
+            height: 65,
+            px: 2,
             bgcolor: '#FFFFFF',
             borderTop: '1px solid #E2E8F0',
             display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             gap: 1.5,
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
+            zIndex: 10,
           }}
         >
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleClearFilters}
-            sx={{ borderRadius: 2.5, fontWeight: 700, textTransform: 'none' }}
-          >
-            Clear All
-          </Button>
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={() => handleApplyFilters()}
-            sx={{ borderRadius: 2.5, fontWeight: 700, textTransform: 'none', bgcolor: '#1B4FD8', '&:hover': { bgcolor: '#1541B5' } }}
-          >
-            Apply Filters
-          </Button>
+          <Box>
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, display: 'block', lineHeight: 1 }}>
+              {activeFiltersCount > 0 ? `${activeFiltersCount} Filter${activeFiltersCount > 1 ? 's' : ''} Selected` : 'No Filters'}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#0F172A', fontWeight: 800, fontSize: '0.85rem', mt: 0.3 }}>
+              {properties.length} Properties Found
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClearFilters}
+                sx={{
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  color: '#64748B',
+                  borderColor: '#CBD5E1',
+                  px: 1.5,
+                  py: 0.8,
+                  fontSize: '0.82rem',
+                  '&:hover': { borderColor: '#94A3B8', bgcolor: '#F8FAFC' },
+                }}
+              >
+                Clear All
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => handleApplyFilters()}
+              sx={{
+                borderRadius: 2,
+                fontWeight: 800,
+                textTransform: 'none',
+                bgcolor: '#1B4FD8',
+                px: { xs: 2.5, sm: 3.5 },
+                py: 0.9,
+                fontSize: '0.85rem',
+                boxShadow: '0 4px 12px rgba(27, 79, 216, 0.25)',
+                '&:hover': { bgcolor: '#1541B5' },
+              }}
+            >
+              Apply Filters
+            </Button>
+          </Box>
         </Box>
       </Drawer>
     </Box>

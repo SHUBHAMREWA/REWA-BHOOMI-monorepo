@@ -1120,6 +1120,13 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       WHERE c.type = 'DIRECT' AND c.recipient_id IS NOT NULL
       ON CONFLICT DO NOTHING;
     `
+  },
+  {
+    name: '028_add_is_read_to_messages',
+    sql: `
+      ALTER TABLE messages
+        ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT false;
+    `
   }
 ];
 
