@@ -4,6 +4,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import GridViewIcon from '@mui/icons-material/GridView';
 
+import ShareButton from '@/components/ShareButton';
+
 interface ProjectData {
   id: string;
   slug: string;
@@ -14,6 +16,7 @@ interface ProjectData {
   city: string;
   state: string;
   featured_image_url?: string;
+  description?: string;
 }
 
 async function fetchProjects(): Promise<ProjectData[]> {
@@ -57,8 +60,24 @@ export default async function PopularProjects() {
                 component={Link}
                 href={`/projects/${project.slug}`}
                 className="property-card"
-                sx={{ display: 'block', textDecoration: 'none', overflow: 'hidden' }}
+                sx={{ display: 'block', textDecoration: 'none', overflow: 'hidden', position: 'relative' }}
               >
+                <ShareButton 
+                  url={`/projects/${project.slug}`}
+                  title={project.name}
+                  text={project.description || `Check out ${project.name}`}
+                  sx={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    zIndex: 4,
+                    bgcolor: 'rgba(255,255,255,0.85)',
+                    backdropFilter: 'blur(4px)',
+                    color: '#0F172A',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    '&:hover': { bgcolor: '#1B4FD8', color: 'white' }
+                  }}
+                />
                 {project.featured_image_url && (
                   <Box 
                     sx={{ 

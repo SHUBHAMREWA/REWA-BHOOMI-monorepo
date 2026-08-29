@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import HomeIcon from '@mui/icons-material/Home';
+import ShareIcon from '@mui/icons-material/Share';
 
 const PublicMapViewer = dynamic(() => import('./PublicMapViewer'), {
   ssr: false,
@@ -52,6 +53,23 @@ export default function ProjectDetailsPage() {
   const googleMapsUrl = project.latitude && project.longitude
     ? `https://www.google.com/maps/search/?api=1&query=${project.latitude},${project.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${project.name}, ${project.city || 'Rewa'}, ${project.state || 'Madhya Pradesh'}`)}`;
+
+  const handleShare = () => {
+    const url = window.location.href;
+    const title = project.name;
+    const text = project.description || `Check out ${project.name} located in ${project.city}.`;
+
+    if (navigator.share) {
+      navigator.share({
+        title,
+        text,
+        url,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      toast.success('Link copied to clipboard!');
+    }
+  };
 
   return (
     <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', pb: 8 }}>
@@ -118,11 +136,21 @@ export default function ProjectDetailsPage() {
               </Box>
             </Box>
 
-            {project.developer && (
-              <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
-                Developer: <Typography component="span" variant="caption" sx={{ color: '#94A3B8', fontWeight: 700 }}>{project.developer}</Typography>
-              </Typography>
-            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button 
+                size="small"
+                startIcon={<ShareIcon />} 
+                onClick={handleShare}
+                sx={{ color: '#94A3B8', '&:hover': { color: '#38BDF8', bgcolor: 'rgba(56,189,248,0.1)' }, textTransform: 'none', fontWeight: 600 }}
+              >
+                Share Project
+              </Button>
+              {project.developer && (
+                <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
+                  Developer: <Typography component="span" variant="caption" sx={{ color: '#94A3B8', fontWeight: 700 }}>{project.developer}</Typography>
+                </Typography>
+              )}
+            </Box>
           </Box>
         </Container>
       </Box>
