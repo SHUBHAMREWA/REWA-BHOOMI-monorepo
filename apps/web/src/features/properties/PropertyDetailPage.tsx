@@ -107,7 +107,7 @@ interface PropertyData {
 
 export default function PropertyDetailPage({ initialProperty, slug }: { initialProperty: PropertyData | null, slug: string }) {
   const router = useRouter();
-  const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, user, isLoading: isAuthLoading, accessToken } = useAuth();
   
   const [property, setProperty] = useState<PropertyData | null>(initialProperty);
   const [loading, setLoading] = useState(!initialProperty);
@@ -115,7 +115,10 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
   useEffect(() => {
     if (!initialProperty && !isAuthLoading) {
-      // Fetch property client-side if missing from SSR (e.g. requires auth)
+      // Fetch property client-side if missing from SSR (e.g. admin previewing PENDING).
+      // We wait for isAuthLoading=false (set only after refreshAuth resolves & token is ready).
+      setLoading(true);
+      setError(false);
       import('@/lib/api').then(({ apiClient }) => {
         apiClient.get(`/properties/${slug}`)
           .then(res => {
@@ -128,7 +131,8 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
           });
       });
     }
-  }, [initialProperty, slug, isAuthLoading]);
+  // accessToken is in deps so if the token arrives late we still retry
+  }, [initialProperty, slug, isAuthLoading, accessToken]);
 
   const [isFavorited, setIsFavorited] = useState(property?.is_favorited || false);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
