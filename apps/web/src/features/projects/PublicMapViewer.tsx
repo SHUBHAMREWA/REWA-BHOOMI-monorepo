@@ -80,12 +80,15 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
 
     const stage = stageRef.current;
     if (stage) {
-      stage.scale({ x: 1.0, y: 1.0 });
+      const isMobile = window.innerWidth <= 768;
+      const initialScale = isMobile ? 0.4 : 1.0;
+
+      stage.scale({ x: initialScale, y: initialScale });
       stage.position({
-        x: canvasSize.width / 2 - centerX,
-        y: canvasSize.height / 2 - centerY,
+        x: canvasSize.width / 2 - (centerX * initialScale),
+        y: canvasSize.height / 2 - (centerY * initialScale),
       });
-      setStageScale(1.0);
+      setStageScale(initialScale);
       stage.batchDraw();
     }
   }, [plots, mapObjects, canvasSize]);
@@ -109,9 +112,31 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
       setHighlightId(null);
       return;
     }
-    const match = plots.find(p => p.plot_number.toLowerCase().includes(value.toLowerCase().trim()));
+    const match = plots.find((p: any) => p.plot_number.toLowerCase().includes(value.toLowerCase().trim()));
     if (match) {
       setHighlightId(match.id);
+      
+      const stage = stageRef.current;
+      if (stage && match.polygon_geometry?.coordinates?.[0]) {
+        const center = polygonCenter(match.polygon_geometry.coordinates[0]);
+        const boardWidth = 1600;
+        const boardHeight = 1000;
+        const plotX = center[0] * boardWidth;
+        const plotY = center[1] * boardHeight;
+        
+        // Target scale - slightly zoomed in if we were zoomed out
+        const targetScale = Math.max(stage.scaleX(), 1.5);
+        
+        // Animate pan to center
+        stage.to({
+          x: canvasSize.width / 2 - (plotX * targetScale),
+          y: canvasSize.height / 2 - (plotY * targetScale),
+          scaleX: targetScale,
+          scaleY: targetScale,
+          duration: 0.4,
+        });
+        setStageScale(targetScale);
+      }
     } else {
       setHighlightId(null);
     }

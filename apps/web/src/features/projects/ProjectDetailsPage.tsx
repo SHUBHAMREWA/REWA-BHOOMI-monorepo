@@ -161,6 +161,26 @@ export default function ProjectDetailsPage() {
           <PublicMapViewer project={project} plots={plots} mapObjects={mapObjects} />
         </Paper>
 
+        <Box sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}>
+          <Button 
+            fullWidth 
+            variant="contained" 
+            size="large"
+            href="tel:+918889999120" // Adjust number or logic as needed
+            sx={{ 
+              bgcolor: '#1B4FD8', 
+              color: 'white', 
+              py: 1.5, 
+              borderRadius: 3, 
+              fontWeight: 800,
+              fontSize: '1rem',
+              boxShadow: '0 8px 16px rgba(27,79,216,0.2)'
+            }}
+          >
+            Contact for Booking & Info
+          </Button>
+        </Box>
+
         {/* ─── 3. BOTTOM CARDS: OVERVIEW & REAL WORLD LOCATION ─── */}
         <Grid container spacing={3} sx={{ mt: 2 }}>
           <Grid item xs={12} md={6}>
