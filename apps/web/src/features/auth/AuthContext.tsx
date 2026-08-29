@@ -56,7 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Attempt instant hydration from localStorage to prevent profile flickering
+    // Attempt instant hydration from localStorage to prevent profile flickering.
+    // NOTE: We intentionally keep isLoading=true here so that any component
+    // waiting on auth (e.g. PropertyDetailPage client-side fetch) doesn't fire
+    // before the real access token is available in memory (set by refreshAuth).
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('user_session');
       if (cached) {
@@ -66,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ...prev,
             user: parsedUser,
             isAuthenticated: true,
-            isLoading: false,
+            // Keep isLoading:true — refreshAuth() will set it false once token is ready
           }));
         } catch {
           localStorage.removeItem('user_session');
