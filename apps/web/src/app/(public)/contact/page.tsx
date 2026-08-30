@@ -17,12 +17,10 @@ import YouTubeIcon from '@mui/icons-material/YouTube';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import toast from 'react-hot-toast';
-import { apiGet } from '@/lib/api';
-import type { CompanyCommunication } from '@rewa-bhoomi/types';
+import { useCompanyCommunication } from '@/features/home/api/useHomeData';
 
 export default function ContactUsPage() {
-  const [comm, setComm] = useState<CompanyCommunication | null>(null);
-  const [isLoadingComm, setIsLoadingComm] = useState(true);
+  const { data: comm, isLoading: isLoadingComm } = useCompanyCommunication();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -32,25 +30,6 @@ export default function ContactUsPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    async function loadComm() {
-      try {
-        const data = await apiGet<CompanyCommunication>('/communication');
-        if (mounted && data) {
-          setComm(data);
-        }
-      } catch (err) {
-        // Silently fallback
-      } finally {
-        if (mounted) setIsLoadingComm(false);
-      }
-    }
-    loadComm();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

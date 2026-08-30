@@ -25,7 +25,7 @@ export default async function FeaturedProperties() {
 
   return (
     <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#FFFFFF' }}>
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 5, flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography variant="caption" sx={{ color: '#1B4FD8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>

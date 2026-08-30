@@ -1,33 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Fab, Tooltip, Zoom } from '@mui/material';
+import { Fab, Tooltip } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import { apiGet } from '@/lib/api';
-import type { CompanyCommunication } from '@rewa-bhoomi/types';
+import { useCompanyCommunication } from '@/features/home/api/useHomeData';
 
 export default function FloatingWhatsAppButton() {
-  const [comm, setComm] = useState<CompanyCommunication | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    async function loadComm() {
-      try {
-        const data = await apiGet<CompanyCommunication>('/communication');
-        if (mounted && data) {
-          setComm(data);
-        }
-      } catch (err) {
-        // Silently catch
-      }
-    }
-    loadComm();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const { data: comm } = useCompanyCommunication();
 
   if (!comm?.whatsapp_number) return null;
+
 
   const whatsappHref = `https://wa.me/${comm.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(
     comm.whatsapp_message || 'Namaste, I want to inquire about properties on Rewa Bhoomi'

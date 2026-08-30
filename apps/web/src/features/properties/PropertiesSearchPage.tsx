@@ -41,6 +41,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import CheckIcon from '@mui/icons-material/Check';
 
 import PropertyCard, { PropertyCardData } from './PropertyCard';
+import { PropertyListCardSkeleton, PropertyGridCardSkeleton } from './PropertySkeletons';
 import { apiGet } from '@/lib/api';
 import {
   PROPERTY_CATEGORIES,
@@ -544,7 +545,7 @@ export default function PropertiesSearchPage() {
           )}
         </Box>
 
-        {/* ─── BUDGET RANGE FILTER BANNER (Perfect Inline Alignment) ─── */}
+        {/* ─── BUDGET RANGE FILTER BANNER (Perfect Centered Alignment) ─── */}
         <Paper
           elevation={0}
           sx={{
@@ -555,6 +556,9 @@ export default function PropertiesSearchPage() {
             border: '1px solid #E2E8F0',
             display: 'flex',
             flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
             gap: 1,
           }}
         >
@@ -563,103 +567,105 @@ export default function PropertiesSearchPage() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justify: 'center',
+              justifyContent: 'center',
               width: '100%',
-              gap: { xs: 0.8, sm: 1.2 },
-              flexWrap: 'wrap',
+              gap: { xs: 0.6, sm: 1 },
+              flexWrap: 'nowrap',
+              overflowX: 'auto',
+              '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            {/* Centered Controls */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 0.8 }, flexWrap: 'nowrap' }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 700,
-                  color: '#334155',
-                  fontSize: { xs: '0.75rem', sm: '0.85rem' },
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Budget:
-              </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+                color: '#334155',
+                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              Budget:
+            </Typography>
 
-              <Select
-                size="small"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                displayEmpty
-                renderValue={(selected) => formatSelectLabel(selected, 'Min')}
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  borderRadius: '6px',
-                  minWidth: { xs: 65, sm: 90 },
-                  fontSize: { xs: '0.72rem', sm: '0.78rem' },
-                  fontWeight: 600,
-                  color: '#0F172A',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#94A3B8' },
-                  '& .MuiSelect-select': { py: 0.3, px: { xs: 0.6, sm: 1 } },
-                }}
-              >
-                {BUDGET_OPTIONS_MIN.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                ))}
-              </Select>
+            <Select
+              size="small"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              displayEmpty
+              renderValue={(selected) => formatSelectLabel(selected, 'Min')}
+              sx={{
+                bgcolor: '#FFFFFF',
+                borderRadius: '6px',
+                minWidth: { xs: 68, sm: 90 },
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                fontWeight: 600,
+                color: '#0F172A',
+                flexShrink: 0,
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#94A3B8' },
+                '& .MuiSelect-select': { py: 0.3, px: { xs: 0.6, sm: 1 } },
+              }}
+            >
+              {BUDGET_OPTIONS_MIN.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+              ))}
+            </Select>
 
-              <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem' }}>
-                to
-              </Typography>
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', flexShrink: 0 }}>
+              to
+            </Typography>
 
-              <Select
-                size="small"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                displayEmpty
-                renderValue={(selected) => formatSelectLabel(selected, 'Max')}
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  borderRadius: '6px',
-                  minWidth: { xs: 65, sm: 90 },
-                  fontSize: { xs: '0.72rem', sm: '0.78rem' },
-                  fontWeight: 600,
-                  color: '#0F172A',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#94A3B8' },
-                  '& .MuiSelect-select': { py: 0.3, px: { xs: 0.6, sm: 1 } },
-                }}
-              >
-                {BUDGET_OPTIONS_MAX.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                ))}
-              </Select>
+            <Select
+              size="small"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              displayEmpty
+              renderValue={(selected) => formatSelectLabel(selected, 'Max')}
+              sx={{
+                bgcolor: '#FFFFFF',
+                borderRadius: '6px',
+                minWidth: { xs: 68, sm: 90 },
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                fontWeight: 600,
+                color: '#0F172A',
+                flexShrink: 0,
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#94A3B8' },
+                '& .MuiSelect-select': { py: 0.3, px: { xs: 0.6, sm: 1 } },
+              }}
+            >
+              {BUDGET_OPTIONS_MAX.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+              ))}
+            </Select>
 
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => handleApplyFilters()}
-                sx={{
-                  bgcolor: '#1B4FD8',
-                  color: '#FFFFFF',
-                  borderRadius: '8px',
-                  px: { xs: 1.2, sm: 2.5 },
-                  py: 0.35,
-                  fontWeight: 700,
-                  fontSize: { xs: '0.72rem', sm: '0.78rem' },
-                  textTransform: 'none',
-                  boxShadow: 'none',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  '&:hover': { bgcolor: '#1541B5' },
-                }}
-              >
-                Apply
-              </Button>
-            </Box>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => handleApplyFilters()}
+              sx={{
+                bgcolor: '#1B4FD8',
+                color: '#FFFFFF',
+                borderRadius: '8px',
+                px: { xs: 1.5, sm: 2.5 },
+                py: 0.35,
+                fontWeight: 700,
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                textTransform: 'none',
+                boxShadow: 'none',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                '&:hover': { bgcolor: '#1541B5' },
+              }}
+            >
+              Apply
+            </Button>
           </Box>
 
           {/* Bottom Row: Centered Half-Width Touch Slider */}
-          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', pt: 0.2, pb: 0.2 }}>
-            <Box sx={{ width: { xs: '80%', sm: '50%' }, px: 1 }}>
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', pt: 0.2, pb: 0.2 }}>
+            <Box sx={{ width: { xs: '85%', sm: '50%', md: '45%' }, px: 1 }}>
               <Slider
                 value={[Number(minPrice) || 300000, Number(maxPrice) || 10000000]}
                 min={300000}
@@ -809,11 +815,21 @@ export default function PropertiesSearchPage() {
 
         {/* Results Loading State */}
         {loading ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} variant="rectangular" height={220} sx={{ borderRadius: 4 }} />
-            ))}
-          </Box>
+          viewMode === 'list' ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {[1, 2, 3, 4].map(i => (
+                <PropertyListCardSkeleton key={i} />
+              ))}
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <Grid item xs={12} sm={6} md={4} key={i}>
+                  <PropertyGridCardSkeleton />
+                </Grid>
+              ))}
+            </Grid>
+          )
         ) : properties.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 10, bgcolor: 'white', borderRadius: 4, border: '1px solid #E2E8F0' }}>
             <Typography variant="h5" color="text.secondary">

@@ -12,6 +12,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@mui/material', '@mui/icons-material'],
   },
+
+
   // Headers for security
   async headers() {
     return [
