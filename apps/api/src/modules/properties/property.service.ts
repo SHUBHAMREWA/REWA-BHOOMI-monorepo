@@ -275,8 +275,8 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
 // ─── Get Property by ID (for edit/ownership check) ──────────────────────────
 
 export async function getPropertyById(id: string) {
-  return queryOne<{ id: string; owner_id: string; status: string }>(
-    'SELECT id, owner_id, status FROM properties WHERE id = $1 AND deleted_at IS NULL',
+  return queryOne<{ id: string; owner_id: string; status: string; title: string; slug: string; city: string }>(
+    'SELECT id, owner_id, status, title, slug, city FROM properties WHERE id = $1 AND deleted_at IS NULL',
     [id],
   );
 }
@@ -292,7 +292,7 @@ export async function createProperty(
   const slug = await generateUniqueSlug(input.title, city);
   const status = createdByRole === 'ADMIN' ? 'PUBLISHED' : 'PENDING_REVIEW';
 
-  return withTransaction(async (client) => {
+  const createdProp = await withTransaction(async (client) => {
     // 0. Fetch valid category_id from DB
     const catRes = await client.query<{ id: string }>(
       `SELECT id FROM property_categories ORDER BY sort_order ASC LIMIT 1`
@@ -460,6 +460,23 @@ export async function createProperty(
 
     return result.rows[0];
   });
+
+  // Notify Admins in background if submitted by a user
+  if (createdByRole === 'USER') {
+    try {
+      const { notifyAdminsNewProperty } = await import('../notifications/push.service');
+      notifyAdminsNewProperty({
+        propertyId: createdProp.id,
+        slug: createdProp.slug,
+        title: input.title,
+        city,
+        ownerId,
+        isUpdate: false,
+      }).catch((err) => console.warn('Failed to notify admins of new property:', err));
+    } catch (e) {}
+  }
+
+  return createdProp;
 }
 
 // ─── Update Property ──────────────────────────────────────────────────────────
@@ -511,6 +528,12 @@ export async function updateProperty(
   if (areaUnit) fields.push(['area_unit', areaUnit]);
   if (bedrooms !== null) fields.push(['bedrooms', bedrooms]);
   if (bathrooms !== null) fields.push(['bathrooms', bathrooms]);
+
+  // When updated by a regular user, reset status to PENDING_REVIEW for re-approval
+  if (!isAdmin) {
+    fields.push(['status', 'PENDING_REVIEW']);
+    fields.push(['rejection_reason', null]);
+  }
 
   if (input.customAmenities !== undefined) {
     fields.push(['custom_amenities', input.customAmenities]);
@@ -706,6 +729,22 @@ export async function updateProperty(
     }
   }
 
+  // If updated by a regular user, notify admins of re-approval requirement
+  if (!isAdmin) {
+    try {
+      const { notifyAdminsNewProperty } = await import('../notifications/push.service');
+      const property = await getPropertyById(id);
+      notifyAdminsNewProperty({
+        propertyId: id,
+        slug: property?.slug || '',
+        title: input.title || property?.title || 'Property',
+        city: input.location?.city || property?.city || 'Unknown',
+        ownerId: property?.owner_id || '',
+        isUpdate: true,
+      }).catch((err) => console.warn('Failed to notify admins of property update:', err));
+    } catch (e) {}
+  }
+
   return getPropertyBySlug(
     (await queryOne<{ slug: string }>('SELECT slug FROM properties WHERE id = $1', [id]))!.slug,
     requesterId,
@@ -830,6 +869,19 @@ export async function moderateProperty(
      WHERE id = $3`,
     [status, rejectionReason ?? null, id],
   );
+
+  // Notify Owner in background
+  try {
+    const { notifyUserPropertyModeration } = await import('../notifications/push.service');
+    notifyUserPropertyModeration({
+      ownerId: property.owner_id,
+      propertyId: id,
+      slug: property.slug || '',
+      title: property.title || 'Property',
+      status,
+      rejectionReason: rejectionReason ?? undefined,
+    }).catch((err) => console.warn('Failed to notify user of property moderation:', err));
+  } catch (e) {}
 }
 
 // ─── Admin: Set Popular ───────────────────────────────────────────────────────
