@@ -24,6 +24,8 @@ import chatRoutes from './modules/chat/chat.routes';
 import groupRoutes from './modules/groups/group.routes';
 import webrtcRoutes from './modules/webrtc/webrtc.routes';
 import usersRoutes from './modules/users/users.routes';
+import posterRoutes from './modules/posters/poster.routes';
+import communicationRoutes from './modules/communication/communication.routes';
 
 // ─── App setup ────────────────────────────────────────────────────────────────
 
@@ -118,6 +120,8 @@ app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/groups', groupRoutes);
 app.use('/api/v1/webrtc', webrtcRoutes);
 app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/posters', posterRoutes);
+app.use('/api/v1/communication', communicationRoutes);
 // Future routes will be added here as modules are implemented
 
 // ─── 404 + Error handling ─────────────────────────────────────────────────────

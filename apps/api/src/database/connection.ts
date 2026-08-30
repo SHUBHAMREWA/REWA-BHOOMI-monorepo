@@ -26,7 +26,7 @@ export async function connectDatabase(): Promise<void> {
 
 // ─── Query helper ────────────────────────────────────────────────────────────────
 
-export async function query<T extends Record<string, unknown>>(
+export async function query<T extends Record<string, any> = any>(
   text: string,
   params?: unknown[],
 ): Promise<T[]> {
@@ -41,7 +41,7 @@ export async function query<T extends Record<string, unknown>>(
   return result.rows;
 }
 
-export async function queryOne<T extends Record<string, unknown>>(
+export async function queryOne<T extends Record<string, any> = any>(
   text: string,
   params?: unknown[],
 ): Promise<T | null> {

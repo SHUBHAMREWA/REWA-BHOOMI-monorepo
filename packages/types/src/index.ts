@@ -633,3 +633,65 @@ export interface AuditLog {
   ip?: string;
   createdAt: string;
 }
+
+// ─── Posters & Banners ────────────────────────────────────────────────────────
+
+export interface Poster {
+  id: string;
+  title?: string | null;
+  image_url: string; // Desktop / Default image URL
+  storage_key: string;
+  mobile_image_url?: string | null; // Mobile image URL
+  mobile_storage_key?: string | null;
+  redirect_url?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePosterInput {
+  title?: string;
+  redirect_url?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface UpdatePosterInput {
+  title?: string | null;
+  redirect_url?: string | null;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+
+// ─── Communication & Social Media ─────────────────────────────────────────────
+
+export interface CompanyCommunication {
+  id: string;
+  whatsapp_number?: string | null;
+  whatsapp_message?: string | null;
+  instagram_url?: string | null;
+  twitter_url?: string | null;
+  youtube_url?: string | null;
+  facebook_url?: string | null;
+  linkedin_url?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  office_address?: string | null;
+  updated_at: string;
+}
+
+export interface UpdateCompanyCommunicationInput {
+  whatsapp_number?: string | null;
+  whatsapp_message?: string | null;
+  instagram_url?: string | null;
+  twitter_url?: string | null;
+  youtube_url?: string | null;
+  facebook_url?: string | null;
+  linkedin_url?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  office_address?: string | null;
+}
+

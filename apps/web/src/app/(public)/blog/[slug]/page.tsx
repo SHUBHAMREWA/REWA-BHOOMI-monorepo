@@ -1,7 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-export const dynamic = 'force-dynamic';
 import { Container, Typography, Box, Chip, Divider, Avatar, Paper, Stack } from '@mui/material';
 import { format } from 'date-fns';
 import { Blog } from '@rewa-bhoomi/types';
@@ -9,6 +8,8 @@ import { APP_URL, APP_NAME } from '@rewa-bhoomi/config';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TranslateIcon from '@mui/icons-material/Translate';
 import ShareButtons from '@/features/blogs/components/ShareButtons';
+
+export const dynamic = 'force-dynamic';
 
 // ─── Server-side data fetch ──────────────────────────────────────────────────
 

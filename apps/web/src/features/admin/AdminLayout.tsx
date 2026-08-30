@@ -14,6 +14,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ArticleIcon from '@mui/icons-material/Article';
 import ChatIcon from '@mui/icons-material/Chat';
 import BlockIcon from '@mui/icons-material/Block';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import Badge from '@mui/material/Badge';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useConversations } from '@/features/chat/chat-api';
@@ -27,6 +28,7 @@ const menuItems = [
   { text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
   { text: 'Properties', icon: <HomeWorkIcon />, path: '/admin/properties' },
   { text: 'Projects', icon: <BusinessIcon />, path: '/admin/projects' },
+  { text: 'Posters & Social', icon: <CampaignIcon />, path: '/admin/posters-communication' },
   { text: 'Blogs', icon: <ArticleIcon />, path: '/admin/blogs' },
   { text: 'Chat Support', icon: <ChatIcon />, path: '/admin/chat' },
   { text: 'Audit Logs', icon: <HistoryIcon />, path: '/admin/logs' },

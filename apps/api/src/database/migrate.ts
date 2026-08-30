@@ -1177,8 +1177,56 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       ALTER TABLE properties ADD COLUMN IF NOT EXISTS video_url TEXT;
       ALTER TABLE properties ADD COLUMN IF NOT EXISTS custom_amenities TEXT[] DEFAULT '{}';
     `
+  },
+  {
+    name: '030_posters_and_communication',
+    sql: `
+      CREATE TABLE IF NOT EXISTS posters (
+        id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title              VARCHAR(150),
+        image_url          TEXT NOT NULL,
+        storage_key        VARCHAR(500) NOT NULL,
+        mobile_image_url   TEXT,
+        mobile_storage_key VARCHAR(500),
+        redirect_url       TEXT,
+        sort_order         INTEGER NOT NULL DEFAULT 0,
+        is_active          BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_posters_sort_order ON posters(sort_order);
+      CREATE INDEX IF NOT EXISTS idx_posters_is_active ON posters(is_active);
+
+      CREATE TABLE IF NOT EXISTS company_communications (
+        id                   VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+        whatsapp_number      VARCHAR(20) DEFAULT '+919999999999',
+        whatsapp_message     TEXT DEFAULT 'Namaste, I would like to inquire about properties on Rewa Bhoomi.',
+        instagram_url        VARCHAR(500) DEFAULT '',
+        twitter_url          VARCHAR(500) DEFAULT '',
+        youtube_url          VARCHAR(500) DEFAULT '',
+        facebook_url         VARCHAR(500) DEFAULT '',
+        linkedin_url         VARCHAR(500) DEFAULT '',
+        contact_phone        VARCHAR(20) DEFAULT '+919999999999',
+        contact_email        VARCHAR(255) DEFAULT 'contact@rewabhoomi.com',
+        office_address       TEXT DEFAULT 'Rewa, Madhya Pradesh, India',
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      INSERT INTO company_communications (id)
+      VALUES ('default')
+      ON CONFLICT (id) DO NOTHING;
+    `
+  },
+  {
+    name: '031_poster_mobile_and_desktop',
+    sql: `
+      ALTER TABLE posters ADD COLUMN IF NOT EXISTS mobile_image_url TEXT;
+      ALTER TABLE posters ADD COLUMN IF NOT EXISTS mobile_storage_key VARCHAR(500);
+    `
   }
 ];
+
 
 // ─── Migration runner ────────────────────────────────────────────────────────────
 

@@ -13,21 +13,41 @@ interface Props {
 }
 
 async function getProperty(slug: string) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-  const res = await fetch(`${apiUrl}/api/v1/properties/${slug}`, {
-    next: { revalidate: 60 },
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error('Failed to fetch property');
+  if (
+    !slug ||
+    slug.startsWith('_') ||
+    slug.endsWith('.js') ||
+    slug.endsWith('.map') ||
+    slug.endsWith('.json') ||
+    slug.endsWith('.png') ||
+    slug.endsWith('.jpg') ||
+    slug.endsWith('.ico')
+  ) {
+    return null;
   }
 
-  const json = await res.json();
-  return json.data;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  try {
+    const res = await fetch(`${apiUrl}/api/v1/properties/${slug}`, {
+      next: { revalidate: 60 },
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (params.purpose.startsWith('_') || params.slug.endsWith('.js')) {
+    return { title: 'Not Found' };
+  }
+
   const property = await getProperty(params.slug);
   if (!property) return { title: 'Property Not Found' };
 
@@ -57,7 +77,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PropertySeoRoute({ params }: Props) {
+  if (
+    params.purpose.startsWith('_') ||
+    params.category.startsWith('_') ||
+    params.type.startsWith('_') ||
+    params.slug.endsWith('.js')
+  ) {
+    notFound();
+  }
+
   const property = await getProperty(params.slug);
+  if (!property) {
+    notFound();
+  }
+
 
   return (
     <>

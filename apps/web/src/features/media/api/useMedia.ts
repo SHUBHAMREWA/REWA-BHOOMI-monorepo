@@ -3,22 +3,28 @@ import { apiPost } from '@/lib/api';
 
 export const useUploadMedia = () => {
   return useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // We cannot use apiPost directly with FormData since it sets Content-Type to application/json by default
-      // We will use the underlying apiClient to bypass default headers
+    mutationFn: async (payload: File | { imageUrl: string }) => {
       const { apiClient } = await import('@/lib/api');
-      const response = await apiClient.post<{ success: true; data: { url: string } }>('/media/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data.data;
+      
+      if (payload instanceof File) {
+        const formData = new FormData();
+        formData.append('file', payload);
+        const response = await apiClient.post<{ success: true; data: { url: string } }>('/media/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        return response.data.data;
+      } else {
+        const response = await apiClient.post<{ success: true; data: { url: string } }>('/media/upload', {
+          imageUrl: payload.imageUrl,
+        });
+        return response.data.data;
+      }
     },
   });
 };
+
 
 export const useDeleteMedia = () => {
   return useMutation({

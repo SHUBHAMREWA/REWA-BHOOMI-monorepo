@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import FloatingWhatsAppButton from './FloatingWhatsAppButton';
 import { Paper, BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
 import { Home, Search, AddCircle, Person } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
@@ -28,6 +29,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           {children}
         </main>
         {!isAdmin && <Footer />}
+        {!isAdmin && <FloatingWhatsAppButton />}
       </Box>
 
       {!isAdmin && (

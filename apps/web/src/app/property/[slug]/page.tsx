@@ -12,33 +12,54 @@ interface Props {
 import { cookies } from 'next/headers';
 
 async function getProperty(slug: string) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-  
-  const cookieStore = cookies();
-  const cookieStr = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
-
-  const res = await fetch(`${apiUrl}/api/v1/properties/${slug}`, {
-    headers: {
-      Cookie: cookieStr
-    },
-    cache: 'no-store'
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error('Failed to fetch property');
+  if (
+    !slug ||
+    slug.startsWith('_') ||
+    slug.endsWith('.js') ||
+    slug.endsWith('.map') ||
+    slug.endsWith('.json') ||
+    slug.endsWith('.png') ||
+    slug.endsWith('.jpg') ||
+    slug.endsWith('.ico')
+  ) {
+    return null;
   }
 
-  const json = await res.json();
-  return json.data;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  
+  try {
+    const cookieStore = cookies();
+    const cookieStr = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
+
+    const res = await fetch(`${apiUrl}/api/v1/properties/${slug}`, {
+      headers: {
+        Cookie: cookieStr
+      },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const json = await res.json();
+    return json.data;
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (params.slug?.endsWith('.js') || params.slug?.startsWith('_')) {
+    return { title: 'Not Found' };
+  }
+
   const property = await getProperty(params.slug);
 
   if (!property) {
     return { title: 'Property Not Found' };
   }
+
 
   const title = `${property.title} | ${APP_NAME}`;
   const description = property.description.substring(0, 160);

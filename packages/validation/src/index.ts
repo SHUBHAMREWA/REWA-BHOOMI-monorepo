@@ -390,6 +390,30 @@ export const SetPopularPropertySchema = z.object({
   popularRank: z.number().int().min(1).max(9999).optional(),
 });
 
+// ─── Posters & Banners ────────────────────────────────────────────────────────
+
+export const UpdatePosterSchema = z.object({
+  title: z.string().max(150).nullable().optional(),
+  redirectUrl: z.string().url().or(z.literal('')).nullable().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+});
+
+// ─── Company Communication ───────────────────────────────────────────────────
+
+export const UpdateCompanyCommunicationSchema = z.object({
+  whatsappNumber: z.string().max(20).nullable().optional(),
+  whatsappMessage: z.string().max(500).nullable().optional(),
+  instagramUrl: z.string().max(500).nullable().optional(),
+  twitterUrl: z.string().max(500).nullable().optional(),
+  youtubeUrl: z.string().max(500).nullable().optional(),
+  facebookUrl: z.string().max(500).nullable().optional(),
+  linkedinUrl: z.string().max(500).nullable().optional(),
+  contactPhone: z.string().max(20).nullable().optional(),
+  contactEmail: z.string().email().or(z.literal('')).nullable().optional(),
+  officeAddress: z.string().max(500).nullable().optional(),
+});
+
 // ─── Type Exports ───────────────────────────────────────────────────────────────
 
 export type RegisterInput = z.infer<typeof RegisterSchema>;
@@ -410,4 +434,7 @@ export type CreateBlogTagInput = z.infer<typeof CreateBlogTagSchema>;
 export type BlogFaqItem = z.infer<typeof BlogFaqItemSchema>;
 export type SendMessageInput = z.infer<typeof SendMessageSchema>;
 export type AdminUpdateUserInput = z.infer<typeof AdminUpdateUserSchema>;
+export type UpdatePosterInputType = z.infer<typeof UpdatePosterSchema>;
+export type UpdateCompanyCommunicationInputType = z.infer<typeof UpdateCompanyCommunicationSchema>;
+
 

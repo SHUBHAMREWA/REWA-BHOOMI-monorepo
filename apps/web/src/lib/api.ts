@@ -117,7 +117,13 @@ export async function apiPost<T>(url: string, data?: unknown, config?: import('a
   return response.data;
 }
 
+export async function apiPut<T>(url: string, data?: unknown, config?: import('axios').AxiosRequestConfig) {
+  const response = await apiClient.put<{ success: true; data: T; message?: string }>(url, data, config);
+  return response.data;
+}
+
 export async function apiPatch<T>(url: string, data?: unknown) {
+
   const response = await apiClient.patch<{ success: true; data: T; message?: string }>(url, data);
   return response.data;
 }
