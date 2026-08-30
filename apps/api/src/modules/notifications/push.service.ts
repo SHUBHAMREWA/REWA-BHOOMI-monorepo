@@ -65,8 +65,11 @@ export const sendPushToUser = async (userId: string, payload: PushPayload) => {
     title: payload.title,
     body: payload.body,
     icon: payload.icon || '/icons/icon-192x192.png',
-    badge: payload.badge || '/icons/icon-72x72.png',
-    data: payload.data || {}
+    badge: payload.badge || '/icons/badge-72x72.png',
+    data: {
+      ...(payload.data || {}),
+      timestamp: Date.now()
+    }
   });
 
   const sendPromises = subscriptions.map(async (sub: any) => {
@@ -117,9 +120,13 @@ export const notifyChatMessagePush = async (params: {
   isApproved: boolean;
   senderId: string;
   senderName: string;
+  senderAvatar?: string;
   content: string;
 }) => {
-  const { conversationId, type, initiatorId, recipientId, isApproved, senderId, senderName, content } = params;
+  const { conversationId, type, initiatorId, recipientId, isApproved, senderId, senderName, senderAvatar, content } = params;
+
+  const messageIcon = senderAvatar || '/icons/icon-192x192.png';
+  const badgeIcon = '/icons/badge-72x72.png';
 
   try {
     if (type === 'SUPPORT') {
@@ -127,8 +134,10 @@ export const notifyChatMessagePush = async (params: {
       if (senderId === initiatorId) {
         // Regular user sent message to Support -> Notify Admins
         await sendPushToAdmins({
-          title: `Support: ${senderName}`,
-          body: content.length > 100 ? `${content.substring(0, 97)}...` : content,
+          title: `Support • ${senderName}`,
+          body: content.length > 120 ? `${content.substring(0, 117)}...` : content,
+          icon: messageIcon,
+          badge: badgeIcon,
           data: {
             url: `/admin/chat?conversationId=${conversationId}`,
             conversationId
@@ -138,7 +147,9 @@ export const notifyChatMessagePush = async (params: {
         // Admin sent message -> Notify User
         await sendPushToUser(initiatorId, {
           title: 'Rewa Bhoomi Support',
-          body: content.length > 100 ? `${content.substring(0, 97)}...` : content,
+          body: content.length > 120 ? `${content.substring(0, 117)}...` : content,
+          icon: '/icons/icon-192x192.png',
+          badge: badgeIcon,
           data: {
             url: `/?openChat=${conversationId}`,
             conversationId
@@ -151,8 +162,10 @@ export const notifyChatMessagePush = async (params: {
         // APPROVED: Both users communicate directly
         const targetUserId = senderId === initiatorId ? recipientId : initiatorId;
         await sendPushToUser(targetUserId, {
-          title: `New message from ${senderName}`,
-          body: content.length > 100 ? `${content.substring(0, 97)}...` : content,
+          title: `${senderName}`,
+          body: content.length > 120 ? `${content.substring(0, 117)}...` : content,
+          icon: messageIcon,
+          badge: badgeIcon,
           data: {
             url: `/?openChat=${conversationId}`,
             conversationId
@@ -160,12 +173,13 @@ export const notifyChatMessagePush = async (params: {
         });
       } else {
         // NOT APPROVED (Pending Moderation):
-        // Rule: Only Admin & User 1 (initiator) know about this chat. User 2 must NOT receive push.
         if (senderId === initiatorId) {
           // User 1 sent message -> Notify Admins for moderation
           await sendPushToAdmins({
-            title: `[Moderation] ${senderName} sent a message`,
-            body: content.length > 100 ? `${content.substring(0, 97)}...` : content,
+            title: `[Moderation] ${senderName}`,
+            body: content.length > 120 ? `${content.substring(0, 117)}...` : content,
+            icon: messageIcon,
+            badge: badgeIcon,
             data: {
               url: `/admin/chat?conversationId=${conversationId}`,
               conversationId
@@ -174,8 +188,10 @@ export const notifyChatMessagePush = async (params: {
         } else {
           // Admin ghost-replied or system responded -> Notify User 1
           await sendPushToUser(initiatorId, {
-            title: `New message from ${senderName}`,
-            body: content.length > 100 ? `${content.substring(0, 97)}...` : content,
+            title: `${senderName}`,
+            body: content.length > 120 ? `${content.substring(0, 117)}...` : content,
+            icon: messageIcon,
+            badge: badgeIcon,
             data: {
               url: `/?openChat=${conversationId}`,
               conversationId

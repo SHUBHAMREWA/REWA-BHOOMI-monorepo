@@ -25,12 +25,27 @@ self.addEventListener('push', (event: PushEvent) => {
   try {
     const payload = event.data.json();
     const title = payload.title || 'Rewa Bhoomi';
-    const options: NotificationOptions = {
+    const conversationId = payload.data?.conversationId || 'chat-notification';
+
+    const options: any = {
       body: payload.body || 'You received a new message.',
       icon: payload.icon || '/icons/icon-192x192.png',
-      badge: payload.badge || '/icons/icon-72x72.png',
+      badge: payload.badge || '/icons/badge-72x72.png',
       data: payload.data || {},
-      tag: payload.data?.conversationId || 'chat-notification'
+      tag: conversationId,
+      renotify: true,
+      timestamp: payload.data?.timestamp || Date.now(),
+      vibrate: [200, 100, 200],
+      actions: [
+        {
+          action: 'open',
+          title: '💬 Open Chat',
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss',
+        },
+      ],
     };
 
     event.waitUntil(self.registration.showNotification(title, options));
@@ -40,8 +55,11 @@ self.addEventListener('push', (event: PushEvent) => {
       self.registration.showNotification('Rewa Bhoomi', {
         body: text,
         icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png'
-      })
+        badge: '/icons/badge-72x72.png',
+        tag: 'chat-notification',
+        renotify: true,
+        vibrate: [200, 100, 200],
+      } as any)
     );
   }
 });
@@ -49,6 +67,10 @@ self.addEventListener('push', (event: PushEvent) => {
 // ─── Notification Click Listener ─────────────────────────────────────────────
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
 
   const data = event.notification.data || {};
   const targetUrl = data.url || '/';

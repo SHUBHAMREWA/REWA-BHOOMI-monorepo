@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Container, Typography, Grid, Paper, CircularProgress, Chip, Divider, Button, Breadcrumbs, Link as MuiLink } from '@mui/material';
+import { Box, Container, Typography, Grid, Paper, CircularProgress, Chip, Divider, Button, Breadcrumbs, Link as MuiLink, Skeleton } from '@mui/material';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { apiGet } from '@/lib/api';
@@ -14,7 +14,7 @@ import ShareIcon from '@mui/icons-material/Share';
 
 const PublicMapViewer = dynamic(() => import('./PublicMapViewer'), {
   ssr: false,
-  loading: () => <Box p={10} textAlign="center"><CircularProgress /></Box>,
+  loading: () => <Skeleton variant="rounded" width="100%" height={450} animation="wave" sx={{ borderRadius: 3 }} />,
 });
 
 export default function ProjectDetailsPage() {
@@ -38,7 +38,55 @@ export default function ProjectDetailsPage() {
     }
   }, [slug]);
 
-  if (loading) return <Box p={10} textAlign="center"><CircularProgress /></Box>;
+  if (loading) {
+    return (
+      <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh', pb: 8 }}>
+        <Box sx={{ bgcolor: '#0F172A', pt: { xs: 6.2, md: 6.8 }, pb: 1.2, px: { xs: 2, md: 4 } }}>
+          <Container maxWidth="xl">
+            <Skeleton variant="text" width={200} sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 1 }} />
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Skeleton variant="text" width={250} height={40} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+                <Skeleton variant="rounded" width={180} height={26} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+              </Box>
+              <Skeleton variant="rounded" width={120} height={30} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+            </Box>
+          </Container>
+        </Box>
+
+        <Container maxWidth="xl" sx={{ mt: 2 }}>
+          <Skeleton variant="rounded" width="100%" height={450} animation="wave" sx={{ borderRadius: 3, mb: 2 }} />
+          
+          <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
+            <Skeleton variant="rounded" width="100%" height={52} sx={{ borderRadius: 3 }} />
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
+                <Skeleton variant="text" width={150} height={30} sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 2 }} />
+                {[1, 2, 3, 4].map((i) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                    <Skeleton variant="text" width={100} />
+                    <Skeleton variant="text" width={120} />
+                  </Box>
+                ))}
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
+                <Skeleton variant="text" width={180} height={30} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width={250} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" width="100%" height={200} sx={{ borderRadius: 2 }} />
+              </Paper>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+    );
+  }
+
   if (!project) return <Box p={10} textAlign="center"><Typography>Project not found.</Typography></Box>;
 
   const plots = mapData?.plots || project.plots || [];

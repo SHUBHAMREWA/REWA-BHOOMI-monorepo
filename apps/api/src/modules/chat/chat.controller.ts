@@ -367,6 +367,7 @@ export const sendMessage = async (req: Request, res: Response) => {
       // Use actualSenderId for routing decisions — senderId may be impersonated user
       senderId: actualSenderId,
       senderName: (populatedMessage as any)?.sender_name || 'User',
+      senderAvatar: (populatedMessage as any)?.sender_avatar,
       content
     }).catch(() => {});
   } catch (e) {}
