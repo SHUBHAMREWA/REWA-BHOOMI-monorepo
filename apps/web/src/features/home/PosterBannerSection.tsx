@@ -6,11 +6,13 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { apiGet } from '@/lib/api';
 import type { Poster } from '@rewa-bhoomi/types';
+import { PosterBannerSkeleton } from './HomeSkeletons';
 
 export default function PosterBannerSection() {
   const [posters, setPosters] = useState<Poster[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -55,9 +57,15 @@ export default function PosterBannerSection() {
     };
   }, [posters.length, currentIndex]);
 
-  if (isLoading || posters.length === 0) {
+  // If loading, show the full-width banner skeleton to avoid any layout shift (CLS)
+  if (isLoading) {
+    return <PosterBannerSkeleton />;
+  }
+
+  if (posters.length === 0) {
     return null;
   }
+
 
   const handlePrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
