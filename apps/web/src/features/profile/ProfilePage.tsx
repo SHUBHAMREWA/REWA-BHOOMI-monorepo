@@ -35,7 +35,7 @@ function CustomTabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ py: { xs: 0, md: 4 } }}>
+        <Box sx={{ py: { xs: 0.5, md: 1.5 } }}>
           {children}
         </Box>
       )}
@@ -349,51 +349,55 @@ export default function ProfilePage() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pt: { xs: 3, md: 4 }, pb: { xs: 6, md: 8 } }}>
-      <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 3 } }}>
-        <Box sx={{ mb: { xs: 2, md: 4 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pt: { xs: 1.5, sm: 2.5 }, pb: { xs: 4, sm: 5 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2.5 } }}>
+        {/* Compact Header Bar */}
+        <Box sx={{ mb: { xs: 1.2, sm: 1.8 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: 1 }}>
           <Box>
-            <Typography variant="h5" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.1rem', md: '1.6rem' } }}>
+            <Typography variant="h5" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '1.15rem', sm: '1.4rem' } }}>
               Account Dashboard
             </Typography>
-            <Typography color="#64748B" sx={{ mt: { xs: 0.2, md: 0.5 }, fontSize: { xs: '0.75rem', md: '0.9rem' }, display: { xs: 'none', sm: 'block' } }}>
+            <Typography color="#64748B" sx={{ mt: 0.2, fontSize: { xs: '0.72rem', sm: '0.82rem' }, display: { xs: 'none', sm: 'block' } }}>
               Manage your saved properties, active listings, and personal profile.
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: { xs: 1, md: 1.5 } }}>
+          <Box sx={{ display: 'flex', gap: { xs: 0.8, sm: 1.2 }, flexShrink: 0 }}>
             <Button
               variant="outlined"
               color="primary"
-              size={isMobile ? "small" : "medium"}
-              startIcon={<Share />}
+              size="small"
+              startIcon={<Share sx={{ fontSize: '1rem' }} />}
               onClick={(e) => handleShareProfile(e)}
-              sx={{ fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
+              sx={{ fontWeight: 650, borderRadius: 2, textTransform: 'none', px: { xs: 1.2, sm: 1.8 }, py: 0.5, fontSize: '0.8rem' }}
             >
               {isMobile ? 'Share' : 'Share Profile'}
             </Button>
             <Button
               variant="outlined"
               color="error"
-              size={isMobile ? "small" : "medium"}
-              startIcon={<Logout />}
+              size="small"
+              startIcon={<Logout sx={{ fontSize: '1rem' }} />}
               onClick={() => {
                 logout().then(() => router.push('/'));
               }}
-              sx={{ fontWeight: 600, borderRadius: 2 }}
+              sx={{ fontWeight: 650, borderRadius: 2, textTransform: 'none', px: { xs: 1.2, sm: 1.8 }, py: 0.5, fontSize: '0.8rem' }}
             >
               {isMobile ? 'Logout' : 'Sign Out'}
             </Button>
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, md: 2 } }}>
-          <Paper elevation={0} sx={{ pt: { xs: 2, md: 3 }, px: { xs: 2, md: 3 }, pb: 0, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0' }}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'stretch', md: 'flex-start' }, textAlign: 'left', gap: { xs: 2, md: 3 }, justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: { xs: 2, md: 3 } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.2, sm: 1.5 } }}>
+          {/* Top Profile Summary & Quick Tabs Card */}
+          <Paper elevation={0} sx={{ pt: { xs: 1.5, sm: 2 }, px: { xs: 1.5, sm: 2.5 }, pb: 0, borderRadius: { xs: 2.5, sm: 3 }, border: '1px solid #E2E8F0' }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1.5, sm: 2.5 }, justifyContent: 'space-between', mb: 1.5 }}>
+              
+              {/* User Avatar + Info */}
+              <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
                 <Box sx={{ position: 'relative', flexShrink: 0 }}>
                   <Avatar
                     src={currentAvatarUrl || undefined}
-                    sx={{ width: { xs: 60, md: 80 }, height: { xs: 60, md: 80 }, border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    sx={{ width: { xs: 52, sm: 64 }, height: { xs: 52, sm: 64 }, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                   >
                     {!currentAvatarUrl && user.name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -410,41 +414,42 @@ export default function ProfilePage() {
                       size="small"
                       sx={{
                         position: 'absolute',
-                        bottom: 0,
-                        right: 0,
+                        bottom: -2,
+                        right: -2,
                         bgcolor: '#1B4FD8',
                         color: 'white',
-                        p: { xs: 0.3, md: 0.6 },
+                        p: 0.4,
                         '&:hover': { bgcolor: '#1D4ED8' },
-                        boxShadow: '0 4px 10px rgba(27, 79, 216, 0.4)'
+                        boxShadow: '0 2px 6px rgba(27, 79, 216, 0.4)'
                       }}
                       disabled={isUploading}
                     >
-                      {isUploading ? <CircularProgress size={12} color="inherit" /> : <PhotoCamera sx={{ fontSize: { xs: 12, md: 16 } }} />}
+                      {isUploading ? <CircularProgress size={10} color="inherit" /> : <PhotoCamera sx={{ fontSize: 13 }} />}
                     </IconButton>
                   </label>
                 </Box>
                 
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {user.name}
-                  </Typography>
-                  <Typography variant="body2" color="#64748B" sx={{ mb: 1, fontSize: { xs: '0.75rem', md: '0.85rem' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle1" fontWeight={750} color="#0F172A" sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem' }, lineHeight: 1.2 }}>
+                      {user.name}
+                    </Typography>
+                    <Box sx={{ display: 'inline-flex', px: 0.8, py: 0.15, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.62rem', fontWeight: 750 }}>
+                      {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
+                    </Box>
+                  </Box>
+                  <Typography variant="caption" color="#64748B" sx={{ display: 'block', mt: 0.2, fontSize: '0.78rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user.email}
                   </Typography>
-                  <Box sx={{ display: 'inline-flex', px: 1, py: 0.2, bgcolor: 'rgba(27, 79, 216, 0.1)', color: '#1B4FD8', borderRadius: 20, fontSize: '0.6rem', fontWeight: 700 }}>
-                    {user.roles.includes('ADMIN') ? 'ADMINISTRATOR' : 'USER'}
-                  </Box>
                 </Box>
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-end' }, width: { xs: '100%', md: '250px' }, mt: { xs: 1, md: 0 } }}>
-                <Typography variant="caption" fontWeight={600} color="#64748B" sx={{ alignSelf: { xs: 'center', md: 'flex-start' }, mb: 0.5, ml: 1 }}>
-                  Username
-                </Typography>
+              {/* Compact Username Row */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' }, maxWidth: { xs: '100%', sm: 300 } }}>
                 <TextField
                   size="small"
                   fullWidth
+                  placeholder="Username"
                   {...register('username')}
                   error={!!errors.username || usernameStatus === 'taken'}
                   helperText={
@@ -455,13 +460,11 @@ export default function ProfilePage() {
                     ''
                   }
                   FormHelperTextProps={{
-                    sx: { color: usernameStatus === 'available' ? 'success.main' : undefined, mx: 0 }
+                    sx: { color: usernameStatus === 'available' ? 'success.main' : undefined, mx: 0, fontSize: '0.68rem', mt: 0.2 }
                   }}
                   InputProps={{
-                    endAdornment: usernameStatus === 'checking' ? <CircularProgress size={16} /> : null
-                  }}
-                  sx={{
-                    '& .MuiInputBase-root': { bgcolor: '#F8FAFC', borderRadius: 2 }
+                    sx: { fontSize: '0.82rem', height: 36, bgcolor: '#F8FAFC', borderRadius: 2 },
+                    endAdornment: usernameStatus === 'checking' ? <CircularProgress size={14} /> : null
                   }}
                 />
                 <Button 
@@ -469,38 +472,37 @@ export default function ProfilePage() {
                   variant="outlined" 
                   disabled={isSaving}
                   onClick={handleSubmit(onSubmit)}
-                  sx={{ mt: 1, alignSelf: { xs: 'center', md: 'flex-end' }, textTransform: 'none', borderRadius: 2 }}
+                  sx={{ textTransform: 'none', borderRadius: 2, height: 36, px: 1.5, fontSize: '0.78rem', fontWeight: 650, flexShrink: 0 }}
                 >
-                  Update Username
+                  Update
                 </Button>
               </Box>
             </Box>
 
-            <Divider sx={{ mt: { xs: 3, md: 4 }, mb: 0 }} />
+            <Divider sx={{ mt: 1, mb: 0 }} />
             
+            {/* Tabs Row */}
             <Tabs
               orientation="horizontal"
               variant="fullWidth"
               value={tabValue}
               onChange={handleTabChange}
               sx={{
-                borderBottom: 0,
-                borderColor: 'divider',
+                minHeight: { xs: 40, sm: 44 },
                 '& .MuiTab-root': {
                   alignItems: 'center',
                   justifyContent: 'center',
-                  py: { xs: 0.5, md: 1.5 },
-                  px: { xs: 0.5, md: 2 },
-                  borderRadius: 0,
-                  fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.85rem' },
-                  minHeight: { xs: 48, md: 48 },
-                  minWidth: { xs: 0, md: 90 },
+                  py: 0.5,
+                  px: { xs: 0.5, sm: 1.5 },
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                  minHeight: { xs: 40, sm: 44 },
                   whiteSpace: 'nowrap',
-                  borderBottom: '3px solid transparent',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: { xs: 0.5, sm: 1 },
+                  borderBottom: '2.5px solid transparent',
+                  flexDirection: 'row',
+                  gap: { xs: 0.4, sm: 0.8 },
                   color: '#64748B',
-                  fontWeight: 600
+                  fontWeight: 650,
+                  textTransform: 'none',
                 },
                 '& .Mui-selected': { 
                   color: '#1B4FD8 !important', 
@@ -508,97 +510,111 @@ export default function ProfilePage() {
                 }
               }}
             >
-              <Tab icon={<Person sx={{ fontSize: { xs: 18, md: 20 } }} />} label={isMobile ? "Profile" : "Profile Details"} />
-              <Tab icon={<Security sx={{ fontSize: { xs: 18, md: 20 } }} />} label="Security" />
-              <Tab icon={<MapsHomeWork sx={{ fontSize: { xs: 18, md: 20 } }} />} label={isMobile ? "Properties" : "My Properties"} />
-              <Tab icon={<Favorite sx={{ color: '#EF4444', fontSize: { xs: 18, md: 20 } }} />} label={isMobile ? "Saved" : "Saved Properties"} />
+              <Tab icon={<Person sx={{ fontSize: { xs: 16, sm: 18 } }} />} label={isMobile ? "Profile" : "Profile Details"} />
+              <Tab icon={<Security sx={{ fontSize: { xs: 16, sm: 18 } }} />} label="Security" />
+              <Tab icon={<MapsHomeWork sx={{ fontSize: { xs: 16, sm: 18 } }} />} label={isMobile ? "Properties" : "My Properties"} />
+              <Tab icon={<Favorite sx={{ color: '#EF4444', fontSize: { xs: 16, sm: 18 } }} />} label={isMobile ? "Saved" : "Saved Properties"} />
             </Tabs>
           </Paper>
 
-          <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: { xs: 3, md: 4 }, border: '1px solid #E2E8F0', minHeight: { xs: 300, md: 400 } }}>
+          {/* Tab Content Panel Card */}
+          <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.5 }, borderRadius: { xs: 2.5, sm: 3 }, border: '1px solid #E2E8F0', minHeight: { xs: 260, md: 320 } }}>
               
               {/* PROFILE TAB */}
               <CustomTabPanel value={tabValue} index={0}>
-                <Box sx={{ px: { xs: 0, sm: 2 }, pt: { xs: 1, sm: 0 } }}>
-                  <Typography variant="h6" fontWeight={700} mb={2.5}>Personal Information</Typography>
+                <Box sx={{ px: { xs: 0, sm: 1 }, pt: { xs: 0.5, sm: 0 } }}>
+                  <Typography variant="subtitle1" fontWeight={750} mb={1.5} color="#0F172A">Personal Information</Typography>
                   <form onSubmit={handleSubmit(onSubmit)}>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={1.5}>
                       <Grid item xs={12} sm={6}>
                         <TextField
+                          size="small"
                           label="Full Name"
                           fullWidth
                           {...register('name')}
                           error={!!errors.name}
                           helperText={errors.name?.message}
+                          InputProps={{ sx: { fontSize: '0.85rem' } }}
+                          InputLabelProps={{ sx: { fontSize: '0.85rem' } }}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
                         <TextField
+                          size="small"
                           label="Email Address"
                           fullWidth
                           value={user.email}
                           disabled
                           helperText="Email address cannot be changed."
+                          InputProps={{ sx: { fontSize: '0.85rem' } }}
+                          InputLabelProps={{ sx: { fontSize: '0.85rem' } }}
                         />
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
                         <TextField
+                          size="small"
                           label="Phone Number"
                           fullWidth
                           {...register('phone')}
                           error={!!errors.phone}
                           helperText={errors.phone?.message}
+                          InputProps={{ sx: { fontSize: '0.85rem' } }}
+                          InputLabelProps={{ sx: { fontSize: '0.85rem' } }}
                         />
                       </Grid>
                       <Grid item xs={12}>
                         <TextField
+                          size="small"
                           label="Bio"
                           fullWidth
                           multiline
-                          rows={3}
+                          rows={2}
                           {...register('bio')}
                           error={!!errors.bio}
                           helperText={errors.bio?.message || 'A short description about yourself'}
+                          InputProps={{ sx: { fontSize: '0.85rem' } }}
+                          InputLabelProps={{ sx: { fontSize: '0.85rem' } }}
                         />
                       </Grid>
                     </Grid>
-                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
                         type="submit"
                         variant="contained"
-                        size="large"
+                        size="small"
                         disabled={isSaving}
                         sx={{
-                          bgcolor: '#1B4FD8', px: 4, borderRadius: 2, textTransform: 'none', fontWeight: 600,
-                          boxShadow: '0 4px 14px rgba(27, 79, 216, 0.3)',
+                          bgcolor: '#1B4FD8', px: 3, py: 0.7, borderRadius: 2, textTransform: 'none', fontWeight: 650, fontSize: '0.82rem',
+                          boxShadow: '0 2px 10px rgba(27, 79, 216, 0.25)',
                           '&:hover': { bgcolor: '#1D4ED8' }
                         }}
                       >
-                        {isSaving ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
+                        {isSaving ? <CircularProgress size={18} color="inherit" /> : 'Save Changes'}
                       </Button>
                     </Box>
                   </form>
 
-                  <Divider sx={{ my: 4 }} />
+                  <Divider sx={{ my: 2.5 }} />
                   
                   <Box>
-                    <Typography variant="h6" fontWeight={700} mb={1} display="flex" alignItems="center" gap={1} color="#0F172A">
-                      <NotificationsActive sx={{ color: '#1B4FD8' }} /> Notifications & Alerts
+                    <Typography variant="subtitle1" fontWeight={750} mb={0.5} display="flex" alignItems="center" gap={0.8} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
+                      <NotificationsActive sx={{ color: '#1B4FD8', fontSize: 18 }} /> Notifications & Alerts
                     </Typography>
-                    <Typography variant="body2" color="#64748B" mb={3}>
-                      Get real-time push notifications when you receive messages or support chat updates, even when you're not using the app.
+                    <Typography variant="caption" color="#64748B" mb={1.5} display="block">
+                      Get real-time push notifications when you receive messages or support chat updates.
                     </Typography>
 
                     {isSupported ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: '#F8FAFC', borderRadius: 3, border: '1px solid #E2E8F0' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0' }}>
                         <Box>
-                          <Typography variant="subtitle2" fontWeight={700} color="#0F172A">Push Notifications</Typography>
+                          <Typography variant="subtitle2" fontWeight={700} color="#0F172A" sx={{ fontSize: '0.85rem' }}>Push Notifications</Typography>
                           <Typography variant="caption" color="#64748B">
                             {isSubscribed ? 'Notifications are currently enabled' : 'Notifications are currently disabled'}
                           </Typography>
                         </Box>
                         <Switch
+                          size="small"
                           checked={isSubscribed}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -611,7 +627,7 @@ export default function ProfilePage() {
                         />
                       </Box>
                     ) : (
-                      <Alert severity="warning" sx={{ borderRadius: 2, fontWeight: 500 }}>
+                      <Alert severity="warning" sx={{ borderRadius: 2, fontWeight: 500, py: 0.5, fontSize: '0.8rem' }}>
                         Push notifications are not supported on this browser or device.
                       </Alert>
                     )}
@@ -621,15 +637,17 @@ export default function ProfilePage() {
 
               {/* SECURITY TAB */}
               <CustomTabPanel value={tabValue} index={1}>
-                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
-                  <Typography variant="h6" fontWeight={700} mb={4}>Security Settings</Typography>
-                  <Typography color="text.secondary" mb={3}>
+                <Box sx={{ px: { xs: 0, sm: 2 }, pt: { xs: 1, sm: 0 } }}>
+                  <Typography variant="subtitle1" fontWeight={750} mb={1.5} color="#0F172A">Security Settings</Typography>
+                  <Typography variant="body2" color="text.secondary" mb={2} sx={{ fontSize: '0.85rem' }}>
                     To change your password, please request a password reset email to your registered email address.
                   </Typography>
                   <Button
                     variant="outlined"
                     color="primary"
+                    size="small"
                     onClick={() => router.push('/auth/forgot-password')}
+                    sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 650, px: 2, py: 0.6 }}
                   >
                     Reset Password
                   </Button>
@@ -638,58 +656,58 @@ export default function ProfilePage() {
 
               {/* MY PROPERTIES TAB */}
               <CustomTabPanel value={tabValue} index={2}>
-                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
-                  <Typography variant="h6" fontWeight={700} mb={4}>My Listings</Typography>
+                <Box sx={{ px: { xs: 0, sm: 1 }, pt: { xs: 1, sm: 0 } }}>
+                  <Typography variant="subtitle1" fontWeight={750} mb={2} color="#0F172A">My Listings</Typography>
                   
                   {isLoadingProperties ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                      <CircularProgress />
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress size={32} />
                     </Box>
                   ) : myProperties.length === 0 ? (
-                    <Box sx={{ textAlign: 'center', py: 8 }}>
-                      <MapsHomeWork sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
-                      <Typography variant="h6" fontWeight={700} color="#334155">No Listed Properties</Typography>
-                      <Typography color="text.secondary" mt={1} mb={4}>
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <MapsHomeWork sx={{ fontSize: 44, color: '#CBD5E1', mb: 1 }} />
+                      <Typography variant="subtitle1" fontWeight={750} color="#334155">No Listed Properties</Typography>
+                      <Typography variant="body2" color="text.secondary" mt={0.5} mb={2} sx={{ fontSize: '0.82rem' }}>
                         You haven't listed any properties yet.
                       </Typography>
-                      <Button variant="contained" sx={{ bgcolor: '#1B4FD8' }} onClick={() => router.push('/properties/create')}>
+                      <Button variant="contained" size="small" sx={{ bgcolor: '#1B4FD8', textTransform: 'none', borderRadius: 2, fontWeight: 650 }} onClick={() => router.push('/properties/create')}>
                         Post a Property
                       </Button>
                     </Box>
                   ) : (
-                    <Grid container spacing={3}>
+                    <Grid container spacing={1.5}>
                       {myProperties.map((property: any) => (
                         <Grid item xs={12} sm={6} key={property.id}>
                           <Paper 
                             elevation={0} 
-                            sx={{ borderRadius: 3, border: '1px solid #E2E8F0', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', '&:hover': { borderColor: '#1B4FD8', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}
+                            sx={{ borderRadius: 2.5, border: '1px solid #E2E8F0', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', '&:hover': { borderColor: '#1B4FD8', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}
                             onClick={() => router.push(`/property/${property.slug}`)}
                           >
-                            <Box sx={{ height: 160, bgcolor: '#F1F5F9', position: 'relative' }}>
+                            <Box sx={{ height: 135, bgcolor: '#F1F5F9', position: 'relative' }}>
                               {property.thumbnail ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={property.thumbnail} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               ) : (
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                  <MapsHomeWork sx={{ fontSize: 40, color: '#94A3B8' }} />
+                                  <MapsHomeWork sx={{ fontSize: 36, color: '#94A3B8' }} />
                                 </Box>
                               )}
-                              <Box sx={{ position: 'absolute', top: 12, right: 12, bgcolor: property.status === 'PUBLISHED' ? '#22C55E' : property.status === 'REJECTED' ? '#EF4444' : '#EAB308', color: 'white', px: 1.5, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 600 }}>
+                              <Box sx={{ position: 'absolute', top: 8, right: 8, bgcolor: property.status === 'PUBLISHED' ? '#22C55E' : property.status === 'REJECTED' ? '#EF4444' : '#EAB308', color: 'white', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.68rem', fontWeight: 700 }}>
                                 {property.status}
                               </Box>
                             </Box>
-                            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <Box sx={{ overflow: 'hidden', flex: 1 }}>
-                                <Typography variant="subtitle1" fontWeight={700} noWrap>{property.title}</Typography>
-                                <Typography variant="body2" color="text.secondary" noWrap mb={1}>{property.city}, {property.state}</Typography>
-                                <Typography variant="h6" color="#1B4FD8" fontWeight={700}>₹{property.price.toLocaleString()}</Typography>
+                                <Typography variant="subtitle2" fontWeight={750} noWrap sx={{ fontSize: '0.88rem' }}>{property.title}</Typography>
+                                <Typography variant="caption" color="text.secondary" noWrap mb={0.5} sx={{ display: 'block' }}>{property.city}, {property.state}</Typography>
+                                <Typography variant="subtitle1" color="#1B4FD8" fontWeight={800} sx={{ fontSize: '0.95rem' }}>₹{property.price.toLocaleString()}</Typography>
                               </Box>
                               <IconButton
                                 onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, property.id, property.slug, property.status); }}
                                 size="small"
-                                sx={{ ml: 1, color: 'text.secondary' }}
+                                sx={{ ml: 0.5, color: 'text.secondary', p: 0.5 }}
                               >
-                                <MoreVert />
+                                <MoreVert fontSize="small" />
                               </IconButton>
                             </Box>
                           </Paper>
@@ -702,31 +720,31 @@ export default function ProfilePage() {
 
               {/* SAVED / FAVORITES TAB */}
               <CustomTabPanel value={tabValue} index={3}>
-                <Box sx={{ px: { xs: 0, sm: 4 }, pt: { xs: 2, sm: 0 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" fontWeight={700} color="#0F172A">
+                <Box sx={{ px: { xs: 0, sm: 1 }, pt: { xs: 1, sm: 0 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight={750} color="#0F172A">
                       Saved Properties
                     </Typography>
-                    <Chip label={`${favoriteProperties.length} Saved`} size="small" color="primary" sx={{ fontWeight: 700 }} />
+                    <Chip label={`${favoriteProperties.length} Saved`} size="small" color="primary" sx={{ fontWeight: 700, height: 24, fontSize: '0.72rem' }} />
                   </Box>
                   
                   {isLoadingFavorites ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                      <CircularProgress />
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress size={32} />
                     </Box>
                   ) : favoriteProperties.length === 0 ? (
-                    <Box sx={{ textAlign: 'center', py: 8 }}>
-                      <Favorite sx={{ fontSize: 64, color: '#FCA5A5', mb: 2 }} />
-                      <Typography variant="h6" fontWeight={700} color="#334155">No Saved Properties Yet</Typography>
-                      <Typography color="text.secondary" mt={1} mb={4}>
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Favorite sx={{ fontSize: 44, color: '#FCA5A5', mb: 1 }} />
+                      <Typography variant="subtitle1" fontWeight={750} color="#334155">No Saved Properties Yet</Typography>
+                      <Typography variant="body2" color="text.secondary" mt={0.5} mb={2} sx={{ fontSize: '0.82rem' }}>
                         Click the heart icon on any property card to save it for easy access later.
                       </Typography>
-                      <Button variant="contained" sx={{ bgcolor: '#1B4FD8' }} onClick={() => router.push('/properties')}>
+                      <Button variant="contained" size="small" sx={{ bgcolor: '#1B4FD8', textTransform: 'none', borderRadius: 2, fontWeight: 650 }} onClick={() => router.push('/properties')}>
                         Explore Properties
                       </Button>
                     </Box>
                   ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {favoriteProperties.map((property: any) => (
                         <PropertyCard key={property.id} property={property} viewMode="list" showStatusBadge={true} />
                       ))}

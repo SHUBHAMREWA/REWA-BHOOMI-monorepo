@@ -4,15 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, Container, IconButton } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { apiGet } from '@/lib/api';
 import type { Poster } from '@rewa-bhoomi/types';
 import { PosterBannerSkeleton } from './HomeSkeletons';
+import { usePosters } from './api/useHomeData';
 
 export default function PosterBannerSection() {
-  const [posters, setPosters] = useState<Poster[]>([]);
+  const { data: posters = [], isLoading } = usePosters();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -20,25 +18,6 @@ export default function PosterBannerSection() {
   const touchEndY = useRef<number | null>(null);
   const isSwiping = useRef(false);
 
-  useEffect(() => {
-    let mounted = true;
-    async function loadPosters() {
-      try {
-        const data = await apiGet<Poster[]>('/posters');
-        if (mounted && Array.isArray(data)) {
-          setPosters(data.filter((p) => p.is_active));
-        }
-      } catch (err) {
-        console.error('Failed to load active posters:', err);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    }
-    loadPosters();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   // Autoplay
   useEffect(() => {

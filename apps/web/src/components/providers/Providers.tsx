@@ -11,6 +11,7 @@ import { SocketProvider } from '@/lib/SocketProvider';
 import UserChatWidget from '@/features/chat/components/UserChatWidget';
 import NotificationPrompt from '@/features/notifications/NotificationPrompt';
 import { PushNotificationProvider } from '@/features/notifications/usePushNotifications';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ScrollRestoration from './ScrollRestoration';
 
@@ -58,6 +59,7 @@ export default function Providers({ children }: { children: ReactNode }) {
                 {children}
                 <UserChatWidget />
                 <NotificationPrompt />
+                <PwaInstallPrompt />
                 <Toaster
                   position="top-right"
                   toastOptions={{

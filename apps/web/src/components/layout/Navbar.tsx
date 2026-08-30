@@ -234,7 +234,7 @@ export default function Navbar() {
         }}
       >
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ justifyContent: 'space-between', height: 80 }}>
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between', height: { xs: 60, sm: 70, md: 80 } }}>
             {/* Logo */}
             <Box sx={{ flex: { md: 1 }, display: 'flex', alignItems: 'center' }}>
               <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#1B4FD8' }}>
@@ -481,7 +481,7 @@ export default function Navbar() {
           {drawer}
         </Drawer>
       </Box>
-      <Box sx={{ height: 80 }} /> {/* Spacer for fixed navbar */}
+      <Box sx={{ height: { xs: 60, sm: 70, md: 80 } }} /> {/* Spacer for fixed navbar */}
     </>
   );
 }

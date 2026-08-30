@@ -42,6 +42,41 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { apiPost, apiDelete } from '@/lib/api';
 import { PROPERTY_CATEGORIES, PROPERTY_TYPES } from '@/config/propertyFormConfig';
 import { PropertyCategoryType } from '@rewa-bhoomi/types';
+import { PropertyDetailPageSkeleton } from './PropertySkeletons';
+
+const GoogleMapsColorfulPin = ({ size = 22 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ flexShrink: 0, marginTop: 1, display: 'inline-block', verticalAlign: 'top' }}
+  >
+    {/* Red base */}
+    <path
+      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+      fill="#EA4335"
+    />
+    {/* Blue top-left segment */}
+    <path
+      d="M12 2C8.13 2 5 5.13 5 9c0 2.5 1.5 5.5 3.5 8.5L12 12V2z"
+      fill="#4285F4"
+    />
+    {/* Yellow top-right segment */}
+    <path
+      d="M12 2v10l3.5 5.5C17.5 14.5 19 11.5 19 9c0-3.87-3.13-7-7-7z"
+      fill="#FBBC04"
+    />
+    {/* Green bottom point segment */}
+    <path
+      d="M12 22s-2.5-3.5-3.5-4.5L12 12l3.5 5.5c-1 1-3.5 4.5-3.5 4.5z"
+      fill="#34A853"
+    />
+    {/* Center white circle */}
+    <circle cx="12" cy="9" r="3.5" fill="#FFFFFF" />
+  </svg>
+);
 
 interface PropertyImage {
   id: string;
@@ -160,11 +195,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   }, [property]);
 
   if (loading) {
-    return (
-      <Box sx={{ minHeight: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PropertyDetailPageSkeleton />;
   }
 
   if (error || !property) {
@@ -466,6 +497,10 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   };
 
   const renderDetailCard = (label: string, value: React.ReactNode, icon?: React.ReactNode) => {
+    const formattedVal = typeof value === 'string'
+      ? value.replace(/SQ_FT/gi, 'ft²').replace(/SQ_MT/gi, 'm²')
+      : value;
+
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         <Typography
@@ -474,9 +509,9 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             color: '#64748B',
             fontWeight: 650,
             textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            fontSize: '0.72rem',
-            lineHeight: 1.2,
+            letterSpacing: '0.03em',
+            fontSize: '0.66rem',
+            lineHeight: 1.1,
           }}
         >
           {label}
@@ -484,15 +519,15 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
         <Typography
           variant="body2"
           sx={{
-            fontWeight: 700,
+            fontWeight: 750,
             color: '#0F172A',
-            fontSize: '0.84rem',
-            mt: 0.35,
-            lineHeight: 1.3,
+            fontSize: '0.82rem',
+            mt: 0.25,
+            lineHeight: 1.25,
             wordBreak: 'break-word',
           }}
         >
-          {value}
+          {formattedVal}
         </Typography>
       </Box>
     );
@@ -629,52 +664,72 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
         {property.title}
       </Typography>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 0.8, borderTop: '1px solid #F1F5F9' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.3 }}>
-            <LocationOnIcon sx={{ fontSize: 14, color: '#94A3B8' }} />
-            {addressLabel}, {cityLabel}
-          </Typography>
-          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600 }}>
-            {dateFormatted}
-          </Typography>
-        </Box>
-
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8, pt: 0.8, borderTop: '1px solid #F1F5F9' }}>
         {(() => {
-          const mapLink = property.location?.googleMapsLink || property.location?.google_maps_link;
-          if (!mapLink) return null;
+          const mapLink = property.location?.googleMapsLink ||
+            property.location?.google_maps_link ||
+            (property.location?.latitude && property.location?.longitude
+              ? `https://maps.google.com/?q=${property.location.latitude},${property.location.longitude}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([addressLabel, cityLabel, property.state, 'India'].filter(Boolean).join(', '))}`);
+
           return (
-            <Button
-              variant="outlined"
-              size="small"
-              href={mapLink}
-              target="_blank"
-              startIcon={
-                <svg width="20" height="20" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M32 62 C32 62 8 36 8 24 C8 10.7 18.7 0 32 0 C45.3 0 56 10.7 56 24 C56 36 32 62 32 62Z" fill="#34A853"/>
-                  <path d="M32 0 C18.7 0 8 10.7 8 24 L32 24 L32 0Z" fill="#4285F4"/>
-                  <path d="M32 0 L32 24 L56 24 C56 10.7 45.3 0 32 0Z" fill="#EA4335"/>
-                  <path d="M8 24 C8 36 20 50 32 62 L32 24 L8 24Z" fill="#FBBC05"/>
-                  <path d="M32 24 L32 62 C44 50 56 36 56 24 L32 24Z" fill="#34A853"/>
-                  <circle cx="32" cy="24" r="11" fill="white"/>
-                </svg>
-              }
-              sx={{
-                textTransform: 'none',
-                alignSelf: 'flex-start',
-                borderRadius: 2,
-                mt: 0.5,
-                borderColor: '#4285F4',
-                color: '#4285F4',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: '#1A73E8',
-                  bgcolor: 'rgba(66,133,244,0.06)',
-                },
-              }}
-            >
-              View on Google Maps
-            </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+              <Box
+                component="a"
+                href={mapLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'flex-start',
+                  gap: 0.7,
+                  textDecoration: 'none',
+                  color: '#334155',
+                  borderRadius: '6px',
+                  py: 0.3,
+                  px: 0.4,
+                  ml: -0.4,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: 'rgba(66, 133, 244, 0.08)',
+                    color: '#1B4FD8',
+                  },
+                }}
+              >
+                <GoogleMapsColorfulPin size={20} />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'inherit',
+                      fontWeight: 650,
+                      fontSize: '0.78rem',
+                      lineHeight: 1.35,
+                      display: 'inline',
+                    }}
+                  >
+                    {addressLabel ? `${addressLabel}, ` : ''}{cityLabel}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      ml: 0.6,
+                      color: '#2563EB',
+                      fontWeight: 700,
+                      fontSize: '0.72rem',
+                      textDecoration: 'underline',
+                      display: 'inline-block',
+                    }}
+                  >
+                    (Google Map ↗)
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, flexShrink: 0, pt: 0.3, fontSize: '0.72rem' }}>
+                {dateFormatted}
+              </Typography>
+            </Box>
           );
         })()}
       </Box>
@@ -693,52 +748,51 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
       return '₹' + v.toLocaleString('en-IN');
     };
     const projections = [
-      { label: '2 Saal Mein', multiplier: 1.25 },
-      { label: '3 Saal Mein', multiplier: 1.50 },
-      { label: '5 Saal Mein', multiplier: 2.375 },
-      { label: '10 Saal Mein', multiplier: 3.75 },
+      { label: '2 Saal Mein (2 Years)', multiplier: 1.25 },
+      { label: '3 Saal Mein (3 Years)', multiplier: 1.50 },
+      { label: '5 Saal Mein (5 Years)', multiplier: 2.375 },
+      { label: '10 Saal Mein (10 Years)', multiplier: 3.75 },
     ];
     return (
-      <Paper elevation={0} sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: '10px', border: '1px solid #E2E8F0', bgcolor: '#fff', ...displayProps }}>
-        <Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: '0.85rem', mb: 0.5 }}>
-          Es property ki kimat, agle kuch saalon mein lagbag itni ho sakti hai
+      <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#fff', ...displayProps }}>
+        <Typography variant="subtitle2" fontWeight={750} color="#0F172A" sx={{ fontSize: '0.88rem', mb: 0.3 }}>
+          भविष्य में प्रॉपर्टी की कीमत
         </Typography>
-        <Typography variant="caption" color="#94A3B8" sx={{ fontSize: '0.7rem', display: 'block', mb: 2 }}>
-          Market average ke hisaab se anumaan
+        <Typography variant="caption" color="#64748B" sx={{ fontSize: '0.7rem', display: 'block', mb: 1.2 }}>
+          इस प्रॉपर्टी की अनुमानित कीमत अगले कुछ सालों में
         </Typography>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.4 }}>
+        <Grid container spacing={1}>
           {projections.map((p) => {
             const projVal = Math.round(base * p.multiplier);
             return (
-              <Box key={p.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ fontSize: '0.83rem' }}>
-                  {p.label}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <Box component="span" sx={{ color: '#CBD5E1', fontSize: '0.9rem' }}>→</Box>
-                  <Typography variant="body2" fontWeight={700} color="#16A34A" sx={{ fontSize: '0.85rem' }}>
+              <Grid item xs={6} key={p.label}>
+                <Box sx={{ p: 1.2, bgcolor: '#F8FAFC', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                  <Typography variant="caption" sx={{ fontSize: '0.74rem', color: '#1B4FD8', fontWeight: 700, display: 'block', mb: 0.3 }}>
+                    {p.label}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 850, color: '#16A34A', fontSize: '0.92rem', letterSpacing: '-0.01em' }}>
                     ₹{fmt(projVal)}
                   </Typography>
                 </Box>
-              </Box>
+              </Grid>
             );
           })}
-        </Box>
+        </Grid>
 
-        <Typography variant="caption" color="#CBD5E1" sx={{ display: 'block', mt: 2, fontSize: '0.67rem' }}>
-          Ye sirf ek anumaan hai. Asli kimat market par depend karti hai.
+        <Typography variant="caption" color="#94A3B8" sx={{ display: 'block', mt: 1, fontSize: '0.65rem' }}>
+          *ये सिर्फ एक अनुमान है। असली कीमत मार्केट डिमांड पर निर्भर करती है।
         </Typography>
       </Paper>
     );
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', pt: { xs: 4, sm: 8.5 }, pb: { xs: 6, sm: 8 }, bgcolor: '#F2F4F7' }}>
-      <Container maxWidth="lg">
+    <Box sx={{ minHeight: '100vh', pt: { xs: 1, sm: 2 }, pb: { xs: 4, sm: 6 }, bgcolor: '#F2F4F7' }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1.25, sm: 2.5 } }}>
         
         {/* ─── BREADCRUMBS & BACK BUTTON BAR ─── */}
-        <Box sx={{ py: { xs: 0.2, sm: 0.8 }, mb: { xs: 0.8, sm: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ py: 0.4, mb: { xs: 0.6, sm: 1.2 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {/* Back Button */}
           <Button
             startIcon={<ArrowBackIcon sx={{ fontSize: '1rem !important' }} />}
@@ -977,15 +1031,16 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             </Paper>
 
             {/* Thumbnails Row */}
+            {/* Thumbnail Strip */}
             {mediaList.length > 1 && (
-              <Box sx={{ display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1, mb: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, mb: 1.5 }}>
                 {mediaList.map((item, idx) => (
                   <Box
                     key={item.id || idx}
                     onClick={() => setActiveImgIdx(idx)}
                     sx={{
-                      width: 90,
-                      height: 60,
+                      width: { xs: 75, sm: 90 },
+                      height: { xs: 50, sm: 60 },
                       flexShrink: 0,
                       borderRadius: '6px',
                       overflow: 'hidden',
@@ -999,7 +1054,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   >
                     {item.type === 'video' ? (
                       <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#475569' }}>
-                        <PlayArrowIcon sx={{ fontSize: 24, color: '#fff' }} />
+                        <PlayArrowIcon sx={{ fontSize: 22, color: '#fff' }} />
                       </Box>
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -1011,18 +1066,18 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             )}
 
             {/* 2. Overview & Details Box */}
-            <Paper elevation={0} sx={{ p: { xs: 2, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 2, sm: 3 }, bgcolor: '#FFFFFF' }}>
-              <Typography variant="h6" fontWeight={700} mb={2.5} color="#0F172A">
+            <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 1.5, sm: 2 }, bgcolor: '#FFFFFF' }}>
+              <Typography variant="subtitle1" fontWeight={750} mb={1.2} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
                 Overview & Details
               </Typography>
 
-               <Grid container spacing={{ xs: 1.5, sm: 2.5 }} sx={{ mb: 1 }}>
-                 <Grid item xs={6} sm={4}>
-                   {renderDetailCard('Type / Purpose', property.listing_purpose || property.listing_type || 'SALE', <LocalOfferIcon sx={{ fontSize: 18 }} />)}
-                 </Grid>
-                 <Grid item xs={6} sm={4}>
-                   {renderDetailCard('Category', categoryLabel, <CategoryIcon sx={{ fontSize: 18 }} />)}
-                 </Grid>
+              <Grid container spacing={{ xs: 1.2, sm: 2 }} sx={{ mb: 0.5 }}>
+                <Grid item xs={6} sm={4}>
+                  {renderDetailCard('Type / Purpose', property.listing_purpose || property.listing_type || 'SALE', <LocalOfferIcon sx={{ fontSize: 18 }} />)}
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  {renderDetailCard('Category', categoryLabel, <CategoryIcon sx={{ fontSize: 18 }} />)}
+                </Grid>
                  {(() => {
                    const displayArea = property.area || (land && land.total_land_area) || (res && (res.carpet_area || res.built_up_area)) || (comm && (comm.carpet_area || comm.built_up_area));
                    const displayUnit = property.area_unit || (land && land.area_unit) || 'ft²';
@@ -1245,26 +1300,28 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             </Paper>
 
             {/* Mobile-only Future Value Projection (Right under Overview) */}
-            {renderFutureValueProjection({ display: { xs: 'block', md: 'none' }, mb: 2 })}
+            {renderFutureValueProjection({ display: { xs: 'block', md: 'none' }, mb: 1.5 })}
 
             {/* 3. Amenities & Features Box */}
             {((property.amenities && property.amenities.length > 0) || (property.custom_amenities && property.custom_amenities.length > 0)) && (
-              <Paper elevation={0} sx={{ p: { xs: 2, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 2, sm: 3 }, bgcolor: '#FFFFFF' }}>
-                <Typography variant="h6" fontWeight={700} mb={2.5} color="#0F172A">Amenities & Features (सुख सुविधाएं)</Typography>
-                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+              <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 1.5, sm: 2 }, bgcolor: '#FFFFFF' }}>
+                <Typography variant="subtitle1" fontWeight={750} mb={1.2} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
+                  Amenities & Features (सुख सुविधाएं)
+                </Typography>
+                <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                   {property.amenities?.map((amenity) => (
                     <Grid item xs={6} sm={4} key={amenity.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckCircleIcon sx={{ fontSize: 18, color: '#16A34A' }} />
-                        <Typography fontWeight={600} color="#334155" variant="body2">{amenity.name}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <CheckCircleIcon sx={{ fontSize: 16, color: '#16A34A' }} />
+                        <Typography fontWeight={600} color="#334155" variant="body2" sx={{ fontSize: '0.8rem' }}>{amenity.name}</Typography>
                       </Box>
                     </Grid>
                   ))}
                   {property.custom_amenities?.map((amenity, index) => (
                     <Grid item xs={6} sm={4} key={`custom-${index}`}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckCircleIcon sx={{ fontSize: 18, color: '#0EA5E9' }} />
-                        <Typography fontWeight={600} color="#334155" variant="body2">{amenity}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <CheckCircleIcon sx={{ fontSize: 16, color: '#0EA5E9' }} />
+                        <Typography fontWeight={600} color="#334155" variant="body2" sx={{ fontSize: '0.8rem' }}>{amenity}</Typography>
                       </Box>
                     </Grid>
                   ))}
@@ -1273,15 +1330,17 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             )}
 
             {/* 4. Description Box */}
-            <Paper elevation={0} sx={{ p: { xs: 2, sm: 3.5 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
-              <Typography variant="h6" fontWeight={700} mb={1.5} color="#0F172A">Description</Typography>
-              <Typography color="#475569" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: '0.95rem' }}>
+            <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
+              <Typography variant="subtitle1" fontWeight={750} mb={1} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
+                Description
+              </Typography>
+              <Typography color="#475569" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: '0.86rem' }}>
                 {property.description}
               </Typography>
             </Paper>
           </Grid>
 
-          {/* ─── RIGHT COLUMN (~32% width) — Exactly matching screenshot ─── */}
+          {/* ─── RIGHT COLUMN (~32% width) ─── */}
           <Grid item xs={12} md={4}>
             <Box sx={{ position: 'sticky', top: 76, display: 'flex', flexDirection: 'column', gap: 2 }}>
               
@@ -1296,7 +1355,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5 },
                   borderRadius: '8px',
                   border: '1px solid #E2E8F0',
                   bgcolor: '#FFFFFF',

@@ -12,7 +12,7 @@ import {
 } from '@/features/home/HomeSkeletons';
 import { APP_NAME, APP_DESCRIPTION, APP_URL } from '@rewa-bhoomi/config';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: `${APP_NAME} — Buy, Sell & Rent Properties in Rewa, MP`,

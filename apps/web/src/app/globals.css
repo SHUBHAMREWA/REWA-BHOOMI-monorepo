@@ -29,8 +29,8 @@ html {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
 }
+
 
 /* Hide number input spin buttons (up/down arrows) */
 input[type="number"]::-webkit-inner-spin-button,

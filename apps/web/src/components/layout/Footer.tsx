@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Box, Container, Grid, Typography, Link as MuiLink, IconButton, Stack } from '@mui/material';
 import Link from 'next/link';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
@@ -12,30 +11,11 @@ import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-
-import { apiGet } from '@/lib/api';
-import type { CompanyCommunication } from '@rewa-bhoomi/types';
+import { useCompanyCommunication } from '@/features/home/api/useHomeData';
 
 export default function Footer() {
-  const [comm, setComm] = useState<CompanyCommunication | null>(null);
+  const { data: comm } = useCompanyCommunication();
 
-  useEffect(() => {
-    let mounted = true;
-    async function loadComm() {
-      try {
-        const data = await apiGet<CompanyCommunication>('/communication');
-        if (mounted && data) {
-          setComm(data);
-        }
-      } catch (err) {
-        // Silently fallback if communication endpoint is loading or unavailable
-      }
-    }
-    loadComm();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const whatsappHref = comm?.whatsapp_number
     ? `https://wa.me/${comm.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(
@@ -224,32 +204,55 @@ export default function Footer() {
             </Box>
           </Grid>
 
-          {/* Contact Details */}
-          <Grid item xs={12} sm={6} md={4}>
-            <Typography variant="subtitle1" fontWeight={700} mb={2}>
-              Contact Us
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, color: '#94A3B8' }}>
-              {comm?.contact_phone && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PhoneIcon fontSize="small" sx={{ color: '#38BDF8' }} />
-                  <Typography variant="body2">{comm.contact_phone}</Typography>
-                </Box>
-              )}
-              {comm?.contact_email && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EmailIcon fontSize="small" sx={{ color: '#38BDF8' }} />
-                  <Typography variant="body2">{comm.contact_email}</Typography>
-                </Box>
-              )}
-              {comm?.office_address && (
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <LocationOnIcon fontSize="small" sx={{ color: '#38BDF8', mt: 0.2 }} />
-                  <Typography variant="body2">{comm.office_address}</Typography>
-                </Box>
-              )}
-            </Box>
-          </Grid>
+            {/* Contact Details */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Typography variant="subtitle1" fontWeight={700} mb={2}>
+                Contact Us
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {comm?.contact_phone && (
+                  <MuiLink
+                    href={`tel:${comm.contact_phone.replace(/\s+/g, '')}`}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      color: '#94A3B8',
+                      textDecoration: 'none',
+                      transition: 'all 0.2s ease',
+                      '&:hover': { color: '#FFFFFF', transform: 'translateX(2px)' },
+                    }}
+                  >
+                    <PhoneIcon fontSize="small" sx={{ color: '#38BDF8' }} />
+                    <Typography variant="body2">{comm.contact_phone}</Typography>
+                  </MuiLink>
+                )}
+                {comm?.contact_email && (
+                  <MuiLink
+                    href={`mailto:${comm.contact_email}`}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      color: '#94A3B8',
+                      textDecoration: 'none',
+                      transition: 'all 0.2s ease',
+                      '&:hover': { color: '#FFFFFF', transform: 'translateX(2px)' },
+                    }}
+                  >
+                    <EmailIcon fontSize="small" sx={{ color: '#38BDF8' }} />
+                    <Typography variant="body2">{comm.contact_email}</Typography>
+                  </MuiLink>
+                )}
+                {comm?.office_address && (
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, color: '#94A3B8' }}>
+                    <LocationOnIcon fontSize="small" sx={{ color: '#38BDF8', mt: 0.2 }} />
+                    <Typography variant="body2">{comm.office_address}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+
         </Grid>
 
         <Box
