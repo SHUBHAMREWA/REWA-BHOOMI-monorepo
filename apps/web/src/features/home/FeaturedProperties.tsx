@@ -1,7 +1,9 @@
-import { Box, Container, Grid, Typography, Button, Skeleton } from '@mui/material';
+import { Box, Container, Grid, Typography, Button } from '@mui/material';
 import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PropertyCard, { PropertyCardData } from '@/features/properties/PropertyCard';
+import { PropertyCardSkeleton } from './HomeSkeletons';
+
 
 async function fetchFeaturedProperties(): Promise<PropertyCardData[]> {
   try {
@@ -47,10 +49,11 @@ export default async function FeaturedProperties() {
           <Grid container spacing={3}>
             {[1, 2, 3].map((i) => (
               <Grid item xs={12} sm={6} md={4} key={i}>
-                <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 4 }} />
+                <PropertyCardSkeleton />
               </Grid>
             ))}
           </Grid>
+
         ) : (
           <Grid container spacing={3}>
             {properties.map((property) => (

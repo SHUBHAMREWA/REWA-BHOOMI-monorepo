@@ -10,6 +10,7 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { SocketProvider } from '@/lib/SocketProvider';
 import UserChatWidget from '@/features/chat/components/UserChatWidget';
 import NotificationPrompt from '@/features/notifications/NotificationPrompt';
+import { PushNotificationProvider } from '@/features/notifications/usePushNotifications';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ScrollRestoration from './ScrollRestoration';
 
@@ -51,24 +52,26 @@ export default function Providers({ children }: { children: ReactNode }) {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
-            <SocketProvider>
-              <ScrollRestoration />
-              {children}
-              <UserChatWidget />
-              <NotificationPrompt />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#1e293b',
-                    color: '#f1f5f9',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                  },
-                }}
-              />
-            </SocketProvider>
+            <PushNotificationProvider>
+              <SocketProvider>
+                <ScrollRestoration />
+                {children}
+                <UserChatWidget />
+                <NotificationPrompt />
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#1e293b',
+                      color: '#f1f5f9',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                    },
+                  }}
+                />
+              </SocketProvider>
+            </PushNotificationProvider>
           </AuthProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}

@@ -6,6 +6,10 @@ import FeaturedProperties from '@/features/home/FeaturedProperties';
 import PopularProjects from '@/features/home/PopularProjects';
 import WhyChooseUs from '@/features/home/WhyChooseUs';
 import StatsBar from '@/features/home/StatsBar';
+import {
+  FeaturedPropertiesSkeleton,
+  PopularProjectsSkeleton,
+} from '@/features/home/HomeSkeletons';
 import { APP_NAME, APP_DESCRIPTION, APP_URL } from '@rewa-bhoomi/config';
 
 export const dynamic = 'force-dynamic';
@@ -22,13 +26,14 @@ export default function HomePage() {
       <HeroSection />
       <PosterBannerSection />
       <StatsBar />
-      <Suspense fallback={<div className="h-96 skeleton" />}>
+      <Suspense fallback={<FeaturedPropertiesSkeleton />}>
         <FeaturedProperties />
       </Suspense>
       <WhyChooseUs />
-      <Suspense fallback={<div className="h-64 skeleton" />}>
+      <Suspense fallback={<PopularProjectsSkeleton />}>
         <PopularProjects />
       </Suspense>
     </main>
   );
 }
+
