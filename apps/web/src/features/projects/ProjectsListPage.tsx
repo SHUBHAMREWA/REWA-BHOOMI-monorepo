@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Chip, Button, CircularProgress, InputBase, IconButton } from '@mui/material';
+import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Chip, Button, CircularProgress, InputBase, IconButton, Skeleton } from '@mui/material';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -106,9 +106,28 @@ export default function ProjectsListPage() {
 
       <Container maxWidth="xl" sx={{ mt: 4 }}>
         {loading ? (
-          <Box p={10} textAlign="center">
-            <CircularProgress />
-          </Box>
+          <Grid container spacing={4}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)' }}>
+                  <Skeleton variant="rectangular" height={200} animation="wave" />
+                  <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
+                    <Skeleton variant="text" height={32} width="80%" sx={{ mb: 1 }} animation="wave" />
+                    <Skeleton variant="text" height={20} width="60%" sx={{ mb: 2 }} animation="wave" />
+                    <Skeleton variant="text" height={20} width="100%" animation="wave" />
+                    <Skeleton variant="text" height={20} width="90%" sx={{ mb: 3 }} animation="wave" />
+                    <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid #F1F5F9' }}>
+                      <Box sx={{ width: '40%' }}>
+                        <Skeleton variant="text" height={16} width="60%" animation="wave" />
+                        <Skeleton variant="text" height={24} width="100%" animation="wave" />
+                      </Box>
+                      <Skeleton variant="rounded" width={100} height={32} sx={{ borderRadius: '20px' }} animation="wave" />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         ) : filteredProjects.length === 0 ? (
           <Box p={10} textAlign="center">
             <Typography variant="h6" color="text.secondary">
