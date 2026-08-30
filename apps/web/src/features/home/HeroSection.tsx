@@ -16,11 +16,11 @@ import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 
 const categories = [
-  { name: 'Houses', icon: <HomeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'category=house' },
-  { name: 'Plots', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'category=plot' },
-  { name: 'Commercial', icon: <StorefrontIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'category=commercial' },
-  { name: 'Agriculture', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 }, color: '#4CAF50' }}/>, query: 'category=agricultural' },
-  { name: 'Rentals', icon: <VpnKeyIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'listingType=RENT' },
+  { name: 'Houses', icon: <HomeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=RESIDENTIAL' },
+  { name: 'Plots', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=LAND' },
+  { name: 'Commercial', icon: <StorefrontIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=COMMERCIAL' },
+  { name: 'Agriculture', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 }, color: '#4CAF50' }}/>, query: 'categoryType=LAND&propertyType=FARM_LAND' },
+  { name: 'Rentals', icon: <VpnKeyIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'listingPurpose=RENT' },
   { name: 'Projects', icon: <MapsHomeWorkIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'projects', isProject: true },
 ];
 

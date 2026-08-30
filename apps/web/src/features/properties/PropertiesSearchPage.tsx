@@ -165,12 +165,34 @@ export default function PropertiesSearchPage() {
     }
   }, [searchParams]);
 
-  const fetchProperties = async (reset = false) => {
+  const fetchProperties = async (reset = false, customParams?: URLSearchParams) => {
     try {
       if (reset) setLoading(true);
-      const params = new URLSearchParams(searchParams.toString());
+      const params = customParams ? new URLSearchParams(customParams.toString()) : new URLSearchParams(searchParams.toString());
       if (!reset && cursor) params.append('cursor', cursor);
       params.set('limit', '12');
+
+      // Normalize category query params if legacy category=plot/house is passed
+      const rawCat = params.get('categoryType') || params.get('category') || '';
+      const normCat = (['LAND', 'RESIDENTIAL', 'COMMERCIAL', 'SPECIAL'].includes(rawCat.toUpperCase())
+        ? rawCat.toUpperCase()
+        : rawCat.toLowerCase() === 'land' || rawCat.toLowerCase() === 'plot' || rawCat.toLowerCase() === 'agricultural' ? 'LAND'
+        : rawCat.toLowerCase() === 'house' || rawCat.toLowerCase() === 'apartment' || rawCat.toLowerCase() === 'villa' ? 'RESIDENTIAL'
+        : rawCat.toLowerCase() === 'commercial' || rawCat.toLowerCase() === 'office' || rawCat.toLowerCase() === 'shop' ? 'COMMERCIAL'
+        : '') as PropertyCategoryType | '';
+
+      if (normCat) {
+        params.set('categoryType', normCat);
+      }
+      if (params.has('category') && normCat) {
+        params.delete('category');
+      }
+
+      // Legacy listingType to listingPurpose
+      if (params.has('listingType') && !params.has('listingPurpose')) {
+        const lt = params.get('listingType');
+        if (lt) params.set('listingPurpose', lt);
+      }
 
       const data = await apiGet<{ data: PropertyCardData[]; meta: { hasMore: boolean; cursor: string | null } }>(
         `/properties?${params.toString()}`
@@ -234,6 +256,8 @@ export default function PropertiesSearchPage() {
 
     setDrawerOpen(false);
     router.push(`/properties?${params.toString()}`);
+    // Instantly trigger search fetch directly with updated parameters
+    fetchProperties(true, params);
   };
 
   const handleClearFilters = () => {
@@ -251,6 +275,7 @@ export default function PropertiesSearchPage() {
     setSortBy('newest');
     setDrawerOpen(false);
     router.push('/properties');
+    fetchProperties(true, new URLSearchParams());
   };
 
   // Helper to change Category & handle propertyType compatibility
@@ -1526,11 +1551,11 @@ export default function PropertiesSearchPage() {
           }}
         >
           <Box>
-            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, display: 'block', lineHeight: 1 }}>
-              {activeFiltersCount > 0 ? `${activeFiltersCount} Filter${activeFiltersCount > 1 ? 's' : ''} Selected` : 'No Filters'}
+            <Typography variant="body2" sx={{ color: '#0F172A', fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.2 }}>
+              {activeFiltersCount > 0 ? `${activeFiltersCount} Filter${activeFiltersCount > 1 ? 's' : ''} Selected` : 'No Filters Selected'}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#0F172A', fontWeight: 800, fontSize: '0.85rem', mt: 0.3 }}>
-              {properties.length} Properties Found
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, display: 'block', mt: 0.3 }}>
+              Ready to apply search
             </Typography>
           </Box>
 
