@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import PropertiesSearchPage from '@/features/properties/PropertiesSearchPage';
+import { PropertiesSearchPageSkeleton } from '@/features/properties/PropertySkeletons';
 import { APP_NAME } from '@rewa-bhoomi/config';
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PropertiesRoute() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', padding: '100px' }}>Loading...</div>}>
+    <Suspense fallback={<PropertiesSearchPageSkeleton />}>
       <PropertiesSearchPage />
     </Suspense>
   );

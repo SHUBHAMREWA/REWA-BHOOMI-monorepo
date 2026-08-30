@@ -19,12 +19,13 @@ export const listConversations = async (req: Request, res: Response) => {
               u_recip.name as recipient_name, u_recip.email as recipient_email, u_recip.avatar_url as recipient_avatar,
               COALESCE(u_init.name, u_recip.name, u_msg.name, 'Support User') as user_name,
               COALESCE(u_init.email, u_recip.email, u_msg.email) as user_email,
+              COALESCE(u_init.avatar_url, u_recip.avatar_url, u_msg.avatar_url) as user_avatar,
               (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND is_read = false) as unread_count
        FROM conversations c
        LEFT JOIN users u_init ON u_init.id = c.initiator_id
        LEFT JOIN users u_recip ON u_recip.id = c.recipient_id
        LEFT JOIN LATERAL (
-         SELECT u.name, u.email
+         SELECT u.name, u.email, u.avatar_url
          FROM messages msg
          JOIN users u ON u.id = msg.sender_id
          WHERE msg.conversation_id = c.id AND u.id != $1
@@ -57,6 +58,11 @@ export const listConversations = async (req: Request, res: Response) => {
                  WHEN c.initiator_id = $1 THEN u_recip.avatar_url
                  ELSE u_init.avatar_url
                END as other_user_avatar,
+               CASE 
+                 WHEN c.type = 'SUPPORT' THEN NULL
+                 WHEN c.initiator_id = $1 THEN u_recip.avatar_url
+                 ELSE u_init.avatar_url
+               END as user_avatar,
                CASE 
                  WHEN c.type = 'SUPPORT' THEN 'support@rewabhoomi.com'
                  WHEN c.initiator_id = $1 THEN u_recip.email

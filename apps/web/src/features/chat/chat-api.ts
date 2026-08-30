@@ -12,6 +12,7 @@ export interface Conversation {
   last_message_at?: string;
   user_name?: string;
   user_email?: string;
+  user_avatar?: string;
   initiator_name?: string;
   initiator_email?: string;
   initiator_avatar?: string;

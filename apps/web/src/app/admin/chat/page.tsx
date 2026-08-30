@@ -329,6 +329,10 @@ export default function AdminChatPage() {
               filteredConversations.map((conv) => {
                 const isDirect = conv.type === 'DIRECT';
                 const isApproved = conv.is_approved_for_recipient;
+                const userAvatar = conv.user_avatar || (isDirect ? conv.initiator_avatar : conv.initiator_avatar || conv.recipient_avatar);
+                const displayName = isDirect 
+                  ? `${conv.initiator_name || 'User 1'} ↔ ${conv.recipient_name || 'User 2'}`
+                  : (conv.user_name || `User ${conv.id.substring(0,6)}...`);
 
                 return (
                   <React.Fragment key={conv.id}>
@@ -343,8 +347,17 @@ export default function AdminChatPage() {
                     >
                       <ListItemAvatar>
                         <Badge badgeContent={parseInt(conv.unread_count || '0', 10)} color="error">
-                          <Avatar sx={{ bgcolor: isDirect ? '#7C3AED' : '#1B4FD8' }}>
-                            {isDirect ? <SwapHorizIcon /> : <PersonIcon />}
+                          <Avatar 
+                            src={userAvatar || undefined}
+                            alt={displayName}
+                            sx={{ 
+                              bgcolor: isDirect ? '#7C3AED' : '#1B4FD8',
+                              fontWeight: 700,
+                              fontSize: '0.9rem',
+                              border: '1px solid rgba(0,0,0,0.06)'
+                            }}
+                          >
+                            {isDirect ? <SwapHorizIcon /> : (displayName ? displayName.charAt(0).toUpperCase() : <PersonIcon />)}
                           </Avatar>
                         </Badge>
                       </ListItemAvatar>
@@ -352,9 +365,7 @@ export default function AdminChatPage() {
                         primary={
                           <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
                             <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 160 }}>
-                              {isDirect 
-                                ? `${conv.initiator_name || 'User 1'} ↔ ${conv.recipient_name || 'User 2'}`
-                                : (conv.user_name || `User ${conv.id.substring(0,6)}...`)}
+                              {displayName}
                             </Typography>
                             <Chip 
                               size="small" 
@@ -394,13 +405,28 @@ export default function AdminChatPage() {
           {activeConv ? (
             <>
               <Box sx={{ p: 1.5, px: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white', flexWrap: 'wrap', gap: 1 }}>
-                <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 0, flex: 1 }}>
+                <Box display="flex" alignItems="center" gap={1.2} sx={{ minWidth: 0, flex: 1 }}>
                   <IconButton 
                     sx={{ display: { xs: 'inline-flex', md: 'none' }, p: 0.5, mr: 0.5 }} 
                     onClick={() => setActiveConvId(null)}
                   >
                     <ArrowBackIcon />
                   </IconButton>
+                  <Avatar
+                    src={activeConv.user_avatar || activeConv.initiator_avatar || activeConv.recipient_avatar || undefined}
+                    alt={activeConv.user_name || 'User'}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: activeConv.type === 'DIRECT' ? '#7C3AED' : '#1B4FD8',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      flexShrink: 0,
+                      border: '1px solid rgba(0,0,0,0.06)'
+                    }}
+                  >
+                    {activeConv.type === 'DIRECT' ? <SwapHorizIcon /> : (activeConv.user_name || 'U').charAt(0).toUpperCase()}
+                  </Avatar>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                       <Typography variant="subtitle1" fontWeight={700} color="#0F172A" noWrap fontSize={{ xs: '0.95rem', md: '1.05rem' }}>
@@ -475,7 +501,16 @@ export default function AdminChatPage() {
                         onMouseLeave={() => setHoveredMessageId(null)}
                         sx={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', mb: 2, position: 'relative' }}
                       >
-                        <Box sx={{ display: 'flex', flexDirection: isMine ? 'row-reverse' : 'row', alignItems: 'center', gap: 0.75, maxWidth: { xs: '90%', sm: '75%' } }}>
+                        <Box sx={{ display: 'flex', flexDirection: isMine ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 0.75, maxWidth: { xs: '90%', sm: '75%' } }}>
+                          {!isMine && (
+                            <Avatar
+                              src={msg.sender_avatar || undefined}
+                              alt={msg.sender_name || 'User'}
+                              sx={{ width: 28, height: 28, fontSize: '0.75rem', bgcolor: '#64748B', flexShrink: 0, mt: 0.5 }}
+                            >
+                              {(msg.sender_name || 'U').charAt(0).toUpperCase()}
+                            </Avatar>
+                          )}
                           <Paper 
                             sx={{ 
                               p: 1.5, 

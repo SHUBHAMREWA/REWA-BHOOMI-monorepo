@@ -144,6 +144,10 @@ export default function PosterBannerSection() {
             <img
               src={currentPoster.image_url || currentPoster.mobile_image_url || ''}
               alt={currentPoster.title || 'Rewa Bhoomi Special Offer'}
+              // @ts-expect-error - fetchpriority is standard in modern browsers
+              fetchpriority="high"
+              loading="eager"
+              decoding="async"
               style={{
                 width: '100%',
                 height: 'auto',

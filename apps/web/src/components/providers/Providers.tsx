@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider, CssBaseline } from '@mui/material';
@@ -8,24 +9,37 @@ import { Toaster } from 'react-hot-toast';
 import { theme } from '@/lib/theme';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { SocketProvider } from '@/lib/SocketProvider';
-import UserChatWidget from '@/features/chat/components/UserChatWidget';
-import NotificationPrompt from '@/features/notifications/NotificationPrompt';
 import { PushNotificationProvider } from '@/features/notifications/usePushNotifications';
-import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ScrollRestoration from './ScrollRestoration';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
+// Dynamically import non-critical interactive widgets to keep initial page load ultra-fast
+const UserChatWidget = dynamic(() => import('@/features/chat/components/UserChatWidget'), {
+  ssr: false,
+});
+const NotificationPrompt = dynamic(
+  () => import('@/features/notifications/NotificationPrompt'),
+  { ssr: false },
+);
+const PwaInstallPrompt = dynamic(() => import('@/components/pwa/PwaInstallPrompt'), {
+  ssr: false,
 });
 
 export default function Providers({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 2 * 60 * 1000, // 2 minutes
+            gcTime: 5 * 60 * 1000, // 5 minutes
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
+
   // Use a fallback empty string for the client ID if not provided in env, 
   // but it's required for Google login to actually work.
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';

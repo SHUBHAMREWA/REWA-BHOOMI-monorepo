@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Google Fonts ─────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 /* ─── CSS Variables (Design Tokens) ───────────────────────────────────────── */
 :root {
   --brand:         #1B4FD8;
@@ -26,7 +23,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

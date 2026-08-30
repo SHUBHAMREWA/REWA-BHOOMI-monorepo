@@ -32,7 +32,7 @@ import { LISTING_PURPOSES, PROPERTY_CATEGORIES, AREA_UNITS, getFilteredPropertyT
 import { apiGet, apiPost, apiClient } from '@/lib/api';
 import LocationMapPicker from './LocationMapPicker';
 import toast from 'react-hot-toast';
-import { State, City } from 'country-state-city';
+import { INDIAN_STATE_NAMES, getCitiesForState } from '@/config/indiaLocations';
 
 const STEPS = [
   'Property Details',
@@ -224,11 +224,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
   // Submitting
   const [submitting, setSubmitting] = useState(false);
-  const indianStates = State.getStatesOfCountry('IN');
-  const selectedStateObj = indianStates.find(s => s.name === location.state);
-  const citiesOfState = selectedStateObj 
-    ? City.getCitiesOfState('IN', selectedStateObj.isoCode).map(c => c.name)
-    : [];
+  const citiesOfState = getCitiesForState(location.state);
 
   const { user, isLoading: isAuthLoading } = useAuth();
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
@@ -846,7 +842,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             <Grid container spacing={2} mb={3}>
               <Grid item xs={12} sm={4}>
                 <Autocomplete
-                  options={indianStates.map(s => s.name)}
+                  options={INDIAN_STATE_NAMES}
                   value={location.state}
                   onChange={(e: any, newValue: string | null) => setLocation({ ...location, state: newValue || '', city: '', locality: '' })}
                   renderInput={(params) => <TextField {...params} label="State *" size="small" />}

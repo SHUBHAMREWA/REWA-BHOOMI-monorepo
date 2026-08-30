@@ -237,15 +237,16 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
     : [fallbackPlaceholder];
 
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
-  // Auto-change image every 1300ms with smooth transition
+  // Auto-cycle images only when user hovers on card/image (eliminates continuous CPU churn on main thread)
   useEffect(() => {
-    if (imageList.length <= 1) return;
+    if (!isHovered || imageList.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentImageIdx((prev) => (prev + 1) % imageList.length);
-    }, 1300);
+    }, 1400);
     return () => clearInterval(interval);
-  }, [imageList.length]);
+  }, [isHovered, imageList.length]);
 
   const activeImage = imageList[currentImageIdx] || property.thumbnail;
   const photoCount = property.image_count || imageList.length || 1;
@@ -389,6 +390,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         id={`property-${property.id}`}
         data-property-slug={property.slug}
         data-property-card="true"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -411,7 +414,14 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         <Box sx={{ position: 'relative', height: 200, bgcolor: '#F0F4FF' }}>
           {activeImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={currentImageIdx} src={activeImage} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeCross 0.5s ease-in-out' }} />
+            <img
+              key={currentImageIdx}
+              src={activeImage}
+              alt={property.title}
+              loading="lazy"
+              decoding="async"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeCross 0.5s ease-in-out' }}
+            />
           ) : (
             <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#E2E8F0' }}>
               <Typography color="text.secondary" variant="caption">No Image</Typography>
@@ -562,6 +572,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
       id={`property-${property.id}`}
       data-property-slug={property.slug}
       data-property-card="true"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
         display: 'block',
         textDecoration: 'none',
@@ -610,7 +622,14 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
           >
             {activeImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={currentImageIdx} src={activeImage} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeCross 0.5s ease-in-out' }} />
+              <img
+                key={currentImageIdx}
+                src={activeImage}
+                alt={property.title}
+                loading="lazy"
+                decoding="async"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeCross 0.5s ease-in-out' }}
+              />
             ) : (
               <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="caption" color="text.disabled">No Image</Typography>
@@ -874,6 +893,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 key={currentImageIdx}
                 src={activeImage}
                 alt={property.title}
+                loading="lazy"
+                decoding="async"
                 style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeCross 0.5s ease-in-out' }}
               />
             ) : (
