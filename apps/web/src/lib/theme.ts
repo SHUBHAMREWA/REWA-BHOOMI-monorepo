@@ -37,7 +37,7 @@ export const theme = createTheme({
     divider: '#E2E8F0',
   },
   typography: {
-    fontFamily: "'Inter', system-ui, sans-serif",
+    fontFamily: "var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif",
     h1: { fontWeight: 700 },
     h2: { fontWeight: 700 },
     h3: { fontWeight: 600 },

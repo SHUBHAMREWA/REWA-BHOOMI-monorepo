@@ -47,9 +47,11 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     return () => window.removeEventListener('resize', resize);
   }, []);
 
-  // Center map on public stage at 100% scale (1:1)
-  useEffect(() => {
-    if (!stageRef.current || canvasSize.width <= 0) return;
+  // Center map on public stage (0.4 scale on mobile, 1.0 scale on desktop)
+  const centerMap = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage || canvasSize.width <= 0) return;
+
     const allCoords: number[][] = [];
     plots.forEach((p: any) => {
       if (p.polygon_geometry?.coordinates?.[0]) {
@@ -78,20 +80,43 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
       centerY = (minY + (maxY - minY) / 2) * boardHeight;
     }
 
-    const stage = stageRef.current;
-    if (stage) {
-      const isMobile = window.innerWidth <= 768;
-      const initialScale = isMobile ? 0.4 : 1.0;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const initialScale = isMobile ? 0.4 : 1.0;
 
-      stage.scale({ x: initialScale, y: initialScale });
-      stage.position({
-        x: canvasSize.width / 2 - (centerX * initialScale),
-        y: canvasSize.height / 2 - (centerY * initialScale),
-      });
-      setStageScale(initialScale);
-      stage.batchDraw();
-    }
+    stage.scale({ x: initialScale, y: initialScale });
+    stage.position({
+      x: canvasSize.width / 2 - (centerX * initialScale),
+      y: canvasSize.height / 2 - (centerY * initialScale),
+    });
+    setStageScale(initialScale);
+    stage.batchDraw();
   }, [plots, mapObjects, canvasSize]);
+
+  useEffect(() => {
+    centerMap();
+  }, [centerMap]);
+
+  const zoomAtCenter = (factor: number) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const oldScale = stage.scaleX();
+    const newScale = Math.max(0.2, Math.min(5, oldScale * factor));
+    const center = {
+      x: canvasSize.width / 2,
+      y: canvasSize.height / 2,
+    };
+    const pointTo = {
+      x: (center.x - stage.x()) / oldScale,
+      y: (center.y - stage.y()) / oldScale,
+    };
+    stage.scale({ x: newScale, y: newScale });
+    stage.position({
+      x: center.x - pointTo.x * newScale,
+      y: center.y - pointTo.y * newScale,
+    });
+    setStageScale(newScale);
+    stage.batchDraw();
+  };
 
   const getPlotColor = useCallback((plot: any) => {
     return plot.display_color ?? PLOT_COLORS[plot.status as keyof typeof PLOT_COLORS] ?? '#22c55e';
@@ -165,8 +190,46 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     stage.batchDraw();
   };
 
-  // Touch Pinch Zoom Handler
-  const touchState = useRef<{ lastCenter: { x: number; y: number } | null; lastDist: number }>({ lastCenter: null, lastDist: 0 });
+  // Smooth Multi-Touch Pinch Zoom Handler
+  const getTouchDistance = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+    return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  };
+
+  const getTouchCenter = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+    return {
+      x: (p1.x + p2.x) / 2,
+      y: (p1.y + p2.y) / 2,
+    };
+  };
+
+  const touchState = useRef<{
+    lastDist: number;
+    lastCenter: { x: number; y: number } | null;
+    rafId: number | null;
+  }>({ lastDist: 0, lastCenter: null, rafId: null });
+
+  const handleTouchStart = (e: any) => {
+    const evt = e.evt as TouchEvent;
+    const stage = stageRef.current;
+    if (evt.touches.length >= 2) {
+      if (stage) {
+        if (stage.isDragging()) {
+          stage.stopDrag();
+        }
+        stage.draggable(false);
+      }
+      const container = containerRef.current;
+      const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+      const touch1 = evt.touches[0];
+      const touch2 = evt.touches[1];
+      const p1 = { x: touch1.clientX - rect.left, y: touch1.clientY - rect.top };
+      const p2 = { x: touch2.clientX - rect.left, y: touch2.clientY - rect.top };
+      touchState.current.lastDist = getTouchDistance(p1, p2);
+      touchState.current.lastCenter = getTouchCenter(p1, p2);
+    } else if (stage) {
+      stage.draggable(true);
+    }
+  };
 
   const handleTouchMove = (e: any) => {
     const evt = e.evt as TouchEvent;
@@ -175,38 +238,85 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
       const stage = stageRef.current;
       if (!stage) return;
 
-      const p1 = { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
-      const p2 = { x: evt.touches[1].clientX, y: evt.touches[1].clientY };
-      const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+      if (stage.isDragging()) {
+        stage.stopDrag();
+      }
+      if (stage.draggable()) {
+        stage.draggable(false);
+      }
 
-      if (touchState.current.lastDist === 0) {
+      const container = containerRef.current;
+      const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+
+      const touch1 = evt.touches[0];
+      const touch2 = evt.touches[1];
+      const p1 = { x: touch1.clientX - rect.left, y: touch1.clientY - rect.top };
+      const p2 = { x: touch2.clientX - rect.left, y: touch2.clientY - rect.top };
+
+      const dist = getTouchDistance(p1, p2);
+      const newCenter = getTouchCenter(p1, p2);
+
+      const lastDist = touchState.current.lastDist;
+      const lastCenter = touchState.current.lastCenter;
+
+      if (!lastDist || !lastCenter || lastDist <= 0) {
         touchState.current.lastDist = dist;
+        touchState.current.lastCenter = newCenter;
+        return;
+      }
+
+      const distRatio = dist / lastDist;
+      if (distRatio < 0.2 || distRatio > 5.0) {
+        touchState.current.lastDist = dist;
+        touchState.current.lastCenter = newCenter;
         return;
       }
 
       const oldScale = stage.scaleX();
-      const scaleBy = dist / touchState.current.lastDist;
-      const newScale = Math.max(0.3, Math.min(5, oldScale * scaleBy));
+      const newScale = Math.max(0.2, Math.min(5, oldScale * distRatio));
 
-      const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      // Local coordinates of center point before zoom
       const pointTo = {
-        x: (center.x - stage.x()) / oldScale,
-        y: (center.y - stage.y()) / oldScale,
+        x: (newCenter.x - stage.x()) / oldScale,
+        y: (newCenter.y - stage.y()) / oldScale,
       };
+
+      // Translation delta for simultaneous pan
+      const dx = newCenter.x - lastCenter.x;
+      const dy = newCenter.y - lastCenter.y;
 
       stage.scale({ x: newScale, y: newScale });
       stage.position({
-        x: center.x - pointTo.x * newScale,
-        y: center.y - pointTo.y * newScale,
+        x: newCenter.x - pointTo.x * newScale + dx,
+        y: newCenter.y - pointTo.y * newScale + dy,
       });
-      setStageScale(newScale);
-      touchState.current.lastDist = dist;
       stage.batchDraw();
+
+      touchState.current.lastDist = dist;
+      touchState.current.lastCenter = newCenter;
+
+      // Throttle React state update so UI chip doesn't lag the canvas
+      if (!touchState.current.rafId) {
+        touchState.current.rafId = requestAnimationFrame(() => {
+          setStageScale(newScale);
+          touchState.current.rafId = null;
+        });
+      }
     }
   };
 
   const handleTouchEnd = () => {
     touchState.current.lastDist = 0;
+    touchState.current.lastCenter = null;
+    if (touchState.current.rafId) {
+      cancelAnimationFrame(touchState.current.rafId);
+      touchState.current.rafId = null;
+    }
+    const stage = stageRef.current;
+    if (stage) {
+      stage.draggable(true);
+      setStageScale(stage.scaleX());
+    }
   };
 
   const filteredPlots = useMemo(() => {
@@ -305,6 +415,9 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               border: '2.5px solid #1B4FD8',
               boxShadow: '0 4px 20px rgba(27, 79, 216, 0.12), inset 0 0 10px rgba(15, 23, 42, 0.03)',
               bgcolor: '#F7F3EB',
+              touchAction: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
             }}
             ref={containerRef}
           >
@@ -315,6 +428,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                 height={canvasSize.height}
                 draggable
                 onWheel={handleWheel}
+                onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 onClick={(e) => { if (e.target.name() === 'bg') setSelectedPlot(null); }}
@@ -386,12 +500,12 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               <Chip
                 label={`${Math.round(stageScale * 100)}%`}
                 size="small"
-                onClick={() => { const s = stageRef.current; if (s) { s.scale({ x: 1, y: 1 }); s.position({ x: 0, y: 0 }); setStageScale(1); s.batchDraw(); } }}
+                onClick={centerMap}
                 sx={{ cursor: 'pointer', fontWeight: 700, bgcolor: '#0F172A', color: '#38BDF8' }}
               />
-              <Chip label="+" size="small" onClick={() => { const s = stageRef.current; if (s) { const sc = s.scaleX() * 1.2; s.scale({ x: sc, y: sc }); setStageScale(sc); s.batchDraw(); } }} sx={{ cursor: 'pointer', fontWeight: 700 }} />
-              <Chip label="-" size="small" onClick={() => { const s = stageRef.current; if (s) { const sc = s.scaleX() / 1.2; s.scale({ x: sc, y: sc }); setStageScale(sc); s.batchDraw(); } }} sx={{ cursor: 'pointer', fontWeight: 700 }} />
-              <Chip label="Reset" size="small" onClick={() => { const s = stageRef.current; if (s) { s.scale({ x: 1, y: 1 }); s.position({ x: 0, y: 0 }); setStageScale(1); s.batchDraw(); } }} sx={{ cursor: 'pointer' }} />
+              <Chip label="+" size="small" onClick={() => zoomAtCenter(1.25)} sx={{ cursor: 'pointer', fontWeight: 700 }} />
+              <Chip label="-" size="small" onClick={() => zoomAtCenter(1 / 1.25)} sx={{ cursor: 'pointer', fontWeight: 700 }} />
+              <Chip label="Reset" size="small" onClick={centerMap} sx={{ cursor: 'pointer' }} />
             </Box>
 
             {/* No plots hint */}

@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   AppBar, Toolbar, Button, IconButton, Box, Container, Drawer, List,
-  ListItem, ListItemButton, ListItemText, ListItemIcon, Avatar, Menu, MenuItem, Tooltip, Typography, Switch
+  ListItem, ListItemButton, ListItemText, ListItemIcon, Avatar, Menu, MenuItem, Tooltip, Typography, Switch,
+  InputBase
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import PersonIcon from '@mui/icons-material/Person';
@@ -33,18 +35,23 @@ const changingWords = ['plot', 'house', 'land', 'apartment', 'villa', 'farm'];
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [wordIndex, setWordIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
+
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -234,50 +241,181 @@ export default function Navbar() {
         }}
       >
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ justifyContent: 'space-between', height: { xs: 60, sm: 70, md: 80 } }}>
-            {/* Logo */}
-            <Box sx={{ flex: { md: 1 }, display: 'flex', alignItems: 'center' }}>
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between', height: { xs: 60, sm: 70, md: 80 }, position: 'relative' }}>
+            {/* Logo: Always Visible on Desktop and Mobile */}
+            <Box sx={{ flex: { md: 1 }, display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, mr: { xs: 0.5, sm: 2 } }}>
+
               <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#1B4FD8' }}>
-                <Box sx={{ 
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <img src="/favicon.png" alt="Rewa Bhoomi Logo" style={{ width: '90px', height: '90px', margin: '-15px -25px -15px -15px', objectFit: 'contain' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  <img
+                    src="/favicon.png"
+                    alt="Rewa Bhoomi Logo"
+                    style={{
+                      width: mobileSearchOpen ? '48px' : '88px',
+                      height: mobileSearchOpen ? '48px' : '88px',
+                      margin: mobileSearchOpen ? '-6px -8px -6px -6px' : '-12px -22px -12px -10px',
+                      objectFit: 'contain',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0,
+                    }}
+                  />
                 </Box>
-                <Typography component="span" sx={{ fontSize: { xs: '20px', sm: '24px' }, fontWeight: 800, letterSpacing: '-0.5px', marginRight: { xs: '6px', sm: '12px' } }}>
+                <Typography
+                  component="span"
+                  sx={{
+                    display: { xs: mobileSearchOpen ? 'none' : 'inline', md: 'inline' },
+                    fontSize: { xs: '19px', sm: '22px', md: '25px' },
+                    fontWeight: 800,
+                    letterSpacing: '-0.5px',
+                    marginRight: { xs: '5px', sm: '10px' },
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
                   Rewa Bhoomi
                 </Typography>
+
                 
-                {/* Animated Text Section */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.2, sm: 0.4 }, bgcolor: 'rgba(27, 79, 216, 0.08)', px: { xs: 0.7, sm: 1 }, py: { xs: 0.2, sm: 0.35 }, borderRadius: 2 }}>
-                  <Typography sx={{ fontWeight: 600, color: '#475569', fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>Buy</Typography>
-                  <Typography 
-                    key={wordIndex} 
-                    sx={{ 
-                      fontWeight: 800, 
-                      color: '#1B4FD8', 
-                      fontSize: { xs: '0.65rem', sm: '0.75rem' }, 
-                      minWidth: { xs: '40px', sm: '55px' },
-                      '@keyframes popIn': {
-                        '0%': { opacity: 0, transform: 'translateY(5px)' },
-                        '100%': { opacity: 1, transform: 'translateY(0)' },
-                      },
-                      animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
-                    }}
-                  >
-                    {changingWords[wordIndex]}
-                  </Typography>
-                </Box>
+                {/* Animated Pill Text Section - Visible on mobile & desktop until search is opened */}
+                {!mobileSearchOpen && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.2, sm: 0.4 }, bgcolor: 'rgba(27, 79, 216, 0.08)', px: { xs: 0.6, sm: 1 }, py: { xs: 0.2, sm: 0.35 }, borderRadius: 2 }}>
+                    <Typography sx={{ fontWeight: 600, color: '#475569', fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Buy</Typography>
+
+                    <Typography 
+                      key={wordIndex} 
+                      sx={{ 
+                        fontWeight: 800, 
+                        color: '#1B4FD8', 
+                        fontSize: { xs: '0.62rem', sm: '0.75rem' }, 
+                        minWidth: { xs: '38px', sm: '55px' },
+                        '@keyframes popIn': {
+                          '0%': { opacity: 0, transform: 'translateY(5px)' },
+                          '100%': { opacity: 1, transform: 'translateY(0)' },
+                        },
+                        animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
+                      }}
+                    >
+                      {changingWords[wordIndex]}
+                    </Typography>
+                  </Box>
+                )}
               </Link>
             </Box>
 
-            {/* Desktop Navigation */}
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', alignItems: 'center', gap: 4 }}>
+            {/* Mobile Expanding Search Bar: Stretches next to Logo Icon */}
+            {mobileSearchOpen && (
+              <Box
+                component="form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (mobileSearchQuery.trim()) {
+                    router.push(`/properties?search=${encodeURIComponent(mobileSearchQuery.trim())}`);
+                    setMobileSearchOpen(false);
+                  } else {
+                    searchInputRef.current?.focus();
+                  }
+                }}
+                sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  alignItems: 'center',
+                  flex: 1,
+                  minWidth: 0,
+                  bgcolor: '#F1F5F9',
+                  borderRadius: '24px',
+                  pl: 1.5,
+                  pr: 0.4,
+                  py: 0.25,
+                  mx: 1,
+                  border: '1.5px solid #1B4FD8',
+                  boxShadow: '0 2px 10px rgba(27, 79, 216, 0.16)',
+                  animation: 'stretchSearch 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '@keyframes stretchSearch': {
+                    '0%': { width: '40px', opacity: 0.3 },
+                    '100%': { width: '100%', opacity: 1 },
+                  },
+                }}
+              >
+                {/* Search text input */}
+                <InputBase
+                  autoFocus
+                  inputRef={searchInputRef}
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  placeholder="Search locality, house, plot..."
+                  sx={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: '0.82rem',
+                    color: '#0F172A',
+                    '& input': { py: 0.3, px: 0 },
+                  }}
+                />
+
+                {/* Clear input button */}
+                {mobileSearchQuery && (
+                  <IconButton
+                    size="small"
+                    onClick={() => setMobileSearchQuery('')}
+                    sx={{ p: 0.4, mr: 0.2, color: '#64748B' }}
+                    aria-label="Clear text"
+                  >
+                    <CloseIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                )}
+
+                {/* Dedicated Search Icon Button on RIGHT side of input */}
+                <IconButton
+                  type="submit"
+                  size="small"
+                  aria-label="Search properties"
+                  sx={{
+                    p: 0.6,
+                    mr: 0.3,
+                    color: '#FFFFFF',
+                    bgcolor: '#1B4FD8',
+                    borderRadius: '50%',
+                    transition: 'all 0.2s',
+                    '&:hover': { bgcolor: '#1338A8', transform: 'scale(1.06)' },
+                  }}
+                >
+                  <SearchIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+
+                {/* Close search button */}
+                <IconButton
+                  size="small"
+                  onClick={() => setMobileSearchOpen(false)}
+                  sx={{ p: 0.4, bgcolor: '#E2E8F0', color: '#334155', '&:hover': { bgcolor: '#CBD5E1' } }}
+                  aria-label="Close search"
+                >
+                  <CloseIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </Box>
+            )}
+
+
+
+
+            {/* Desktop Navigation: Centered on Desktop */}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: { md: 3, lg: 4 },
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 1,
+              }}
+            >
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
                   style={{
+
+
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
@@ -452,16 +590,34 @@ export default function Navbar() {
               )}
             </Box>
 
-            {/* Mobile Menu Button */}
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="end"
-              onClick={handleDrawerToggle}
-              sx={{ display: { md: 'none' }, color: '#0F172A' }}
-            >
-              <MenuIcon />
-            </IconButton>
+            {/* Mobile Actions: Search + Menu */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5 }}>
+              {!mobileSearchOpen && (
+                <IconButton
+                  onClick={() => setMobileSearchOpen(true)}
+                  aria-label="Search properties"
+                  sx={{
+                    color: '#1B4FD8',
+                    p: 0.8,
+                    bgcolor: 'rgba(27, 79, 216, 0.08)',
+                    borderRadius: '10px',
+                    '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.16)' },
+                  }}
+                >
+                  <SearchIcon sx={{ fontSize: 21 }} />
+                </IconButton>
+              )}
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="end"
+                onClick={handleDrawerToggle}
+                sx={{ color: '#0F172A', p: 0.8 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Box>
+
           </Toolbar>
         </Container>
       </AppBar>

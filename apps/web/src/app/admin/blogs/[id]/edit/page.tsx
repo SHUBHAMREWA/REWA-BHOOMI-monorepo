@@ -20,14 +20,33 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UpdateBlogSchema } from '@rewa-bhoomi/validation';
-import type { UpdateBlogInput } from '@rewa-bhoomi/validation';
+import { UpdateBlogSchema, type UpdateBlogInput } from '@rewa-bhoomi/validation';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@mui/material';
 import { useBlog, useUpdateBlog, useDeleteBlog, useBlogCategories, useBlogTags, useCreateBlogTag } from '@/features/blogs/api/useBlogs';
 import { ImageUploader } from '@/features/media/components/ImageUploader';
-import { RichTextEditor } from '@/features/blogs/components/editor/RichTextEditor';
 import { SeoPreview } from '@/features/blogs/components/seo/SeoPreview';
 import { FaqManager, type FaqItem } from '@/features/blogs/components/FaqManager';
 import toast from 'react-hot-toast';
+
+const RichTextEditor = dynamic(
+  () =>
+    import('@/features/blogs/components/editor/RichTextEditor').then(
+      (mod) => mod.RichTextEditor,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton
+        variant="rounded"
+        width="100%"
+        height={450}
+        animation="wave"
+        sx={{ borderRadius: 2 }}
+      />
+    ),
+  },
+);
 
 const slugify = (text: string) =>
   text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -294,7 +313,7 @@ export default function EditBlogPage() {
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <Controller name="title" control={control} render={({ field }) => (
-                  <TextField {...field} label="Blog Title *" fullWidth error={!!errors.title} helperText={errors.title?.message} />
+                  <TextField {...field} label="Blog Title *" fullWidth error={!!errors.title} helperText={errors.title?.message as string | undefined} />
                 )} />
               </Grid>
 
@@ -305,7 +324,7 @@ export default function EditBlogPage() {
                     label="URL Slug"
                     fullWidth
                     error={!!errors.slug}
-                    helperText={errors.slug?.message || `URL: /blog/${watchSlug}`}
+                    helperText={(errors.slug?.message as string) || `URL: /blog/${watchSlug}`}
                     onChange={(e) => {
                       setSlugManual(true);
                       field.onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
@@ -372,7 +391,7 @@ export default function EditBlogPage() {
                     value={field.value as Record<string, unknown> | null ?? blog.contentJson}
                     onChange={(json) => { field.onChange(json); setValue('content', ' '); }}
                     error={!!errors.content}
-                    helperText={errors.content?.message}
+                    helperText={errors.content?.message as string | undefined}
                     minHeight={450}
                   />
                 )}

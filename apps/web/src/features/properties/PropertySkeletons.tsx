@@ -289,3 +289,86 @@ export function PropertyDetailPageSkeleton() {
     </Box>
   );
 }
+
+// ─── 4. Full Properties Search Page Skeleton ──────────────────────────────────
+export function PropertiesSearchPageSkeleton() {
+  return (
+    <Box sx={{ minHeight: '100vh', pt: { xs: 2, sm: 3.5 }, pb: { xs: 6, sm: 6 }, bgcolor: '#F8FAFC' }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 3 } }}>
+        {/* Header Title */}
+        <Box sx={{ mb: 1 }}>
+          <Skeleton variant="text" animation="wave" width={240} height={32} />
+        </Box>
+
+        {/* Purpose selector chips */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 0.6, sm: 0.8 },
+            mb: 1,
+            borderRadius: '8px',
+            border: '1px solid #E2E8F0',
+            bgcolor: '#FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.8,
+            overflowX: 'auto',
+          }}
+        >
+          <Skeleton variant="rounded" width={80} height={26} sx={{ borderRadius: '16px' }} />
+          <Skeleton variant="rounded" width={90} height={26} sx={{ borderRadius: '16px' }} />
+          <Skeleton variant="rounded" width={70} height={26} sx={{ borderRadius: '16px' }} />
+          <Skeleton variant="rounded" width={75} height={26} sx={{ borderRadius: '16px' }} />
+          <Skeleton variant="rounded" width={110} height={26} sx={{ borderRadius: '16px' }} />
+        </Paper>
+
+        {/* Search and Filters Bar */}
+        <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+          <Skeleton variant="rounded" width="100%" height={38} sx={{ borderRadius: 2 }} />
+          <Skeleton variant="rounded" width={90} height={38} sx={{ borderRadius: 2, flexShrink: 0 }} />
+          <Skeleton variant="rounded" width={95} height={38} sx={{ borderRadius: 2, flexShrink: 0 }} />
+        </Box>
+
+        {/* Budget Range Filter Banner */}
+        <Paper
+          elevation={0}
+          sx={{
+            bgcolor: '#F1F5F9',
+            borderRadius: '12px',
+            p: { xs: 1, sm: 1.5 },
+            mb: 1.2,
+            border: '1px solid #E2E8F0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+            <Skeleton variant="text" width={55} height={20} />
+            <Skeleton variant="rounded" width={80} height={32} sx={{ borderRadius: '6px' }} />
+            <Skeleton variant="text" width={20} height={20} />
+            <Skeleton variant="rounded" width={80} height={32} sx={{ borderRadius: '6px' }} />
+            <Skeleton variant="rounded" width={70} height={32} sx={{ borderRadius: '8px' }} />
+          </Box>
+          <Skeleton variant="rounded" width="50%" height={6} sx={{ borderRadius: 1 }} />
+        </Paper>
+
+        {/* View Toggle and Count Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 1 }}>
+          <Skeleton variant="text" width={150} height={24} />
+          <Skeleton variant="rounded" width={130} height={32} sx={{ borderRadius: 2 }} />
+        </Box>
+
+        {/* 4 Cards Skeleton */}
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          {[1, 2, 3, 4].map((i) => (
+            <PropertyListCardSkeleton key={i} />
+          ))}
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
