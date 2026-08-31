@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 
 import { useRouter } from 'next/navigation';
-import { Box, Container, Typography, InputBase, Button, Paper } from '@mui/material';
+import { Box, Container, Typography, InputBase, Button, Paper, Link as MuiLink } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import HomeIcon from '@mui/icons-material/Home';
 import ApartmentIcon from '@mui/icons-material/Apartment';
@@ -14,6 +14,9 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import { useCompanyCommunication } from './api/useHomeData';
+
 
 const categories = [
   { name: 'Houses', icon: <HomeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=RESIDENTIAL' },
@@ -59,32 +62,34 @@ export default function HeroSection() {
     if (isRedirecting) return;
     setIsRedirecting(true);
 
-    const query = customSearch !== undefined ? customSearch : search;
-    const params = new URLSearchParams();
-    if (query) params.set('keyword', query);
-    params.set('city', 'Rewa');
-    params.set('focus', 'true');
-
-    setTimeout(() => {
-      router.push(`/properties?${params.toString()}`);
-    }, 300);
+    const query = (customSearch !== undefined ? customSearch : search).trim();
+    if (query) {
+      router.push(`/properties?keyword=${encodeURIComponent(query)}`);
+    } else {
+      router.push('/properties');
+    }
   };
 
+
+  const { data: comm } = useCompanyCommunication();
+  const contactPhone = comm?.contact_phone || '+91 7898522932';
+  const whatsappNumber = (comm?.contact_phone || '917898522932').replace(/[^0-9]/g, '');
+
   return (
-    <Box component="section" sx={{ bgcolor: '#F7F8F9', pt: { xs: 3, sm: 4, md: 5 }, pb: { xs: 3, md: 4 }, borderBottom: '1px solid #E5E7EB' }}>
+    <Box component="section" sx={{ bgcolor: '#F7F8F9', pt: { xs: 2, sm: 3.5, md: 4.5 }, pb: { xs: 2, sm: 3, md: 4 }, borderBottom: '1px solid #E5E7EB' }}>
       <Container maxWidth="lg">
         
         {/* Compact Search Bar Area */}
-        <Box sx={{ maxWidth: 800, mx: 'auto', mb: { xs: 2.5, md: 3.5 } }}>
-          <Typography variant="h4" component="h1" sx={{ textAlign: 'center', fontWeight: 800, color: '#0F172A', mb: 0.5, fontSize: { xs: '1.4rem', sm: '1.85rem', md: '2.3rem' }, lineHeight: 1.25 }}>
+        <Box sx={{ maxWidth: 800, mx: 'auto', mb: { xs: 1.8, sm: 2.5, md: 3 } }}>
+          <Typography variant="h4" component="h1" sx={{ textAlign: 'center', fontWeight: 800, color: '#0F172A', mb: { xs: 0.3, sm: 0.5 }, fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.2rem' }, lineHeight: 1.25 }}>
             रीवा में खोजें अपने सपनों की संपत्ति
           </Typography>
-          <Typography variant="body1" sx={{ textAlign: 'center', color: '#64748B', mb: 1.5, fontSize: { xs: '0.85rem', md: '0.95rem' } }}>
+          <Typography variant="body1" sx={{ textAlign: 'center', color: '#64748B', mb: { xs: 1, sm: 1.5 }, fontSize: { xs: '0.78rem', sm: '0.88rem', md: '0.95rem' } }}>
             Rewa ke aaspas verified plots, makaan, aur commercial properties dhoodhein.
           </Typography>
 
           {/* Action Buttons: Properties & Contact */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: { xs: 1.2, sm: 2 }, mb: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: { xs: 0.8, sm: 1.5 }, mb: { xs: 1, sm: 1.4 }, flexWrap: 'wrap' }}>
 
             <Button
               variant="contained"
@@ -92,13 +97,13 @@ export default function HeroSection() {
               sx={{
                 bgcolor: '#1E40AF',
                 color: 'white',
-                px: { xs: 2.5, sm: 3 },
-                py: { xs: 0.9, sm: 1.1 },
+                px: { xs: 1.8, sm: 2.5, md: 3 },
+                py: { xs: 0.6, sm: 0.85, md: 1.1 },
                 borderRadius: 2.5,
                 fontWeight: 700,
-                fontSize: { xs: '0.82rem', sm: '0.92rem' },
+                fontSize: { xs: '0.75rem', sm: '0.84rem', md: '0.92rem' },
                 textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
+                boxShadow: '0 3px 10px rgba(30, 64, 175, 0.2)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 '&:hover': { bgcolor: '#1E3A8A' },
@@ -113,7 +118,7 @@ export default function HeroSection() {
                   transform: iconFading ? 'scale(0.5) rotate(-20deg)' : 'scale(1) rotate(0deg)',
                   opacity: iconFading ? 0 : 1,
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  mr: 1,
+                  mr: 0.8,
                 }}
               >
                 {animatedIcons[iconIndex]}
@@ -124,16 +129,16 @@ export default function HeroSection() {
             <Button
               variant="outlined"
               onClick={() => router.push('/contact')}
-              startIcon={<PhoneInTalkIcon />}
+              startIcon={<PhoneInTalkIcon sx={{ fontSize: { xs: '0.9rem', sm: '1.1rem' } }} />}
               sx={{
                 borderColor: '#CBD5E1',
                 bgcolor: '#FFFFFF',
                 color: '#1E293B',
-                px: { xs: 2.5, sm: 3 },
-                py: { xs: 0.9, sm: 1.1 },
+                px: { xs: 1.8, sm: 2.5, md: 3 },
+                py: { xs: 0.6, sm: 0.85, md: 1.1 },
                 borderRadius: 2.5,
                 fontWeight: 700,
-                fontSize: { xs: '0.82rem', sm: '0.92rem' },
+                fontSize: { xs: '0.75rem', sm: '0.84rem', md: '0.92rem' },
                 textTransform: 'none',
                 '&:hover': { borderColor: '#94A3B8', bgcolor: '#F8FAFC' },
               }}
@@ -142,16 +147,108 @@ export default function HeroSection() {
             </Button>
           </Box>
 
+          {/* अधिक जानकारी के लिए संपर्क करें Badge - Compact Single-Line on Mobile */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: { xs: 0.5, sm: 1 },
+              flexWrap: { xs: 'nowrap', sm: 'wrap' },
+              mb: { xs: 1.2, sm: 1.8 },
+              px: { xs: 1, sm: 1.8 },
+              py: { xs: 0.35, sm: 0.6 },
+              bgcolor: '#FFFFFF',
+              borderRadius: '30px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+              maxWidth: 'fit-content',
+              mx: 'auto',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.84rem' },
+                fontWeight: 600,
+                color: '#475569',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              अधिक जानकारी:
+            </Typography>
+
+            {/* Direct Phone Call */}
+            <MuiLink
+              href={`tel:${contactPhone.replace(/\s+/g, '')}`}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.4,
+                color: '#1E40AF',
+                bgcolor: 'rgba(30, 64, 175, 0.08)',
+                px: { xs: 0.8, sm: 1.3 },
+                py: { xs: 0.25, sm: 0.35 },
+                borderRadius: '16px',
+                fontSize: { xs: '0.7rem', sm: '0.84rem' },
+                fontWeight: 700,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: '#1E40AF',
+                  color: '#FFFFFF',
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              <PhoneInTalkIcon sx={{ fontSize: { xs: 13, sm: 15 } }} />
+              {contactPhone}
+            </MuiLink>
+
+            {/* Direct WhatsApp Chat */}
+            <MuiLink
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('नमस्ते Rewa Bhoomi, मुझे प्रॉपर्टी के बारे में अधिक जानकारी चाहिए।')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.4,
+                color: '#15803D',
+                bgcolor: 'rgba(34, 197, 94, 0.1)',
+                px: { xs: 0.8, sm: 1.3 },
+                py: { xs: 0.25, sm: 0.35 },
+                borderRadius: '16px',
+                fontSize: { xs: '0.7rem', sm: '0.84rem' },
+                fontWeight: 700,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: '#16A34A',
+                  color: '#FFFFFF',
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              <WhatsAppIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
+              WhatsApp
+            </MuiLink>
+          </Box>
+
           <Paper
             elevation={0}
             sx={{
               display: 'flex',
               alignItems: 'center',
-              p: 0.8,
-              borderRadius: 3,
+              p: { xs: 0.4, sm: 0.7 },
+              borderRadius: { xs: 2.5, sm: 3 },
               border: '2px solid #E2E8F0',
               transition: 'all 0.2s',
-              '&:focus-within': { borderColor: '#3B82F6', boxShadow: '0 4px 20px rgba(59, 130, 246, 0.15)' },
+              '&:focus-within': { borderColor: '#3B82F6', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.15)' },
             }}
           >
             <InputBase
@@ -159,13 +256,19 @@ export default function HeroSection() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              sx={{ ml: 2, flex: 1, fontSize: { xs: '0.9rem', sm: '1rem' }, fontWeight: 500 }}
+              sx={{ ml: { xs: 1.2, sm: 2 }, flex: 1, fontSize: { xs: '0.82rem', sm: '0.96rem' }, fontWeight: 500 }}
             />
             <Button
               variant="contained"
               onClick={() => handleSearch()}
               sx={{
-                bgcolor: '#1E40AF', borderRadius: 2, px: { xs: 3, sm: 4 }, py: 1.2, fontWeight: 700, textTransform: 'none',
+                bgcolor: '#1E40AF',
+                borderRadius: 2,
+                px: { xs: 2.2, sm: 3.5 },
+                py: { xs: 0.75, sm: 1.1 },
+                fontSize: { xs: '0.8rem', sm: '0.92rem' },
+                fontWeight: 700,
+                textTransform: 'none',
                 '&:hover': { bgcolor: '#1E3A8A' },
                 boxShadow: 'none',
               }}
@@ -179,12 +282,12 @@ export default function HeroSection() {
         <Box
           sx={{
             display: 'flex',
-            gap: { xs: 1.2, sm: 2.5, md: 4.5 },
+            gap: { xs: 1, sm: 2.2, md: 4 },
             justifyContent: { xs: 'space-between', sm: 'center' },
             flexWrap: 'nowrap',
             overflowX: { xs: 'auto', sm: 'visible' },
-            pb: { xs: 0.5, sm: 0 },
-            px: { xs: 0.5, sm: 0 },
+            pb: { xs: 0.3, sm: 0 },
+            px: { xs: 0.3, sm: 0 },
             scrollbarWidth: 'none',
             '&::-webkit-scrollbar': { display: 'none' },
           }}
@@ -194,19 +297,19 @@ export default function HeroSection() {
               key={idx}
               onClick={() => {
                 if (cat.isProject) router.push('/projects');
-                else router.push(`/properties?city=Rewa&${cat.query}`);
+                else router.push(`/properties?${cat.query}`);
               }}
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 0.8,
+                gap: 0.5,
                 cursor: 'pointer',
                 flexShrink: 0,
-                width: { xs: '52px', sm: '68px', md: '84px' },
+                width: { xs: '48px', sm: '64px', md: '80px' },
                 '&:hover .icon-box': {
-                  transform: 'translateY(-3px)',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
                   bgcolor: '#FFFFFF',
                   borderColor: '#3B82F6',
                 },
@@ -219,31 +322,30 @@ export default function HeroSection() {
               <Box
                 className="icon-box"
                 sx={{
-                  width: { xs: 46, sm: 54, md: 64 },
-                  height: { xs: 46, sm: 54, md: 64 },
+                  width: { xs: 38, sm: 50, md: 60 },
+                  height: { xs: 38, sm: 50, md: 60 },
                   bgcolor: '#FFFFFF',
-                  borderRadius: { xs: '12px', sm: '14px', md: '16px' },
+                  borderRadius: { xs: '10px', sm: '13px', md: '15px' },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#475569',
                   transition: 'all 0.25s ease',
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
                 }}
               >
                 {cat.icon}
               </Box>
               <Typography
                 className="cat-text"
-                variant="body2"
                 sx={{
+                  fontSize: { xs: '0.68rem', sm: '0.78rem', md: '0.88rem' },
                   fontWeight: 600,
-                  color: '#334155',
+                  color: '#475569',
                   textAlign: 'center',
-                  fontSize: { xs: '0.7rem', sm: '0.78rem', md: '0.86rem' },
-                  transition: 'all 0.2s',
-                  lineHeight: 1.15,
+                  transition: 'color 0.2s',
+                  lineHeight: 1.2,
                 }}
               >
                 {cat.name}

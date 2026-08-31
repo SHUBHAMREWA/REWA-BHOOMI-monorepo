@@ -105,15 +105,15 @@ export const PROPERTY_TYPES: PropertyTypeOption[] = [
 ];
 
 export const AREA_UNITS: { key: AreaUnit; label: string }[] = [
-  { key: 'SQ_FT', label: 'Sq. Ft.' },
-  { key: 'SQ_MT', label: 'Sq. Meter' },
-  { key: 'SQ_YARD', label: 'Gaj (Sq. Yard)' },
-  { key: 'ACRE', label: 'Acre (Ekar)' },
-  { key: 'BIGHA', label: 'Bigha' },
-  { key: 'BISWA', label: 'Biswa' },
-  { key: 'HECTARE', label: 'Hectare' },
-  { key: 'MARLA', label: 'Marla' },
-  { key: 'KANAL', label: 'Kanal' },
+  { key: 'SQ_FT', label: 'Sq. Ft. (वर्ग फीट)' },
+  { key: 'SQ_MT', label: 'Sq. Meter (वर्ग मीटर)' },
+  { key: 'SQ_YARD', label: 'Gaj (गज / Sq. Yard)' },
+  { key: 'ACRE', label: 'Acre (एकड़ / Ekar)' },
+  { key: 'BIGHA', label: 'Bigha (बीघा)' },
+  { key: 'BISWA', label: 'Biswa (बिस्वा)' },
+  { key: 'HECTARE', label: 'Hectare (हेक्टेयर)' },
+  { key: 'MARLA', label: 'Marla (मरला)' },
+  { key: 'KANAL', label: 'Kanal (कनाल)' },
 ];
 
 export function getFilteredPropertyTypes(purpose: ListingPurpose, category: PropertyCategoryType): PropertyTypeOption[] {

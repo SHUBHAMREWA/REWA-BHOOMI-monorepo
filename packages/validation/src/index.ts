@@ -321,9 +321,11 @@ export const AddReactionSchema = z.object({
 export const UpdateProfileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   username: z.string()
+    .trim()
+    .toLowerCase()
     .min(3, 'Username must be at least 3 characters')
     .max(50, 'Username must be less than 50 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
+    .regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores')
     .optional(),
   bio: z.string().max(500, 'Bio must be less than 500 characters').optional().nullable(),
   phone: z

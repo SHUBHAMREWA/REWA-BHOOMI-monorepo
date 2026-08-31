@@ -75,9 +75,17 @@ export default function AdminPostersAndCommunication() {
 
   // Poster Meta
   const [posterTitle, setPosterTitle] = useState('');
+  const [posterVideoUrl, setPosterVideoUrl] = useState('');
   const [posterRedirectUrl, setPosterRedirectUrl] = useState('');
   const [posterSortOrder, setPosterSortOrder] = useState<number>(0);
   const [posterIsActive, setPosterIsActive] = useState(true);
+
+  const getYouTubeVideoId = (url?: string | null): string | null => {
+    if (!url) return null;
+    const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
+  };
 
   // Delete Poster Dialog
   const [deleteTarget, setDeleteTarget] = useState<Poster | null>(null);
@@ -296,9 +304,15 @@ export default function AdminPostersAndCommunication() {
     e.preventDefault();
     const hasDesktop = Boolean(desktopFile || desktopDraggedUrl);
     const hasMobile = Boolean(mobileFile || mobileDraggedUrl);
+    const hasVideo = Boolean(posterVideoUrl.trim());
 
-    if (!hasDesktop && !hasMobile) {
-      setPosterError('Please provide at least a Desktop Poster or Mobile Poster image.');
+    if (hasVideo && !getYouTubeVideoId(posterVideoUrl.trim())) {
+      setPosterError('Please enter a valid YouTube video URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)');
+      return;
+    }
+
+    if (!hasDesktop && !hasMobile && !hasVideo) {
+      setPosterError('Please provide at least a Desktop/Mobile poster image or a YouTube video link.');
       return;
     }
     if (posters.length >= 6) {
@@ -328,6 +342,7 @@ export default function AdminPostersAndCommunication() {
       }
 
       if (posterTitle) formData.append('title', posterTitle);
+      if (hasVideo) formData.append('videoUrl', posterVideoUrl.trim());
       if (posterRedirectUrl) formData.append('redirectUrl', posterRedirectUrl);
       formData.append('sortOrder', posterSortOrder.toString());
       formData.append('isActive', posterIsActive.toString());
@@ -336,7 +351,7 @@ export default function AdminPostersAndCommunication() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setPosterSuccess('Poster successfully converted to WebP, uploaded to Cloudflare R2, and published!');
+      setPosterSuccess('Poster successfully created and published!');
       
       // Reset inputs
       setDesktopFile(null);
@@ -346,6 +361,7 @@ export default function AdminPostersAndCommunication() {
       setMobileDraggedUrl(null);
       setMobilePreviewUrl(null);
       setPosterTitle('');
+      setPosterVideoUrl('');
       setPosterRedirectUrl('');
       if (desktopFileInputRef.current) desktopFileInputRef.current.value = '';
       if (mobileFileInputRef.current) mobileFileInputRef.current.value = '';
@@ -517,6 +533,17 @@ export default function AdminPostersAndCommunication() {
                             Desktop Preview
                           </Box>
                         </Box>
+                      ) : getYouTubeVideoId(posterVideoUrl) ? (
+                        <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0F172A' }}>
+                          <img
+                            src={`https://img.youtube.com/vi/${getYouTubeVideoId(posterVideoUrl)}/hqdefault.jpg`}
+                            alt="YouTube Video Thumbnail"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <Box sx={{ position: 'absolute', top: 8, left: 8, bgcolor: '#FF0000', color: 'white', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <YouTubeIcon sx={{ fontSize: 15 }} /> Video Thumbnail
+                          </Box>
+                        </Box>
                       ) : (
                         <>
                           <AddPhotoAlternateIcon sx={{ fontSize: 36, color: isDesktopDragging ? '#1E40AF' : '#64748B', mb: 0.5 }} />
@@ -524,7 +551,7 @@ export default function AdminPostersAndCommunication() {
                             {isDesktopDragging ? 'Drop Desktop Image!' : 'Select or Drag Desktop Banner'}
                           </Typography>
                           <Typography variant="caption" color="#64748B">
-                            1600 × 400 px (4:1 ratio) • Drag from file or other tab
+                            1600 × 400 px (4:1 ratio) • Or enter YouTube link below
                           </Typography>
                         </>
                       )}
@@ -580,6 +607,17 @@ export default function AdminPostersAndCommunication() {
                             Mobile Preview
                           </Box>
                         </Box>
+                      ) : getYouTubeVideoId(posterVideoUrl) ? (
+                        <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0F172A' }}>
+                          <img
+                            src={`https://img.youtube.com/vi/${getYouTubeVideoId(posterVideoUrl)}/hqdefault.jpg`}
+                            alt="YouTube Video Thumbnail"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <Box sx={{ position: 'absolute', top: 8, left: 8, bgcolor: '#FF0000', color: 'white', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <YouTubeIcon sx={{ fontSize: 15 }} /> Video Thumbnail
+                          </Box>
+                        </Box>
                       ) : (
                         <>
                           <AddPhotoAlternateIcon sx={{ fontSize: 36, color: isMobileDragging ? '#10B981' : '#64748B', mb: 0.5 }} />
@@ -587,7 +625,7 @@ export default function AdminPostersAndCommunication() {
                             {isMobileDragging ? 'Drop Mobile Image!' : 'Select or Drag Mobile Banner'}
                           </Typography>
                           <Typography variant="caption" color="#64748B">
-                            800 × 400 px (2:1 ratio) • Drag from file or other tab
+                            800 × 400 px (2:1 ratio) • Or enter YouTube link below
                           </Typography>
                         </>
                       )}
@@ -606,7 +644,7 @@ export default function AdminPostersAndCommunication() {
                   <Grid item xs={12}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                       <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12} sm={4}>
                           <TextField
                             label="Poster Title (Optional)"
                             placeholder="e.g. Special Plot Discount in Rewa"
@@ -616,7 +654,26 @@ export default function AdminPostersAndCommunication() {
                             size="small"
                           />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            label="YouTube Video Link (Optional)"
+                            placeholder="e.g. https://youtu.be/... or youtube.com/watch?v=..."
+                            value={posterVideoUrl}
+                            onChange={(e) => setPosterVideoUrl(e.target.value)}
+                            fullWidth
+                            size="small"
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <YouTubeIcon fontSize="small" sx={{ color: '#FF0000' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            helperText={posterVideoUrl && !getYouTubeVideoId(posterVideoUrl) ? 'Invalid YouTube link' : (getYouTubeVideoId(posterVideoUrl) ? '✓ Valid YouTube link detected' : 'Plays inline on mobile & desktop')}
+                            error={Boolean(posterVideoUrl && !getYouTubeVideoId(posterVideoUrl))}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
                           <TextField
                             label="Redirect Link URL (Optional)"
                             placeholder="e.g. /properties?category=plot or https://..."
@@ -660,7 +717,11 @@ export default function AdminPostersAndCommunication() {
                         <Button
                           type="submit"
                           variant="contained"
-                          disabled={(!desktopFile && !desktopDraggedUrl && !mobileFile && !mobileDraggedUrl) || isUploading || posters.length >= 6}
+                          disabled={
+                            (!desktopFile && !desktopDraggedUrl && !mobileFile && !mobileDraggedUrl && !getYouTubeVideoId(posterVideoUrl)) ||
+                            isUploading ||
+                            posters.length >= 6
+                          }
                           startIcon={isUploading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
                           sx={{
                             bgcolor: '#1E40AF',
@@ -672,7 +733,11 @@ export default function AdminPostersAndCommunication() {
                             '&:hover': { bgcolor: '#1E3A8A' },
                           }}
                         >
-                          {isUploading ? 'Compressing to WebP & Uploading...' : 'Upload & Publish Poster'}
+                          {isUploading
+                            ? 'Publishing...'
+                            : (!desktopFile && !desktopDraggedUrl && !mobileFile && !mobileDraggedUrl && getYouTubeVideoId(posterVideoUrl))
+                            ? 'Publish Video Poster'
+                            : 'Upload & Publish Poster'}
                         </Button>
                       </Box>
                     </Box>
@@ -723,6 +788,11 @@ export default function AdminPostersAndCommunication() {
                               alt={poster.title || `Desktop Poster ${index + 1}`}
                               sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
+                            {poster.video_url && (
+                              <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', bgcolor: 'rgba(255,0,0,0.85)', color: 'white', p: 0.8, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+                                <YouTubeIcon sx={{ fontSize: 24 }} />
+                              </Box>
+                            )}
                             <Chip
                               label="💻 Desktop"
                               size="small"
@@ -755,7 +825,15 @@ export default function AdminPostersAndCommunication() {
                           <Typography variant="subtitle1" fontWeight={700} color="#0F172A" noWrap>
                             {poster.title || `Untitled Poster #${poster.sort_order + 1}`}
                           </Typography>
-                          <Stack direction="row" spacing={1}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {poster.video_url && (
+                              <Chip
+                                icon={<YouTubeIcon sx={{ fontSize: '14px !important', color: '#FFF !important' }} />}
+                                label="YouTube"
+                                size="small"
+                                sx={{ bgcolor: '#FF0000', color: '#FFF', fontWeight: 700, fontSize: '0.7rem' }}
+                              />
+                            )}
                             <Chip
                               label={`Order: ${poster.sort_order}`}
                               size="small"
@@ -769,6 +847,14 @@ export default function AdminPostersAndCommunication() {
                             />
                           </Stack>
                         </Box>
+                        {poster.video_url && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.8, bgcolor: '#FEF2F2', px: 1, py: 0.4, borderRadius: 1.5, border: '1px solid #FEE2E2' }}>
+                            <YouTubeIcon sx={{ fontSize: 16, color: '#FF0000', flexShrink: 0 }} />
+                            <Typography variant="caption" sx={{ color: '#991B1B', fontWeight: 600, wordBreak: 'break-all' }}>
+                              {poster.video_url}
+                            </Typography>
+                          </Box>
+                        )}
                         <Typography variant="body2" color="#64748B" sx={{ wordBreak: 'break-all' }} noWrap>
                           {poster.redirect_url ? `Link: ${poster.redirect_url}` : 'No redirect link'}
                         </Typography>

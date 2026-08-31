@@ -22,18 +22,28 @@ export async function getAllPostersAdmin(): Promise<Poster[]> {
   return posters;
 }
 
+export function extractYouTubeVideoId(url?: string | null): string | null {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+}
+
 export async function createPoster(
   desktopFile: { buffer: Buffer; originalName: string } | null,
   mobileFile: { buffer: Buffer; originalName: string } | null,
   data: {
     title?: string;
+    videoUrl?: string;
     redirectUrl?: string;
     sortOrder?: number;
     isActive?: boolean;
   }
 ): Promise<Poster> {
-  if (!desktopFile && !mobileFile) {
-    throw new BadRequestError('At least one image (Desktop or Mobile) is required to create a poster.');
+  const cleanVideoUrl = data.videoUrl?.trim() || null;
+
+  if (!desktopFile && !mobileFile && !cleanVideoUrl) {
+    throw new BadRequestError('Please provide at least one banner image or a YouTube video link.');
   }
 
   // Check maximum limit
@@ -67,18 +77,28 @@ export async function createPoster(
     mobileImageUrl = await uploadToR2(processedMobile, mobileKey, 'image/webp');
   }
 
-  // Fallback if only one is uploaded
-  const primaryImageUrl = desktopImageUrl || mobileImageUrl!;
-  const primaryStorageKey = desktopKey || mobileKey!;
+  // 3. Fallback: If no custom images uploaded but videoUrl is provided, use YouTube thumbnail
+  if (!desktopImageUrl && !mobileImageUrl && cleanVideoUrl) {
+    const ytId = extractYouTubeVideoId(cleanVideoUrl);
+    const ytThumb = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : '';
+    desktopImageUrl = ytThumb;
+    desktopKey = 'youtube-thumbnail';
+    mobileImageUrl = ytThumb;
+    mobileKey = 'youtube-thumbnail';
+  }
 
-  // 3. Save to posters table
+  // Primary image / storage key
+  const primaryImageUrl = desktopImageUrl || mobileImageUrl || '';
+  const primaryStorageKey = desktopKey || mobileKey || '';
+
+  // 4. Save to posters table
   const sortOrder = data.sortOrder ?? currentCount;
   const isActive = data.isActive !== undefined ? data.isActive : true;
 
   const rows = await query<Poster>(
     `INSERT INTO posters (
-       title, image_url, storage_key, mobile_image_url, mobile_storage_key, redirect_url, sort_order, is_active
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       title, image_url, storage_key, mobile_image_url, mobile_storage_key, video_url, redirect_url, sort_order, is_active
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       data.title?.trim() || null,
@@ -86,6 +106,7 @@ export async function createPoster(
       primaryStorageKey,
       mobileImageUrl,
       mobileKey,
+      cleanVideoUrl,
       data.redirectUrl?.trim() || null,
       sortOrder,
       isActive,
@@ -99,6 +120,7 @@ export async function updatePoster(
   id: string,
   data: {
     title?: string | null;
+    videoUrl?: string | null;
     redirectUrl?: string | null;
     sortOrder?: number;
     isActive?: boolean;
@@ -114,16 +136,17 @@ export async function updatePoster(
   }
 
   const updatedTitle = data.title !== undefined ? (data.title ? data.title.trim() : null) : existing.title;
+  const updatedVideoUrl = data.videoUrl !== undefined ? (data.videoUrl ? data.videoUrl.trim() : null) : existing.video_url;
   const updatedRedirect = data.redirectUrl !== undefined ? (data.redirectUrl ? data.redirectUrl.trim() : null) : existing.redirect_url;
   const updatedSortOrder = data.sortOrder !== undefined ? data.sortOrder : existing.sort_order;
   const updatedIsActive = data.isActive !== undefined ? data.isActive : existing.is_active;
 
   const rows = await query<Poster>(
     `UPDATE posters 
-     SET title = $1, redirect_url = $2, sort_order = $3, is_active = $4, updated_at = NOW()
-     WHERE id = $5
+     SET title = $1, video_url = $2, redirect_url = $3, sort_order = $4, is_active = $5, updated_at = NOW()
+     WHERE id = $6
      RETURNING *`,
-    [updatedTitle, updatedRedirect, updatedSortOrder, updatedIsActive, id]
+    [updatedTitle, updatedVideoUrl, updatedRedirect, updatedSortOrder, updatedIsActive, id]
   );
 
   return rows[0];

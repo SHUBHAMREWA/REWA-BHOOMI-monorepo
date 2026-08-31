@@ -40,11 +40,38 @@ export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [wordIndex, setWordIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const mobileSearchContainerRef = useRef<HTMLDivElement | null>(null);
   
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
   const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
+
+  // Close mobile search when clicking / tapping outside of it
+  useEffect(() => {
+    if (!mobileSearchOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        mobileSearchContainerRef.current &&
+        !mobileSearchContainerRef.current.contains(event.target as Node)
+      ) {
+        setMobileSearchOpen(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [mobileSearchOpen]);
+
 
 
   useEffect(() => {
@@ -61,6 +88,17 @@ export default function Navbar() {
     }, 2500);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && pathname === '/properties') {
+      const params = new URLSearchParams(window.location.search);
+      const kw = params.get('keyword') || params.get('search') || params.get('q') || '';
+      if (kw) {
+        setMobileSearchQuery(kw);
+      }
+    }
+  }, [pathname]);
+
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -305,12 +343,18 @@ export default function Navbar() {
             {/* Mobile Expanding Search Bar: Stretches next to Logo Icon */}
             {mobileSearchOpen && (
               <Box
+                ref={mobileSearchContainerRef}
                 component="form"
+
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (mobileSearchQuery.trim()) {
-                    router.push(`/properties?search=${encodeURIComponent(mobileSearchQuery.trim())}`);
+                  const q = mobileSearchQuery.trim();
+                  if (q) {
+                    router.push(`/properties?keyword=${encodeURIComponent(q)}`);
                     setMobileSearchOpen(false);
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('nav-search-keyword', { detail: { keyword: q } }));
+                    }
                   } else {
                     searchInputRef.current?.focus();
                   }

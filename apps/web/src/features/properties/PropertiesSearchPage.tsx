@@ -25,6 +25,7 @@ import {
   Stack,
   Radio,
   InputAdornment,
+  InputBase,
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -114,7 +115,9 @@ export default function PropertiesSearchPage() {
   const initialPropertyType = (searchParams.get('propertyType') || searchParams.get('type') || '') as PropertyTypeEnum | '';
 
   // Filter States
-  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
+  const [keyword, setKeyword] = useState(
+    searchParams.get('keyword') || searchParams.get('search') || searchParams.get('q') || ''
+  );
   const [city, setCity] = useState(searchParams.get('city') || '');
   const [listingPurpose, setListingPurpose] = useState<string>(searchParams.get('listingPurpose') || searchParams.get('listingType') || '');
   const [categoryType, setCategoryType] = useState<PropertyCategoryType | ''>(initialCategoryType);
@@ -131,7 +134,8 @@ export default function PropertiesSearchPage() {
 
   // Sync state when URL params change
   useEffect(() => {
-    setKeyword(searchParams.get('keyword') || '');
+    const kw = searchParams.get('keyword') || searchParams.get('search') || searchParams.get('q') || '';
+    setKeyword(kw);
     setCity(searchParams.get('city') || '');
     setListingPurpose(searchParams.get('listingPurpose') || searchParams.get('listingType') || '');
     
@@ -154,6 +158,20 @@ export default function PropertiesSearchPage() {
     setSortBy(searchParams.get('sortBy') || 'newest');
   }, [searchParams]);
 
+  // Listen to mobile nav search event when already on this page
+  useEffect(() => {
+    const handleNavSearch = (e: Event) => {
+      const customEvent = e as CustomEvent<{ keyword: string }>;
+      const newKeyword = customEvent.detail?.keyword;
+      if (typeof newKeyword === 'string') {
+        setKeyword(newKeyword);
+        handleApplyFilters({ keyword: newKeyword });
+      }
+    };
+    window.addEventListener('nav-search-keyword', handleNavSearch);
+    return () => window.removeEventListener('nav-search-keyword', handleNavSearch);
+  }, [categoryType, propertyType, listingPurpose, minPrice, maxPrice, bedrooms, furnishedStatus, minArea, maxArea, sortBy, city]);
+
   useEffect(() => {
     if (searchParams.get('focus') === 'true' || searchParams.get('autoFocus') === 'true') {
       const timer = setTimeout(() => {
@@ -172,6 +190,16 @@ export default function PropertiesSearchPage() {
       const params = customParams ? new URLSearchParams(customParams.toString()) : new URLSearchParams(searchParams.toString());
       if (!reset && cursor) params.append('cursor', cursor);
       params.set('limit', '12');
+
+      // Normalize keyword from search or q params
+      if (params.has('search') && !params.has('keyword')) {
+        params.set('keyword', params.get('search')!);
+        params.delete('search');
+      }
+      if (params.has('q') && !params.has('keyword')) {
+        params.set('keyword', params.get('q')!);
+        params.delete('q');
+      }
 
       // Normalize category query params if legacy category=plot/house is passed
       const rawCat = params.get('categoryType') || params.get('category') || '';
@@ -366,15 +394,9 @@ export default function PropertiesSearchPage() {
   ].filter(Boolean).length;
 
   return (
-    <Box sx={{ minHeight: '100vh', pt: { xs: 2, sm: 3.5 }, pb: { xs: 6, sm: 6 }, bgcolor: '#F8FAFC' }}>
-      <Container maxWidth="lg" sx={{ px: { xs: 1.5, sm: 3 } }}>
+    <Box sx={{ minHeight: '100vh', pt: { xs: 1, sm: 3.5 }, pb: { xs: 4, sm: 6 }, bgcolor: '#F8FAFC' }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1.2, sm: 3 } }}>
         
-        {/* Compact Search Header */}
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="h5" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>
-            Properties & Plots in {city || 'Rewa'}
-          </Typography>
-        </Box>
 
         {/* Categories are now inside the Filters Drawer */}
 
@@ -382,8 +404,8 @@ export default function PropertiesSearchPage() {
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 0.6, sm: 0.8 },
-            mb: 1,
+            p: { xs: 0.5, sm: 0.8 },
+            mb: { xs: 0.6, sm: 1 },
             borderRadius: '8px',
             border: '1px solid #E2E8F0',
             bgcolor: '#FFFFFF',
@@ -431,38 +453,94 @@ export default function PropertiesSearchPage() {
           })}
         </Paper>
 
-        {/* ─── SEARCH & QUICK FILTERS BAR ─── */}
+        {/* ─── SEARCH & QUICK FILTERS BAR (Pill styled like nav input) ─── */}
         <Box
-          className="glass"
           sx={{
-            p: { xs: 0.8, sm: 1.2 },
-            borderRadius: { xs: 2, sm: 2.5 },
-            mb: 1,
+            p: { xs: 0.6, sm: 1.2 },
+            bgcolor: '#F8FAFC',
+            borderRadius: { xs: 2, sm: 3 },
+            border: '1px solid #E2E8F0',
+            mb: { xs: 0.6, sm: 1.5 },
             display: 'flex',
-            gap: 1,
+            gap: { xs: 0.6, sm: 1 },
             alignItems: 'center',
-            flexWrap: 'wrap',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.03)',
+            flexWrap: { xs: 'nowrap', sm: 'wrap' },
+            boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
           }}
         >
-          {/* Keyword Search */}
-          <TextField
-            inputRef={keywordInputRef}
-            size="small"
-            placeholder="Search location, title, keyword..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleApplyFilters();
+          {/* Pill-shaped Search Input Form - Styled like Nav Input */}
+          <Box
+            component="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleApplyFilters({ keyword });
             }}
             sx={{
+              display: 'flex',
+              alignItems: 'center',
               flex: 1,
-              minWidth: { xs: 140, sm: 200 },
-              bgcolor: 'white',
-              borderRadius: 2,
-              '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.85rem' },
+              minWidth: 0,
+              bgcolor: '#FFFFFF',
+              borderRadius: '28px',
+              pl: { xs: 1.4, sm: 1.8 },
+              pr: 0.4,
+              py: { xs: 0.15, sm: 0.35 },
+              height: { xs: 34, sm: 38 },
+              border: '1.5px solid #1B4FD8',
+              boxShadow: '0 2px 8px rgba(27, 79, 216, 0.12)',
+              transition: 'all 0.2s ease',
+              '&:hover, &:focus-within': {
+                borderColor: '#1338A8',
+                boxShadow: '0 3px 12px rgba(27, 79, 216, 0.2)',
+              },
             }}
-          />
+          >
+            <InputBase
+              inputRef={keywordInputRef}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Search locality, house, plot, keyword..."
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: { xs: '0.8rem', sm: '0.88rem' },
+                color: '#0F172A',
+                '& input': { py: 0.2, px: 0 },
+              }}
+            />
+
+            {/* Clear keyword button */}
+            {keyword && (
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setKeyword('');
+                  handleApplyFilters({ keyword: '' });
+                }}
+                sx={{ p: 0.4, mr: 0.2, color: '#64748B' }}
+                aria-label="Clear keyword"
+              >
+                <CloseIcon sx={{ fontSize: 15 }} />
+              </IconButton>
+            )}
+
+            {/* Dedicated Search Icon Button on RIGHT side of input - Exactly like Nav Input */}
+            <IconButton
+              type="submit"
+              size="small"
+              aria-label="Search properties"
+              sx={{
+                p: { xs: 0.5, sm: 0.7 },
+                color: '#FFFFFF',
+                bgcolor: '#1B4FD8',
+                borderRadius: '50%',
+                transition: 'all 0.2s',
+                '&:hover': { bgcolor: '#1338A8', transform: 'scale(1.06)' },
+              }}
+            >
+              <SearchIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+            </IconButton>
+          </Box>
 
           {/* Category-Specific Quick Filters: Residential Bedrooms */}
           {categoryType === 'RESIDENTIAL' && (
@@ -476,10 +554,12 @@ export default function PropertiesSearchPage() {
                 handleApplyFilters({ bedrooms: val });
               }}
               sx={{
-                minWidth: { xs: 85, sm: 100 },
+                display: { xs: 'none', sm: 'inline-flex' },
+                minWidth: { xs: 90, sm: 105 },
                 bgcolor: 'white',
-                borderRadius: 2,
-                '& .MuiSelect-select': { py: { xs: 0.4, sm: 0.6 }, px: 1, fontSize: '0.82rem' },
+                borderRadius: '20px',
+                border: '1px solid #CBD5E1',
+                '& .MuiSelect-select': { py: { xs: 0.5, sm: 0.6 }, px: 1.2, fontSize: '0.82rem' },
               }}
             >
               <MenuItem value="">Bedrooms</MenuItem>
@@ -491,21 +571,24 @@ export default function PropertiesSearchPage() {
           )}
 
           {/* Advanced Filter Drawer Trigger Button */}
-          <Badge badgeContent={activeFiltersCount} color="primary">
+          <Badge badgeContent={activeFiltersCount} color="primary" sx={{ flexShrink: 0 }}>
             <Button
               variant="outlined"
               size="small"
-              startIcon={<TuneIcon sx={{ fontSize: '1rem !important' }} />}
+              startIcon={<TuneIcon sx={{ fontSize: { xs: '0.9rem !important', sm: '1rem !important' } }} />}
               onClick={() => setDrawerOpen(true)}
               sx={{
-                py: { xs: 0.4, sm: 0.6 },
+                py: { xs: 0.35, sm: 0.7 },
                 px: { xs: 1.2, sm: 2 },
-                borderRadius: 2,
+                height: { xs: 34, sm: 38 },
+                borderRadius: '20px',
                 borderColor: '#CBD5E1',
                 color: '#0F172A',
                 fontWeight: 700,
-                fontSize: '0.82rem',
+                fontSize: { xs: '0.76rem', sm: '0.82rem' },
                 bgcolor: '#FFFFFF',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
                 '&:hover': { bgcolor: '#F8FAFC', borderColor: '#94A3B8' },
               }}
             >
@@ -513,24 +596,6 @@ export default function PropertiesSearchPage() {
             </Button>
           </Badge>
 
-          {/* Primary Apply Filter Button */}
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<FilterListIcon sx={{ fontSize: '1rem !important' }} />}
-            onClick={() => handleApplyFilters()}
-            sx={{
-              py: { xs: 0.4, sm: 0.6 },
-              px: { xs: 1.8, sm: 2.5 },
-              borderRadius: 2,
-              bgcolor: '#1B4FD8',
-              fontWeight: 700,
-              fontSize: '0.82rem',
-              '&:hover': { bgcolor: '#1541B5' },
-            }}
-          >
-            Search
-          </Button>
 
           {/* Reset Filters Icon Button */}
           {activeFiltersCount > 0 && (
@@ -550,16 +615,16 @@ export default function PropertiesSearchPage() {
           elevation={0}
           sx={{
             bgcolor: '#F1F5F9',
-            borderRadius: '12px',
-            p: { xs: 1, sm: 1.5 },
-            mb: 1.2,
+            borderRadius: { xs: '8px', sm: '12px' },
+            p: { xs: 0.6, sm: 1.2 },
+            mb: { xs: 0.8, sm: 1.2 },
             border: '1px solid #E2E8F0',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center',
-            gap: 1,
+            gap: { xs: 0.2, sm: 0.6 },
           }}
         >
           {/* Top Row: Budget Selects & Apply Button (Centered) */}
@@ -569,7 +634,7 @@ export default function PropertiesSearchPage() {
               alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
-              gap: { xs: 0.6, sm: 1 },
+              gap: { xs: 0.5, sm: 1 },
               flexWrap: 'nowrap',
               overflowX: 'auto',
               '&::-webkit-scrollbar': { display: 'none' },
@@ -580,7 +645,7 @@ export default function PropertiesSearchPage() {
               sx={{
                 fontWeight: 700,
                 color: '#334155',
-                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                fontSize: { xs: '0.72rem', sm: '0.85rem' },
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
               }}
@@ -597,14 +662,14 @@ export default function PropertiesSearchPage() {
               sx={{
                 bgcolor: '#FFFFFF',
                 borderRadius: '6px',
-                minWidth: { xs: 68, sm: 90 },
-                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                minWidth: { xs: 62, sm: 90 },
+                fontSize: { xs: '0.7rem', sm: '0.78rem' },
                 fontWeight: 600,
                 color: '#0F172A',
                 flexShrink: 0,
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#94A3B8' },
-                '& .MuiSelect-select': { py: 0.3, px: { xs: 0.6, sm: 1 } },
+                '& .MuiSelect-select': { py: { xs: 0.2, sm: 0.3 }, px: { xs: 0.5, sm: 1 } },
               }}
             >
               {BUDGET_OPTIONS_MIN.map((opt) => (
@@ -612,7 +677,7 @@ export default function PropertiesSearchPage() {
               ))}
             </Select>
 
-            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem', flexShrink: 0 }}>
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.7rem', flexShrink: 0 }}>
               to
             </Typography>
 
@@ -625,14 +690,14 @@ export default function PropertiesSearchPage() {
               sx={{
                 bgcolor: '#FFFFFF',
                 borderRadius: '6px',
-                minWidth: { xs: 68, sm: 90 },
-                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                minWidth: { xs: 62, sm: 90 },
+                fontSize: { xs: '0.7rem', sm: '0.78rem' },
                 fontWeight: 600,
                 color: '#0F172A',
                 flexShrink: 0,
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#94A3B8' },
-                '& .MuiSelect-select': { py: 0.3, px: { xs: 0.6, sm: 1 } },
+                '& .MuiSelect-select': { py: { xs: 0.2, sm: 0.3 }, px: { xs: 0.5, sm: 1 } },
               }}
             >
               {BUDGET_OPTIONS_MAX.map((opt) => (
@@ -647,11 +712,12 @@ export default function PropertiesSearchPage() {
               sx={{
                 bgcolor: '#1B4FD8',
                 color: '#FFFFFF',
-                borderRadius: '8px',
-                px: { xs: 1.5, sm: 2.5 },
-                py: 0.35,
+                borderRadius: '6px',
+                px: { xs: 1.2, sm: 2.5 },
+                py: { xs: 0.2, sm: 0.35 },
+                height: { xs: 26, sm: 28 },
                 fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                fontSize: { xs: '0.7rem', sm: '0.78rem' },
                 textTransform: 'none',
                 boxShadow: 'none',
                 whiteSpace: 'nowrap',
@@ -664,8 +730,8 @@ export default function PropertiesSearchPage() {
           </Box>
 
           {/* Bottom Row: Centered Half-Width Touch Slider */}
-          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', pt: 0.2, pb: 0.2 }}>
-            <Box sx={{ width: { xs: '85%', sm: '50%', md: '45%' }, px: 1 }}>
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', pt: 0, pb: 0 }}>
+            <Box sx={{ width: { xs: '90%', sm: '50%', md: '45%' }, px: 1 }}>
               <Slider
                 value={[Number(minPrice) || 300000, Number(maxPrice) || 10000000]}
                 min={300000}
@@ -681,9 +747,9 @@ export default function PropertiesSearchPage() {
                 }}
                 sx={{
                   color: '#1B4FD8',
-                  height: 4,
-                  py: 0.8,
-                  '& .MuiSlider-thumb': { height: 16, width: 16, backgroundColor: '#FFFFFF', border: '2px solid #1B4FD8' },
+                  height: { xs: 3, sm: 4 },
+                  py: { xs: 0.3, sm: 0.8 },
+                  '& .MuiSlider-thumb': { height: { xs: 13, sm: 16 }, width: { xs: 13, sm: 16 }, backgroundColor: '#FFFFFF', border: '2px solid #1B4FD8' },
                   '& .MuiSlider-track': { border: 'none', bgcolor: '#1B4FD8' },
                   '& .MuiSlider-rail': { opacity: 0.3, bgcolor: '#94A3B8' },
                 }}
@@ -778,7 +844,7 @@ export default function PropertiesSearchPage() {
           return (
             <Box
               sx={{
-                mb: 2.5,
+                mb: { xs: 1, sm: 2.5 },
                 px: 0.5,
                 display: 'flex',
                 alignItems: 'center',

@@ -13,8 +13,8 @@ export async function getUserByUsername(identifier: string) {
   }>(
     `SELECT id, name, username, bio, avatar_url, created_at
      FROM users 
-     WHERE ${isEmail ? 'email' : 'username'} = $1 AND deleted_at IS NULL AND status = 'ACTIVE'`,
-    [isEmail ? identifier.toLowerCase() : identifier]
+     WHERE ${isEmail ? 'LOWER(email)' : 'LOWER(username)'} = LOWER($1) AND deleted_at IS NULL AND status = 'ACTIVE'`,
+    [identifier.trim()]
   );
 
   if (!user) {
@@ -35,11 +35,11 @@ export async function getUserProperties(identifier: string, isAdmin: boolean = f
      FROM properties p
      JOIN users u ON p.owner_id = u.id
      LEFT JOIN property_categories c ON p.category_id = c.id
-     WHERE ${isEmail ? 'u.email' : 'u.username'} = $1 
+     WHERE ${isEmail ? 'LOWER(u.email)' : 'LOWER(u.username)'} = LOWER($1) 
        ${isAdmin ? '' : "AND p.status = 'PUBLISHED'"} 
        AND p.deleted_at IS NULL
      ORDER BY p.created_at DESC`,
-    [isEmail ? identifier.toLowerCase() : identifier]
+    [identifier.trim()]
   );
 
   return properties;

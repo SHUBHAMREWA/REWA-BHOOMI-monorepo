@@ -35,7 +35,7 @@ export async function runSeed(closePool = true) {
         ('Gym',             'fitness_center'),
         ('Parking',         'local_parking'),
         ('Security',        'security'),
-        ('Power Backup',    'electrical_services'),
+        ('Bijli (Electricity)', 'electrical_services'),
         ('Lift',            'elevator'),
         ('Garden',          'park'),
         ('Club House',      'villa'),

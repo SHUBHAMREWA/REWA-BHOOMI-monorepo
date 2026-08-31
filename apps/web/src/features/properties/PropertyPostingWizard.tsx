@@ -404,8 +404,15 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   useEffect(() => {
     apiGet<any[]>('/properties/amenities')
       .then(res => {
+        const mapped = (res || [])
+          .map((a: any) => {
+            if (a.name === 'Bijli (Power Backup)') return { ...a, name: 'Bijli (Electricity)' };
+            return a;
+          })
+          .filter((a: any) => a.name !== 'Power Backup');
+
         const unique = Array.from(
-          new Map((res || []).map((a: any) => [a.name?.trim().toLowerCase(), a])).values()
+          new Map(mapped.map((a: any) => [a.name?.trim().toLowerCase(), a])).values()
         );
         setAvailableAmenities(unique);
       })
@@ -1033,8 +1040,8 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Area Unit</InputLabel>
-                    <Select label="Area Unit" value={landDetails.areaUnit} onChange={(e) => setLandDetails({ ...landDetails, areaUnit: e.target.value as AreaUnit })}>
+                    <InputLabel>Area Unit (क्षेत्रफल इकाई)</InputLabel>
+                    <Select label="Area Unit (क्षेत्रफल इकाई)" value={landDetails.areaUnit} onChange={(e) => setLandDetails({ ...landDetails, areaUnit: e.target.value as AreaUnit })}>
                       {AREA_UNITS.map(u => <MenuItem key={u.key} value={u.key}>{u.label}</MenuItem>)}
                     </Select>
                   </FormControl>
@@ -1048,10 +1055,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
                   <>
                     <Grid item xs={12} sm={6}>
-                      <TextField fullWidth size="small" label="Soil Type" value={landDetails.soilType} onChange={(e) => setLandDetails({ ...landDetails, soilType: e.target.value })} placeholder="Black Cotton, Alluvial, Red Soil" />
+                      <TextField fullWidth size="small" label="Soil Type (मिट्टी का प्रकार)" value={landDetails.soilType} onChange={(e) => setLandDetails({ ...landDetails, soilType: e.target.value })} placeholder="Black Cotton, Alluvial, Red Soil (काली, दोमट, लाल मिट्टी)" />
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <TextField fullWidth size="small" label="Current Crop" value={landDetails.currentCrop} onChange={(e) => setLandDetails({ ...landDetails, currentCrop: e.target.value })} placeholder="Wheat, Rice, Pulses" />
+                      <TextField fullWidth size="small" label="Current Crop (वर्तमान फसल)" value={landDetails.currentCrop} onChange={(e) => setLandDetails({ ...landDetails, currentCrop: e.target.value })} placeholder="Wheat, Rice, Pulses (गेहूं, धान, दलहन)" />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <FormControlLabel control={<Switch checked={landDetails.irrigationAvailable} onChange={(e) => setLandDetails({ ...landDetails, irrigationAvailable: e.target.checked })} />} label="Pani ki vyawastha hai? (Sinchai / Water Facility)" />
@@ -1121,7 +1128,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               <Grid item xs={12} sm={6}>
                 <FormControlLabel
                   control={<Switch checked={isPriceNegotiable} onChange={(e) => setIsPriceNegotiable(e.target.checked)} />}
-                  label="Price Negotiable?"
+                  label="Price Negotiable? (कीमत में गुंजाइश / मोलभाव संभव है?)"
                   sx={{ mt: 1 }}
                 />
               </Grid>
@@ -1134,6 +1141,31 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                     onChange={(e) => setLeaseDetails({ ...leaseDetails, securityDeposit: toNumVal(e.target.value) as any })}
                     placeholder="e.g. 50000"
                   />
+                </Grid>
+              )}
+
+              {(purpose === 'LEASE' || purpose === 'COMMERCIAL_LEASE') && (
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Minimum Lease Period (कम से कम लीज की अवधि)</InputLabel>
+                    <Select
+                      label="Minimum Lease Period (कम से कम लीज की अवधि)"
+                      value={leaseDetails.leaseDurationYears ?? ''}
+                      onChange={(e) => setLeaseDetails({ ...leaseDetails, leaseDurationYears: toNumVal(e.target.value) as any })}
+                    >
+                      <MenuItem value=""><em>Select Duration (अवधि चुनें)</em></MenuItem>
+                      <MenuItem value={1}>1 Year (1 साल)</MenuItem>
+                      <MenuItem value={2}>2 Years (2 साल)</MenuItem>
+                      <MenuItem value={3}>3 Years (3 साल)</MenuItem>
+                      <MenuItem value={4}>4 Years (4 साल)</MenuItem>
+                      <MenuItem value={5}>5 Years (5 साल)</MenuItem>
+                      <MenuItem value={6}>6 Years (6 साल)</MenuItem>
+                      <MenuItem value={7}>7 Years (7 साल)</MenuItem>
+                      <MenuItem value={8}>8 Years (8 साल)</MenuItem>
+                      <MenuItem value={9}>9 Years (9 साल)</MenuItem>
+                      <MenuItem value={10}>10 Years (10 साल)</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
               )}
 
@@ -1163,7 +1195,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
               <Box display="flex" flexWrap="wrap" gap={1.5} mb={4}>
                 {availableAmenities.sort((a, b) => {
-                  const PREFERRED_ORDER = ['Bijli (Power Backup)', 'Water Supply', 'Near Market', 'Near School', 'Bore Well', 'Near Hospital', 'Near College', 'Garden', 'Parking', 'Lift', 'Security', 'Near Gym'];
+                  const PREFERRED_ORDER = ['Bijli (Electricity)', 'Water Supply', 'Near Market', 'Near School', 'Bore Well', 'Near Hospital', 'Near College', 'Garden', 'Parking', 'Lift', 'Security', 'Near Gym'];
                   const idxA = PREFERRED_ORDER.indexOf(a.name);
                   const idxB = PREFERRED_ORDER.indexOf(b.name);
                   if (idxA !== -1 && idxB !== -1) return idxA - idxB;
@@ -1597,7 +1629,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   </Typography>
                 )}
                 {isPriceNegotiable && (
-                  <Chip label="Negotiable" size="small" sx={{ bgcolor: '#DCFCE7', color: '#166534', fontWeight: 600 }} />
+                  <Chip label="Negotiable (मोलभाव संभव)" size="small" sx={{ bgcolor: '#DCFCE7', color: '#15803D', fontWeight: 700, border: '1px solid #86EFAC' }} />
                 )}
               </Box>
 
@@ -1638,13 +1670,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 <Box mb={3}>
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🌾 Land Details</Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.totalLandArea}</Typography><Typography variant="caption" color="text.secondary">Area ({landDetails.areaUnit})</Typography></Box></Grid>
+                    <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.totalLandArea}</Typography><Typography variant="caption" color="text.secondary">Area ({AREA_UNITS.find(u => u.key === landDetails.areaUnit)?.label || landDetails.areaUnit})</Typography></Box></Grid>
                     {landDetails.plotLength && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.plotLength}</Typography><Typography variant="caption" color="text.secondary">Plot Length (ft)</Typography></Box></Grid>}
                     {landDetails.plotWidth && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{landDetails.plotWidth}</Typography><Typography variant="caption" color="text.secondary">Plot Width (ft)</Typography></Box></Grid>}
                     {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
                       <>
-                        {landDetails.soilType && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Mitti Ka Prakar</Typography><Typography variant="body2" fontWeight={700}>{landDetails.soilType}</Typography></Box></Grid>}
-                        {landDetails.currentCrop && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Current Fasal</Typography><Typography variant="body2" fontWeight={700}>{landDetails.currentCrop}</Typography></Box></Grid>}
+                        {landDetails.soilType && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Soil Type (मिट्टी का प्रकार)</Typography><Typography variant="body2" fontWeight={700}>{landDetails.soilType}</Typography></Box></Grid>}
+                        {landDetails.currentCrop && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Current Crop (वर्तमान फसल)</Typography><Typography variant="body2" fontWeight={700}>{landDetails.currentCrop}</Typography></Box></Grid>}
                         <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Irrigation</Typography><Typography variant="body2" fontWeight={700}>{landDetails.irrigationAvailable ? '✅ Available' : '❌ NA'}</Typography></Box></Grid>
                         {landDetails.nearestRoadDistance && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="caption" color="text.secondary">Nearest Road (km)</Typography><Typography variant="body2" fontWeight={700}>{landDetails.nearestRoadDistance}</Typography></Box></Grid>}
                       </>
@@ -1666,11 +1698,12 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 </Box>
               )}
 
-              {(purpose === 'LEASE' || purpose === 'RENT') && leaseDetails.securityDeposit && (
+              {(purpose === 'LEASE' || purpose === 'RENT') && (leaseDetails.securityDeposit || leaseDetails.leaseDurationYears) && (
                 <Box mb={3}>
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>📄 Lease / Rent Details</Typography>
                   <Grid container spacing={2}>
                     {leaseDetails.securityDeposit && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">₹{Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}</Typography><Typography variant="caption" color="text.secondary">Security Deposit</Typography></Box></Grid>}
+                    {leaseDetails.leaseDurationYears && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{leaseDetails.leaseDurationYears} {leaseDetails.leaseDurationYears === 1 ? 'Year' : 'Years'}</Typography><Typography variant="caption" color="text.secondary">Min Lease (कम से कम अवधि)</Typography></Box></Grid>}
                   </Grid>
                 </Box>
               )}
@@ -1680,6 +1713,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={2}>🏢 Commercial Lease Details</Typography>
                   <Grid container spacing={2}>
                     {leaseDetails.securityDeposit && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">₹{Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}</Typography><Typography variant="caption" color="text.secondary">Security Deposit</Typography></Box></Grid>}
+                    {leaseDetails.leaseDurationYears && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{leaseDetails.leaseDurationYears} {leaseDetails.leaseDurationYears === 1 ? 'Year' : 'Years'}</Typography><Typography variant="caption" color="text.secondary">Min Lease (कम से कम अवधि)</Typography></Box></Grid>}
                     {leaseDetails.lockInPeriodMonths && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{leaseDetails.lockInPeriodMonths}</Typography><Typography variant="caption" color="text.secondary">Lock-in (Months)</Typography></Box></Grid>}
                     {leaseDetails.rentEscalationPercentage && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A">{leaseDetails.rentEscalationPercentage}%</Typography><Typography variant="caption" color="text.secondary">Rent Escalation</Typography></Box></Grid>}
                   </Grid>

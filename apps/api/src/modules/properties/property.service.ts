@@ -45,16 +45,26 @@ export async function listProperties(filters: PropertyFiltersInput, requestingUs
     paramIdx++;
   }
 
-  if (filters.keyword) {
+  const searchKeyword = (filters.keyword || (filters as any).search || (filters as any).q || '').toString().trim();
+  if (searchKeyword) {
     conditions.push(
-      `to_tsvector('english', p.title || ' ' || COALESCE(p.description, '') || ' ' || p.city || ' ' || p.state) @@ plainto_tsquery('english', $${paramIdx})`,
+      `(to_tsvector('english', p.title || ' ' || COALESCE(p.description, '') || ' ' || COALESCE(p.city, '') || ' ' || COALESCE(p.state, '')) @@ plainto_tsquery('english', $${paramIdx})
+       OR p.title ILIKE $${paramIdx + 1}
+       OR COALESCE(pl.city, p.city) ILIKE $${paramIdx + 1}
+       OR COALESCE(pl.locality, '') ILIKE $${paramIdx + 1}
+       OR COALESCE(pl.address, p.address, '') ILIKE $${paramIdx + 1}
+       OR COALESCE(p.description, '') ILIKE $${paramIdx + 1}
+       OR COALESCE(p.property_type::text, '') ILIKE $${paramIdx + 1}
+       OR COALESCE(p.category_type::text, '') ILIKE $${paramIdx + 1}
+       OR COALESCE(pc.name, '') ILIKE $${paramIdx + 1})`,
     );
-    params.push(filters.keyword);
-    paramIdx++;
+    params.push(searchKeyword);
+    params.push(`%${searchKeyword}%`);
+    paramIdx += 2;
   }
 
   if (filters.city) {
-    conditions.push(`LOWER(p.city) = LOWER($${paramIdx})`);
+    conditions.push(`(LOWER(COALESCE(pl.city, p.city)) = LOWER($${paramIdx}) OR LOWER(COALESCE(pl.district, '')) = LOWER($${paramIdx}))`);
     params.push(filters.city);
     paramIdx++;
   }
