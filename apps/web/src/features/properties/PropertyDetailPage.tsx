@@ -449,10 +449,10 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
         if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
         else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
         else if (url.includes('/shorts/')) videoId = url.split('/shorts/')[1].split('?')[0];
-        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}`;
+        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&loop=1&playlist=${videoId}&playsinline=1`;
       } 
       else if (url.includes('facebook.com') || url.includes('fb.watch')) {
-        embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&autoplay=1&mute=1`;
+        embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&autoplay=1`;
       }
       else if (url.includes('instagram.com')) {
         let baseUrl = url.split('?')[0];
@@ -637,9 +637,25 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.8 }}>
-        <Typography variant="h4" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-          {priceFormatted}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.2 }, flexWrap: 'wrap' }}>
+          <Typography variant="h4" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
+            {priceFormatted}
+          </Typography>
+          {property.is_price_negotiable && (
+            <Chip
+              label="Negotiable (मोलभाव संभव)"
+              size="small"
+              sx={{
+                bgcolor: '#DCFCE7',
+                color: '#15803D',
+                fontWeight: 700,
+                fontSize: { xs: '0.68rem', sm: '0.75rem' },
+                height: { xs: 22, sm: 26 },
+                border: '1px solid #86EFAC',
+              }}
+            />
+          )}
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <IconButton onClick={handleShare} size="small" sx={{ color: '#475569', '&:hover': { color: '#0F172A' } }}>
@@ -1078,6 +1094,15 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 <Grid item xs={6} sm={4}>
                   {renderDetailCard('Category', categoryLabel, <CategoryIcon sx={{ fontSize: 18 }} />)}
                 </Grid>
+                {property.is_price_negotiable !== undefined && (
+                  <Grid item xs={6} sm={4}>
+                    {renderDetailCard(
+                      'Price Negotiable',
+                      property.is_price_negotiable ? 'Haan (हाँ / Negotiable)' : 'Fixed (तय मूल्य)',
+                      <LocalOfferIcon sx={{ fontSize: 18 }} />
+                    )}
+                  </Grid>
+                )}
                  {(() => {
                    const displayArea = property.area || (land && land.total_land_area) || (res && (res.carpet_area || res.built_up_area)) || (comm && (comm.carpet_area || comm.built_up_area));
                    const displayUnit = property.area_unit || (land && land.area_unit) || 'ft²';
@@ -1258,7 +1283,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <>
                     {lease.lease_duration_years && (
                       <Grid item xs={6} sm={4}>
-                        {renderDetailCard('Lease Duration', `${lease.lease_duration_years} Years`, <AccessTimeIcon sx={{ fontSize: 18 }} />)}
+                        {renderDetailCard('Min Lease Period', `${lease.lease_duration_years} Years (कम से कम ${lease.lease_duration_years} साल)`, <AccessTimeIcon sx={{ fontSize: 18 }} />)}
                       </Grid>
                     )}
                     {lease.lock_in_period_months && (

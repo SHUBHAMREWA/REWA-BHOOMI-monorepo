@@ -1222,10 +1222,19 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     name: '031_poster_mobile_and_desktop',
     sql: `
       ALTER TABLE posters ADD COLUMN IF NOT EXISTS mobile_image_url TEXT;
-      ALTER TABLE posters ADD COLUMN IF NOT EXISTS mobile_storage_key VARCHAR(500);
+      ALTER TABLE posters ALTER COLUMN mobile_storage_key DROP NOT NULL;
+    `
+  },
+  {
+    name: '032_poster_video_url',
+    sql: `
+      ALTER TABLE posters ADD COLUMN IF NOT EXISTS video_url TEXT;
+      ALTER TABLE posters ALTER COLUMN image_url DROP NOT NULL;
+      ALTER TABLE posters ALTER COLUMN storage_key DROP NOT NULL;
     `
   }
 ];
+
 
 
 // ─── Migration runner ────────────────────────────────────────────────────────────

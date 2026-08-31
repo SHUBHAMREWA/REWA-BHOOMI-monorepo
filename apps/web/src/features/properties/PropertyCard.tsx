@@ -50,6 +50,8 @@ export interface PropertyCardData {
   listing_type: string;
   city: string;
   state: string;
+  address?: string | null;
+  is_price_negotiable?: boolean;
   area?: number | null;
   area_unit?: string | null;
   bedrooms?: number | null;
@@ -135,7 +137,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
         else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
         else if (url.includes('/shorts/')) videoId = url.split('/shorts/')[1].split('?')[0];
-        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1`;
       } 
       else if (url.includes('facebook.com') || url.includes('fb.watch')) {
         embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
@@ -515,12 +517,14 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             }}>
               {property.title}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.82rem' }}>
-                <LocationOnIcon sx={{ fontSize: 16, color: '#EF4444' }} />
-                {property.city}, {property.state}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, gap: 1 }}>
+              <Typography variant="body2" color="text.secondary" noWrap title={property.address || `${property.city}, ${property.state}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.82rem', minWidth: 0, overflow: 'hidden' }}>
+                <LocationOnIcon sx={{ fontSize: 16, color: '#EF4444', flexShrink: 0 }} />
+                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {property.address || `${property.city}, ${property.state}`}
+                </Box>
               </Typography>
-              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.72rem', fontWeight: 600 }}>
+              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.72rem', fontWeight: 600, flexShrink: 0 }}>
                 {formatDaysAgo(property.created_at)}
               </Typography>
             </Box>
@@ -823,8 +827,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0, overflow: 'hidden' }}>
             <LocationOnIcon sx={{ fontSize: 15, color: '#EF4444', flexShrink: 0 }} />
-            <Typography noWrap sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
-              {property.city}, {property.state}
+            <Typography noWrap title={property.address || `${property.city}, ${property.state}`} sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
+              {property.address || `${property.city}, ${property.state}`}
             </Typography>
           </Box>
           {property.created_at && (
@@ -1086,12 +1090,12 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
             {/* Location Row with Red Pin */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <LocationOnIcon sx={{ color: '#EF4444', fontSize: 18 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, overflow: 'hidden', mr: 2 }}>
+                <LocationOnIcon sx={{ color: '#EF4444', fontSize: 18, flexShrink: 0 }} />
                 <Typography
-
-
                   variant="body2"
+                  noWrap
+                  title={property.address || `${property.city}, ${property.state}`}
                   sx={{
                     color: '#475569',
                     fontSize: '0.85rem',
@@ -1101,7 +1105,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                     '&:hover': { color: '#1B4FD8' },
                   }}
                 >
-                  {property.city}, {property.state}
+                  {property.address || `${property.city}, ${property.state}`}
                 </Typography>
               </Box>
               <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600, mr: 2 }}>
@@ -1200,7 +1204,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               </Box>
               <Collapse in={descriptionOpen}>
                 <Typography variant="body2" sx={{ fontSize: '0.82rem', color: '#64748B', mt: 0.5, pl: 0.5 }}>
-                  Full Address: {property.city}, {property.state}. Category: {property.category_name || 'Plot / Land'}. Listed for {property.listing_type || 'Sale'}.
+                  Full Address: {property.address || `${property.city}, ${property.state}`}. Category: {property.category_name || 'Plot / Land'}. Listed for {property.listing_type || 'Sale'}.
                 </Typography>
               </Collapse>
             </Box>

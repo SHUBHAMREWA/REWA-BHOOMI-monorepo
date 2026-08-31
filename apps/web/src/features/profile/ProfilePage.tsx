@@ -93,7 +93,7 @@ export default function ProfilePage() {
     }
     reset({
       name: user.name,
-      username: user.username || '',
+      username: (user.username || '').toLowerCase(),
       bio: user.bio || '',
       phone: user.phone || '',
       avatar_url: user.avatar_url,
@@ -102,11 +102,12 @@ export default function ProfilePage() {
 
   // Username availability check (debounced)
   useEffect(() => {
-    if (!watchUsername || watchUsername === user?.username) {
+    const cleanUsername = watchUsername?.trim().toLowerCase();
+    if (!cleanUsername || cleanUsername === user?.username?.toLowerCase()) {
       setUsernameStatus('idle');
       return;
     }
-    if (watchUsername.length < 3 || !/^[a-zA-Z0-9_]+$/.test(watchUsername)) {
+    if (cleanUsername.length < 3 || !/^[a-z0-9_]+$/.test(cleanUsername)) {
       setUsernameStatus('idle');
       return;
     }
@@ -114,7 +115,7 @@ export default function ProfilePage() {
     const timer = setTimeout(async () => {
       setUsernameStatus('checking');
       try {
-        const res = await apiClient.get(`/auth/check-username/${watchUsername}`);
+        const res = await apiClient.get(`/auth/check-username/${cleanUsername}`);
         if (res.data.data.available) {
           setUsernameStatus('available');
         } else {
@@ -261,7 +262,11 @@ export default function ProfilePage() {
   const onSubmit = async (data: UpdateProfileInput) => {
     setIsSaving(true);
     try {
-      await apiPatch('/auth/me', data);
+      const payload: UpdateProfileInput = {
+        ...data,
+        username: data.username ? data.username.trim().toLowerCase() : data.username,
+      };
+      await apiPatch('/auth/me', payload);
       await refreshAuth();
       toast.success('Profile updated successfully!');
     } catch (error: any) {
@@ -449,8 +454,19 @@ export default function ProfilePage() {
                 <TextField
                   size="small"
                   fullWidth
-                  placeholder="Username"
-                  {...register('username')}
+                  placeholder="username"
+                  {...register('username', {
+                    onChange: (e) => {
+                      const lower = e.target.value.toLowerCase().replace(/\s+/g, '_');
+                      setValue('username', lower, { shouldValidate: true });
+                    },
+                  })}
+                  inputProps={{
+                    style: { textTransform: 'lowercase' },
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off',
+                    spellCheck: 'false',
+                  }}
                   error={!!errors.username || usernameStatus === 'taken'}
                   helperText={
                     errors.username?.message ||
@@ -470,7 +486,7 @@ export default function ProfilePage() {
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  disabled={isSaving}
+                  disabled={isSaving || usernameStatus === 'checking' || usernameStatus === 'taken'}
                   onClick={handleSubmit(onSubmit)}
                   sx={{ textTransform: 'none', borderRadius: 2, height: 36, px: 1.5, fontSize: '0.78rem', fontWeight: 650, flexShrink: 0 }}
                 >

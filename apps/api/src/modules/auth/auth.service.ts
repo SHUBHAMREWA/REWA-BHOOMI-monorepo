@@ -554,17 +554,21 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
 
   if (username !== undefined) {
     if (username !== null) {
-      // Check if username is taken by another user
+      const cleanUsername = username.trim().toLowerCase();
+      // Check if username is taken by another user (case-insensitive)
       const existing = await queryOne<{ id: string }>(
-        'SELECT id FROM users WHERE username = $1 AND id != $2',
-        [username, userId]
+        'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2',
+        [cleanUsername, userId]
       );
       if (existing) {
         throw new ConflictError('Username is already taken');
       }
+      updates.push(`username = $${paramIdx++}`);
+      values.push(cleanUsername);
+    } else {
+      updates.push(`username = $${paramIdx++}`);
+      values.push(null);
     }
-    updates.push(`username = $${paramIdx++}`);
-    values.push(username);
   }
 
   if (bio !== undefined) {

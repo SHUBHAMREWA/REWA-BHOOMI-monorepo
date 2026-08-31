@@ -1,16 +1,26 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Box, Container, IconButton } from '@mui/material';
+import { Box, Container, IconButton, Typography } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CloseIcon from '@mui/icons-material/Close';
 import type { Poster } from '@rewa-bhoomi/types';
 import { PosterBannerSkeleton } from './HomeSkeletons';
 import { usePosters } from './api/useHomeData';
 
+function extractYouTubeVideoId(url?: string | null): string | null {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+}
+
 export default function PosterBannerSection() {
   const { data: posters = [], isLoading } = usePosters();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -18,14 +28,14 @@ export default function PosterBannerSection() {
   const touchEndY = useRef<number | null>(null);
   const isSwiping = useRef(false);
 
-
-  // Autoplay
+  // Autoplay (pauses if user is currently watching a video)
   useEffect(() => {
-    if (posters.length <= 1) return;
+    if (posters.length <= 1 || isPlayingVideo) return;
 
     const startTimer = () => {
       timerRef.current = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % posters.length);
+        setIsPlayingVideo(false);
       }, 5000);
     };
 
@@ -34,7 +44,7 @@ export default function PosterBannerSection() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [posters.length, currentIndex]);
+  }, [posters.length, currentIndex, isPlayingVideo]);
 
   // If loading, show the full-width banner skeleton to avoid any layout shift (CLS)
   if (isLoading) {
@@ -45,14 +55,15 @@ export default function PosterBannerSection() {
     return null;
   }
 
-
   const handlePrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    setIsPlayingVideo(false);
     setCurrentIndex((prev) => (prev - 1 + posters.length) % posters.length);
   };
 
   const handleNext = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    setIsPlayingVideo(false);
     setCurrentIndex((prev) => (prev + 1) % posters.length);
   };
 
@@ -101,9 +112,14 @@ export default function PosterBannerSection() {
   };
 
   const currentPoster = posters[currentIndex];
+  const ytVideoId = extractYouTubeVideoId(currentPoster?.video_url);
 
   const handleBannerClick = () => {
     if (isSwiping.current) return; // Ignore link clicks if user was swiping by hand
+    if (ytVideoId && !isPlayingVideo) {
+      setIsPlayingVideo(true);
+      return;
+    }
     if (currentPoster?.redirect_url) {
       if (currentPoster.redirect_url.startsWith('http')) {
         window.open(currentPoster.redirect_url, '_blank', 'noopener,noreferrer');
@@ -124,25 +140,29 @@ export default function PosterBannerSection() {
           sx={{
             position: 'relative',
             width: '100%',
+            aspectRatio: { xs: '2/1', sm: '21/9', md: '24/7' },
             overflow: 'hidden',
             borderRadius: { xs: 2.5, md: 3.5 },
             boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
-            cursor: currentPoster?.redirect_url ? 'pointer' : 'default',
-            bgcolor: '#FFFFFF',
+            cursor: ytVideoId || currentPoster?.redirect_url ? 'pointer' : 'default',
+            bgcolor: '#0F172A',
             border: '1px solid rgba(226, 232, 240, 0.8)',
-            lineHeight: 0,
             touchAction: 'pan-y',
             userSelect: 'none',
           }}
         >
 
-          {/* Responsive Picture: Loads mobile_image_url on mobile and image_url on desktop */}
-          <picture style={{ width: '100%', display: 'block' }}>
+          {/* Responsive Picture / Thumbnail */}
+          <picture style={{ width: '100%', height: '100%', display: 'block' }}>
             {currentPoster.mobile_image_url && (
               <source media="(max-width: 640px)" srcSet={currentPoster.mobile_image_url} />
             )}
             <img
-              src={currentPoster.image_url || currentPoster.mobile_image_url || ''}
+              src={
+                currentPoster.image_url ||
+                currentPoster.mobile_image_url ||
+                (ytVideoId ? `https://img.youtube.com/vi/${ytVideoId}/hqdefault.jpg` : '')
+              }
               alt={currentPoster.title || 'Rewa Bhoomi Special Offer'}
               // @ts-expect-error - fetchpriority is standard in modern browsers
               fetchpriority="high"
@@ -150,14 +170,138 @@ export default function PosterBannerSection() {
               decoding="async"
               style={{
                 width: '100%',
-                height: 'auto',
+                height: '100%',
+                objectFit: 'cover',
                 display: 'block',
                 transition: 'opacity 0.4s ease-in-out',
               }}
             />
           </picture>
 
+          {/* YouTube Video Badge & Play Button Overlay (when video is not yet playing) */}
+          {ytVideoId && !isPlayingVideo && (
+            <>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: { xs: 10, sm: 16 },
+                  left: { xs: 10, sm: 16 },
+                  bgcolor: 'rgba(0, 0, 0, 0.75)',
+                  backdropFilter: 'blur(6px)',
+                  color: '#FFFFFF',
+                  px: { xs: 1, sm: 1.5 },
+                  py: 0.4,
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.6,
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  zIndex: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: '#EF4444',
+                    animation: 'pulse 1.5s infinite',
+                    '@keyframes pulse': {
+                      '0%': { opacity: 1, transform: 'scale(1)' },
+                      '50%': { opacity: 0.4, transform: 'scale(0.8)' },
+                      '100%': { opacity: 1, transform: 'scale(1)' },
+                    },
+                  }}
+                />
+                <Typography sx={{ fontSize: { xs: '0.68rem', sm: '0.78rem' }, fontWeight: 700 }}>
+                  Featured Video
+                </Typography>
+              </Box>
 
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPlayingVideo(true);
+                }}
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  bgcolor: '#FF0000',
+                  color: '#FFFFFF',
+                  px: { xs: 2.2, sm: 3 },
+                  py: { xs: 1, sm: 1.2 },
+                  borderRadius: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  boxShadow: '0 8px 30px rgba(255, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  zIndex: 3,
+                  border: '2px solid rgba(255, 255, 255, 0.8)',
+                  '&:hover': {
+                    transform: 'translate(-50%, -50%) scale(1.08)',
+                    boxShadow: '0 12px 36px rgba(255, 0, 0, 0.7)',
+                    bgcolor: '#DC2626',
+                  },
+                }}
+              >
+                <PlayArrowIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
+                <Typography sx={{ fontWeight: 800, fontSize: { xs: '0.82rem', sm: '0.95rem' }, letterSpacing: 0.4 }}>
+                  Click to Play Video
+                </Typography>
+              </Box>
+            </>
+          )}
+
+          {/* Active YouTube Embed Player (Plays smoothly inline without changing card size) */}
+          {ytVideoId && isPlayingVideo && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 10,
+                bgcolor: '#000000',
+              }}
+            >
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${ytVideoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                title={currentPoster.title || 'Rewa Bhoomi Video'}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 0,
+                  display: 'block',
+                }}
+              />
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPlayingVideo(false);
+                }}
+                aria-label="Close Video"
+                sx={{
+                  position: 'absolute',
+                  top: { xs: 8, sm: 12 },
+                  right: { xs: 8, sm: 12 },
+                  zIndex: 20,
+                  bgcolor: 'rgba(0, 0, 0, 0.75)',
+                  color: '#FFFFFF',
+                  p: 0.6,
+                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.95)' },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
+              </IconButton>
+            </Box>
+          )}
 
           {/* Navigation Arrows for Multi-posters (Visible on Mobile, Tablet & Desktop) */}
           {posters.length > 1 && (
@@ -249,6 +393,7 @@ export default function PosterBannerSection() {
                     key={idx}
                     onClick={(e) => {
                       e.stopPropagation();
+                      setIsPlayingVideo(false);
                       setCurrentIndex(idx);
                     }}
                     sx={{

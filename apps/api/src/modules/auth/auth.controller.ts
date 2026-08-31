@@ -190,12 +190,12 @@ export const updateProfileHandler = asyncHandler(async (req: Request, res: Respo
 // ─── Check Username ───────────────────────────────────────────────────────────
 
 export const checkUsernameHandler = asyncHandler(async (req: Request, res: Response) => {
-  const { username } = req.params;
+  const cleanUsername = req.params.username.trim().toLowerCase();
   const { queryOne } = await import('../../database/connection');
   
   const existing = await queryOne(
-    'SELECT id FROM users WHERE username = $1',
-    [username]
+    'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+    [cleanUsername]
   );
   
   return successResponse(res, { available: !existing });

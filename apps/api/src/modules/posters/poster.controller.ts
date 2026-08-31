@@ -64,14 +64,17 @@ export const createPosterHandler = async (req: Request, res: Response) => {
     'mobile-poster.jpg'
   );
 
-  if (!desktopImageInput && !mobileImageInput) {
-    throw new BadRequestError('Please provide at least a Desktop or Mobile poster image.');
+  const videoUrl = typeof req.body.videoUrl === 'string' ? req.body.videoUrl : (typeof req.body.video_url === 'string' ? req.body.video_url : undefined);
+
+  if (!desktopImageInput && !mobileImageInput && !videoUrl) {
+    throw new BadRequestError('Please provide at least a Desktop/Mobile poster image or a YouTube video link.');
   }
 
   const { title, redirectUrl, sortOrder, isActive } = req.body;
 
   const poster = await createPoster(desktopImageInput, mobileImageInput, {
     title: typeof title === 'string' ? title : undefined,
+    videoUrl,
     redirectUrl: typeof redirectUrl === 'string' ? redirectUrl : undefined,
     sortOrder: sortOrder !== undefined ? parseInt(sortOrder, 10) : undefined,
     isActive: isActive !== undefined ? isActive === 'true' || isActive === true : true,
@@ -82,10 +85,11 @@ export const createPosterHandler = async (req: Request, res: Response) => {
 
 export const updatePosterHandler = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { title, redirectUrl, sortOrder, isActive } = req.body;
+  const { title, videoUrl, video_url, redirectUrl, sortOrder, isActive } = req.body;
 
   const poster = await updatePoster(id, {
     title,
+    videoUrl: videoUrl !== undefined ? videoUrl : video_url,
     redirectUrl,
     sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined,
     isActive: isActive !== undefined ? Boolean(isActive) : undefined,

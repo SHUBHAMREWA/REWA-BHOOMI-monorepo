@@ -643,6 +643,7 @@ export interface Poster {
   storage_key: string;
   mobile_image_url?: string | null; // Mobile image URL
   mobile_storage_key?: string | null;
+  video_url?: string | null; // YouTube Video URL
   redirect_url?: string | null;
   sort_order: number;
   is_active: boolean;
@@ -652,6 +653,7 @@ export interface Poster {
 
 export interface CreatePosterInput {
   title?: string;
+  video_url?: string;
   redirect_url?: string;
   sort_order?: number;
   is_active?: boolean;
@@ -659,6 +661,7 @@ export interface CreatePosterInput {
 
 export interface UpdatePosterInput {
   title?: string | null;
+  video_url?: string | null;
   redirect_url?: string | null;
   sort_order?: number;
   is_active?: boolean;
