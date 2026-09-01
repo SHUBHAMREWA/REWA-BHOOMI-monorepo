@@ -41,6 +41,7 @@
     "country-state-city": "^3.2.1",
     "date-fns": "^3.6.0",
     "isomorphic-dompurify": "^3.22.0",
+    "jspdf": "^4.2.1",
     "konva": "^10.3.0",
     "leaflet": "^1.9.4",
     "next": "14.2.5",

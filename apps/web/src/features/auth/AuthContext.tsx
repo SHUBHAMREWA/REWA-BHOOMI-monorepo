@@ -46,20 +46,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:refreshed'));
       }
-    } catch {
-      setAccessToken(null);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('user_session');
+    } catch (err: any) {
+      // Check if error was an explicit 401/403 (meaning invalid or revoked credentials)
+      const status = err?.response?.status;
+      const isExplicitAuthFailure = status === 401 || status === 403;
+
+      if (isExplicitAuthFailure) {
+        setAccessToken(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user_session');
+        }
+        setState({ user: null, accessToken: null, isLoading: false, isAuthenticated: false });
+      } else {
+        // Transient error (e.g. Render backend rebooting on git merge, 502/503 or network blip)
+        // Keep cached user from localStorage so user does not get abruptly logged out!
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          isAuthenticated: !!prev.user,
+        }));
       }
-      setState({ user: null, accessToken: null, isLoading: false, isAuthenticated: false });
     }
   }, []);
 
   useEffect(() => {
     // Attempt instant hydration from localStorage to prevent profile flickering.
-    // NOTE: We intentionally keep isLoading=true here so that any component
-    // waiting on auth (e.g. PropertyDetailPage client-side fetch) doesn't fire
-    // before the real access token is available in memory (set by refreshAuth).
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('user_session');
       if (cached) {
@@ -77,6 +88,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     refreshAuth();
+
+    // Re-validate session when browser comes back online
+    const handleOnline = () => {
+      refreshAuth();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
   }, [refreshAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
