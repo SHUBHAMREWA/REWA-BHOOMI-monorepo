@@ -130,7 +130,7 @@ export default function PosterBannerSection() {
   };
 
   return (
-    <Box component="section" sx={{ py: { xs: 2, md: 3 }, bgcolor: '#F8FAFC' }}>
+    <Box component="section" sx={{ pt: { xs: 1.5, sm: 2, md: 2.5 }, pb: { xs: 1, sm: 1.5, md: 2 }, bgcolor: '#F8FAFC' }}>
       <Container maxWidth="lg">
         <Box
           onTouchStart={handleTouchStart}
@@ -228,7 +228,7 @@ export default function PosterBannerSection() {
                   top: '50%',
                   left: '50%',
                   transform: 'translate(-50%, -50%)',
-                  bgcolor: '#FF0000',
+                  bgcolor: '#DC2626',
                   color: '#FFFFFF',
                   px: { xs: 2.2, sm: 3 },
                   py: { xs: 1, sm: 1.2 },
@@ -236,15 +236,15 @@ export default function PosterBannerSection() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
-                  boxShadow: '0 8px 30px rgba(255, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3)',
+                  boxShadow: '0 8px 30px rgba(220, 38, 38, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3)',
                   cursor: 'pointer',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   zIndex: 3,
                   border: '2px solid rgba(255, 255, 255, 0.8)',
                   '&:hover': {
                     transform: 'translate(-50%, -50%) scale(1.08)',
-                    boxShadow: '0 12px 36px rgba(255, 0, 0, 0.7)',
-                    bgcolor: '#DC2626',
+                    boxShadow: '0 12px 36px rgba(220, 38, 38, 0.7)',
+                    bgcolor: '#B91C1C',
                   },
                 }}
               >
@@ -294,11 +294,15 @@ export default function PosterBannerSection() {
                   zIndex: 20,
                   bgcolor: 'rgba(0, 0, 0, 0.75)',
                   color: '#FFFFFF',
-                  p: 0.6,
+                  width: 44,
+                  height: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.95)' },
                 }}
               >
-                <CloseIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
+                <CloseIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
               </IconButton>
             </Box>
           )}
@@ -320,8 +324,8 @@ export default function PosterBannerSection() {
                   bgcolor: 'rgba(255, 255, 255, 0.92)',
                   color: '#0F172A',
                   zIndex: 10,
-                  width: { xs: 32, sm: 38, md: 44 },
-                  height: { xs: 32, sm: 38, md: 44 },
+                  width: { xs: 44, sm: 44, md: 48 },
+                  height: { xs: 44, sm: 44, md: 48 },
                   boxShadow: '0 4px 14px rgba(0, 0, 0, 0.22)',
                   backdropFilter: 'blur(4px)',
                   display: 'flex',
@@ -335,7 +339,7 @@ export default function PosterBannerSection() {
                   transition: 'all 0.2s ease-in-out',
                 }}
               >
-                <ChevronLeftIcon sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, color: '#0F172A' }} />
+                <ChevronLeftIcon sx={{ fontSize: { xs: 24, sm: 26, md: 28 }, color: '#0F172A' }} />
               </IconButton>
 
               <IconButton
@@ -352,8 +356,8 @@ export default function PosterBannerSection() {
                   bgcolor: 'rgba(255, 255, 255, 0.92)',
                   color: '#0F172A',
                   zIndex: 10,
-                  width: { xs: 32, sm: 38, md: 44 },
-                  height: { xs: 32, sm: 38, md: 44 },
+                  width: { xs: 44, sm: 44, md: 48 },
+                  height: { xs: 44, sm: 44, md: 48 },
                   boxShadow: '0 4px 14px rgba(0, 0, 0, 0.22)',
                   backdropFilter: 'blur(4px)',
                   display: 'flex',
@@ -367,7 +371,7 @@ export default function PosterBannerSection() {
                   transition: 'all 0.2s ease-in-out',
                 }}
               >
-                <ChevronRightIcon sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, color: '#0F172A' }} />
+                <ChevronRightIcon sx={{ fontSize: { xs: 24, sm: 26, md: 28 }, color: '#0F172A' }} />
               </IconButton>
 
 
@@ -379,32 +383,50 @@ export default function PosterBannerSection() {
                   left: '50%',
                   transform: 'translateX(-50%)',
                   display: 'flex',
-                  gap: 0.8,
+                  alignItems: 'center',
+                  gap: 0.5,
                   bgcolor: 'rgba(0, 0, 0, 0.4)',
                   backdropFilter: 'blur(6px)',
-                  px: 1.2,
-                  py: 0.5,
+                  px: 1,
+                  py: 0.2,
                   borderRadius: 10,
                   zIndex: 2,
                 }}
               >
                 {posters.map((_, idx) => (
                   <Box
+                    component="button"
                     key={idx}
-                    onClick={(e) => {
+                    type="button"
+                    aria-label={`Go to slide ${idx + 1}`}
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       setIsPlayingVideo(false);
                       setCurrentIndex(idx);
                     }}
                     sx={{
-                      width: idx === currentIndex ? 18 : 6,
-                      height: 6,
-                      borderRadius: 3,
-                      bgcolor: idx === currentIndex ? '#FFFFFF' : 'rgba(255, 255, 255, 0.5)',
-                      transition: 'all 0.3s ease',
+                      background: 'none',
+                      border: 'none',
+                      p: '6px 4px',
+                      minWidth: 28,
+                      minHeight: 28,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       cursor: 'pointer',
+                      '&:focus-visible': { outline: '2px solid #FFFFFF', borderRadius: 1 },
                     }}
-                  />
+                  >
+                    <Box
+                      sx={{
+                        width: idx === currentIndex ? 18 : 6,
+                        height: 6,
+                        borderRadius: 3,
+                        bgcolor: idx === currentIndex ? '#FFFFFF' : 'rgba(255, 255, 255, 0.5)',
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  </Box>
                 ))}
               </Box>
             </>

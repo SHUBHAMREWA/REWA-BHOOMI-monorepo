@@ -11,25 +11,25 @@ const features = [
     icon: <VerifiedIcon fontSize="large" />,
     title: 'Verified Listings',
     desc: 'Every property is manually reviewed to ensure accuracy and legitimacy.',
-    color: '#10B981',
+    color: '#047857',
   },
   {
     icon: <SupportAgentIcon fontSize="large" />,
     title: 'Expert Support',
     desc: 'Chat directly with our real estate experts for guidance on any property.',
-    color: '#1B4FD8',
+    color: '#1E40AF',
   },
   {
     icon: <SpeedIcon fontSize="large" />,
     title: 'Fast & Easy',
     desc: 'List your property in minutes and reach thousands of buyers instantly.',
-    color: '#F59E0B',
+    color: '#B45309',
   },
   {
     icon: <SecurityIcon fontSize="large" />,
     title: 'Secure Platform',
     desc: 'Your data and transactions are protected with enterprise-grade security.',
-    color: '#8B5CF6',
+    color: '#6D28D9',
   },
 ];
 
@@ -39,7 +39,7 @@ export default function WhyChooseUs() {
       <Container maxWidth="lg">
         <Box sx={{ textAlign: 'center', mb: 8 }}>
           <Typography variant="caption" sx={{
-            color: '#1B4FD8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: '#1E40AF', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
           }}>
             Why Rewa Bhoomi
           </Typography>
@@ -52,7 +52,7 @@ export default function WhyChooseUs() {
               Find Property
             </Box>
           </Typography>
-          <Typography sx={{ color: '#475569', mt: 1.5, maxWidth: 500, mx: 'auto' }}>
+          <Typography sx={{ color: '#334155', mt: 1.5, maxWidth: 500, mx: 'auto' }}>
             We combine local expertise with modern technology to deliver the best real estate experience in Rewa.
           </Typography>
         </Box>
@@ -67,7 +67,7 @@ export default function WhyChooseUs() {
                 <Avatar sx={{ bgcolor: `${f.color}15`, width: 56, height: 56, mb: 2.5, color: f.color }}>
                   {f.icon}
                 </Avatar>
-                <Typography variant="h6" fontWeight={700} gutterBottom>
+                <Typography variant="h6" component="h3" fontWeight={700} gutterBottom>
                   {f.title}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" lineHeight={1.7}>

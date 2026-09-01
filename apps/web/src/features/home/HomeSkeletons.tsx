@@ -5,7 +5,7 @@ import { Box, Container, Grid, Skeleton, Paper } from '@mui/material';
 // ─── 1. Poster Banner Skeleton ────────────────────────────────────────────────
 export function PosterBannerSkeleton() {
   return (
-    <Box component="section" sx={{ py: { xs: 2, md: 3 }, bgcolor: '#F8FAFC' }}>
+    <Box component="section" sx={{ pt: { xs: 1.5, sm: 2, md: 2.5 }, pb: { xs: 1, sm: 1.5, md: 2 }, bgcolor: '#F8FAFC' }}>
       <Container maxWidth="lg">
         <Skeleton
           variant="rectangular"
@@ -66,10 +66,10 @@ export function PropertyCardSkeleton() {
 // ─── 3. Featured Properties Section Skeleton ──────────────────────────────────
 export function FeaturedPropertiesSkeleton() {
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#FFFFFF' }}>
+    <Box component="section" sx={{ pt: { xs: 2, sm: 2.5, md: 3.5 }, pb: { xs: 5, md: 8 }, bgcolor: '#FFFFFF' }}>
       <Container maxWidth="lg">
         {/* Header Skeleton */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: { xs: 2.5, sm: 3, md: 4 } }}>
           <Box>
             <Skeleton variant="text" width={100} height={20} sx={{ mb: 0.5 }} />
             <Skeleton variant="text" width={260} height={42} />

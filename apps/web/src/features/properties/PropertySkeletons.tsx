@@ -127,7 +127,7 @@ export function PropertyGridCardSkeleton() {
         flexDirection: 'column',
         height: '100%',
         bgcolor: '#FFFFFF',
-        borderRadius: '16px',
+        borderRadius: { xs: '12px', sm: '16px' },
         border: '1.5px solid #E2E8F0',
         overflow: 'hidden',
       }}
@@ -135,20 +135,16 @@ export function PropertyGridCardSkeleton() {
       <Skeleton
         variant="rectangular"
         animation="wave"
-        sx={{ width: '100%', height: 200, bgcolor: '#F1F5F9' }}
+        sx={{ width: '100%', height: { xs: 115, sm: 165, md: 195 }, bgcolor: '#F1F5F9' }}
       />
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-          <Skeleton variant="text" animation="wave" width={100} height={28} />
-          <Skeleton variant="circular" width={24} height={24} />
+      <Box sx={{ p: { xs: 1, sm: 1.5, md: 2 } }}>
+        <Skeleton variant="text" animation="wave" width="85%" height={22} sx={{ mb: 0.5 }} />
+        <Skeleton variant="text" animation="wave" width="60%" height={16} sx={{ mb: 1 }} />
+        <Skeleton variant="rounded" width="100%" height={20} sx={{ borderRadius: 1, mb: 1 }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 0.5, borderTop: '1px solid #F1F5F9' }}>
+          <Skeleton variant="text" animation="wave" width={60} height={24} />
+          <Skeleton variant="text" animation="wave" width={40} height={18} />
         </Box>
-        <Skeleton variant="text" animation="wave" width="90%" height={22} />
-        <Skeleton variant="text" animation="wave" width="60%" height={22} sx={{ mb: 1.5 }} />
-        <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-          <Skeleton variant="rounded" width={65} height={24} sx={{ borderRadius: 1 }} />
-          <Skeleton variant="rounded" width={75} height={24} sx={{ borderRadius: 1 }} />
-        </Box>
-        <Skeleton variant="text" animation="wave" width="80%" height={18} />
       </Box>
     </Box>
   );

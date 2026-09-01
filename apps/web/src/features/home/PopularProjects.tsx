@@ -41,7 +41,7 @@ export default async function PopularProjects() {
       <Container maxWidth="lg">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 5, flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="caption" sx={{ color: '#1B4FD8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <Typography variant="caption" sx={{ color: '#1E40AF', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               New Launches
             </Typography>
             <Typography variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, fontWeight: 800, mt: 0.5 }}>
@@ -89,23 +89,23 @@ export default async function PopularProjects() {
                 )}
                 <Box sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Chip label={project.status} size="small" sx={{ bgcolor: '#1B4FD810', color: '#1B4FD8', fontWeight: 700 }} />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
-                      <GridViewIcon fontSize="small" />
-                      <Typography variant="caption">{project.total_plots} Plots</Typography>
+                    <Chip label={project.status} size="small" sx={{ bgcolor: 'rgba(30, 64, 175, 0.08)', color: '#1E40AF', fontWeight: 700 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#334155' }}>
+                      <GridViewIcon fontSize="small" sx={{ color: '#334155' }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155' }}>{project.total_plots} Plots</Typography>
                     </Box>
                   </Box>
-                  <Typography variant="h5" fontWeight={700} gutterBottom>
+                  <Typography variant="h5" component="h3" fontWeight={700} gutterBottom>
                     {project.name}
                   </Typography>
                   {project.developer && (
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography variant="body2" sx={{ color: '#475569' }} gutterBottom>
                       by {project.developer}
                     </Typography>
                   )}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.5 }}>
                     <LocationOnIcon fontSize="small" color="primary" />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#334155', fontWeight: 500 }}>
                       {project.city}, {project.state}
                     </Typography>
                   </Box>

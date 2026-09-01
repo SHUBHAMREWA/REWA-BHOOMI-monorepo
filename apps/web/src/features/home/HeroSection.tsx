@@ -22,7 +22,7 @@ const categories = [
   { name: 'Houses', icon: <HomeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=RESIDENTIAL' },
   { name: 'Plots', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=LAND' },
   { name: 'Commercial', icon: <StorefrontIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'categoryType=COMMERCIAL' },
-  { name: 'Agriculture', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 }, color: '#4CAF50' }}/>, query: 'categoryType=LAND&propertyType=FARM_LAND' },
+  { name: 'Agriculture', icon: <LandscapeIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 }, color: '#15803D' }}/>, query: 'categoryType=LAND&propertyType=FARM_LAND' },
   { name: 'Rentals', icon: <VpnKeyIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'listingPurpose=RENT' },
   { name: 'Projects', icon: <MapsHomeWorkIcon sx={{ fontSize: { xs: 22, sm: 28, md: 32 } }} />, query: 'projects', isProject: true },
 ];
@@ -84,7 +84,7 @@ export default function HeroSection() {
           <Typography variant="h4" component="h1" sx={{ textAlign: 'center', fontWeight: 800, color: '#0F172A', mb: { xs: 0.3, sm: 0.5 }, fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.2rem' }, lineHeight: 1.25 }}>
             रीवा में खोजें अपने सपनों की संपत्ति
           </Typography>
-          <Typography variant="body1" sx={{ textAlign: 'center', color: '#64748B', mb: { xs: 1, sm: 1.5 }, fontSize: { xs: '0.78rem', sm: '0.88rem', md: '0.95rem' } }}>
+          <Typography variant="body1" sx={{ textAlign: 'center', color: '#334155', mb: { xs: 1, sm: 1.5 }, fontSize: { xs: '0.78rem', sm: '0.88rem', md: '0.95rem' } }}>
             Rewa ke aaspas verified plots, makaan, aur commercial properties dhoodhein.
           </Typography>
 
@@ -172,8 +172,8 @@ export default function HeroSection() {
             <Typography
               sx={{
                 fontSize: { xs: '0.7rem', sm: '0.84rem' },
-                fontWeight: 600,
-                color: '#475569',
+                fontWeight: 700,
+                color: '#1E293B',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -183,16 +183,18 @@ export default function HeroSection() {
             {/* Direct Phone Call */}
             <MuiLink
               href={`tel:${contactPhone.replace(/\s+/g, '')}`}
+              aria-label={`Call ${contactPhone}`}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 0.4,
+                gap: 0.5,
                 color: '#1E40AF',
                 bgcolor: 'rgba(30, 64, 175, 0.08)',
-                px: { xs: 0.8, sm: 1.3 },
-                py: { xs: 0.25, sm: 0.35 },
+                px: { xs: 1.2, sm: 1.5 },
+                py: { xs: 0.5, sm: 0.5 },
+                minHeight: 36,
                 borderRadius: '16px',
-                fontSize: { xs: '0.7rem', sm: '0.84rem' },
+                fontSize: { xs: '0.72rem', sm: '0.84rem' },
                 fontWeight: 700,
                 textDecoration: 'none',
                 whiteSpace: 'nowrap',
@@ -204,7 +206,7 @@ export default function HeroSection() {
                 },
               }}
             >
-              <PhoneInTalkIcon sx={{ fontSize: { xs: 13, sm: 15 } }} />
+              <PhoneInTalkIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
               {contactPhone}
             </MuiLink>
 
@@ -213,28 +215,30 @@ export default function HeroSection() {
               href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('नमस्ते Rewa Bhoomi, मुझे प्रॉपर्टी के बारे में अधिक जानकारी चाहिए।')}`}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="Chat on WhatsApp"
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 0.4,
-                color: '#15803D',
-                bgcolor: 'rgba(34, 197, 94, 0.1)',
-                px: { xs: 0.8, sm: 1.3 },
-                py: { xs: 0.25, sm: 0.35 },
+                gap: 0.5,
+                color: '#166534',
+                bgcolor: 'rgba(22, 101, 52, 0.08)',
+                px: { xs: 1.2, sm: 1.5 },
+                py: { xs: 0.5, sm: 0.5 },
+                minHeight: 36,
                 borderRadius: '16px',
-                fontSize: { xs: '0.7rem', sm: '0.84rem' },
+                fontSize: { xs: '0.72rem', sm: '0.84rem' },
                 fontWeight: 700,
                 textDecoration: 'none',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  bgcolor: '#16A34A',
+                  bgcolor: '#166534',
                   color: '#FFFFFF',
                   transform: 'translateY(-1px)',
                 },
               }}
             >
-              <WhatsAppIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />
+              <WhatsAppIcon sx={{ fontSize: { xs: 15, sm: 17 } }} />
               WhatsApp
             </MuiLink>
           </Box>
@@ -244,28 +248,46 @@ export default function HeroSection() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              p: { xs: 0.4, sm: 0.7 },
+              bgcolor: '#FFFFFF',
+              p: { xs: 0.5, sm: 0.75 },
               borderRadius: { xs: 2.5, sm: 3 },
               border: '2px solid #E2E8F0',
-              transition: 'all 0.2s',
-              '&:focus-within': { borderColor: '#3B82F6', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.15)' },
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              transition: 'border-color 0.2s ease',
+              '&:focus-within': {
+                borderColor: '#1E40AF',
+              },
             }}
           >
             <InputBase
-              placeholder="Area ya locality search karein... (e.g. Nehru Nagar)"
+              placeholder="Search by city, locality or project..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              sx={{ ml: { xs: 1.2, sm: 2 }, flex: 1, fontSize: { xs: '0.82rem', sm: '0.96rem' }, fontWeight: 500 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSearch();
+              }}
+              inputProps={{ 'aria-label': 'Search properties by city, locality or project' }}
+              sx={{
+                ml: { xs: 1, sm: 1.5 },
+                flex: 1,
+                fontSize: { xs: '0.8rem', sm: '0.95rem' },
+                color: '#0F172A',
+                '& input::placeholder': {
+                  color: '#475569',
+                  opacity: 1,
+                },
+              }}
             />
             <Button
               variant="contained"
               onClick={() => handleSearch()}
+              aria-label="Search properties"
               sx={{
                 bgcolor: '#1E40AF',
                 borderRadius: 2,
                 px: { xs: 2.2, sm: 3.5 },
                 py: { xs: 0.75, sm: 1.1 },
+                minHeight: 44,
                 fontSize: { xs: '0.8rem', sm: '0.92rem' },
                 fontWeight: 700,
                 textTransform: 'none',
@@ -295,9 +317,19 @@ export default function HeroSection() {
           {categories.map((cat, idx) => (
             <Box
               key={idx}
+              role="button"
+              tabIndex={0}
+              aria-label={`View ${cat.name} properties`}
               onClick={() => {
                 if (cat.isProject) router.push('/projects');
                 else router.push(`/properties?${cat.query}`);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (cat.isProject) router.push('/projects');
+                  else router.push(`/properties?${cat.query}`);
+                }
               }}
               sx={{
                 display: 'flex',
@@ -306,7 +338,12 @@ export default function HeroSection() {
                 gap: 0.5,
                 cursor: 'pointer',
                 flexShrink: 0,
-                width: { xs: '48px', sm: '64px', md: '80px' },
+                width: { xs: '56px', sm: '68px', md: '84px' },
+                outline: 'none',
+                '&:focus-visible .icon-box': {
+                  outline: '2px solid #1E40AF',
+                  outlineOffset: 2,
+                },
                 '&:hover .icon-box': {
                   transform: 'translateY(-2px)',
                   boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
@@ -322,10 +359,10 @@ export default function HeroSection() {
               <Box
                 className="icon-box"
                 sx={{
-                  width: { xs: 38, sm: 50, md: 60 },
-                  height: { xs: 38, sm: 50, md: 60 },
+                  width: { xs: 44, sm: 52, md: 60 },
+                  height: { xs: 44, sm: 52, md: 60 },
                   bgcolor: '#FFFFFF',
-                  borderRadius: { xs: '10px', sm: '13px', md: '15px' },
+                  borderRadius: { xs: '12px', sm: '13px', md: '15px' },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -342,7 +379,7 @@ export default function HeroSection() {
                 sx={{
                   fontSize: { xs: '0.68rem', sm: '0.78rem', md: '0.88rem' },
                   fontWeight: 600,
-                  color: '#475569',
+                  color: '#1E293B',
                   textAlign: 'center',
                   transition: 'color 0.2s',
                   lineHeight: 1.2,

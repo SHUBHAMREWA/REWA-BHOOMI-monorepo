@@ -37,8 +37,10 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import GrassIcon from '@mui/icons-material/Grass';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePwaInstall } from '@/features/pwa/usePwaInstall';
 import { apiPost, apiDelete } from '@/lib/api';
 import { PROPERTY_CATEGORIES, PROPERTY_TYPES } from '@/config/propertyFormConfig';
 import { PropertyCategoryType } from '@rewa-bhoomi/types';
@@ -143,6 +145,7 @@ interface PropertyData {
 export default function PropertyDetailPage({ initialProperty, slug }: { initialProperty: PropertyData | null, slug: string }) {
   const router = useRouter();
   const { isAuthenticated, user, isLoading: isAuthLoading, accessToken } = useAuth();
+  const { canInstall, promptInstall } = usePwaInstall();
   
   const [property, setProperty] = useState<PropertyData | null>(initialProperty);
   const [loading, setLoading] = useState(!initialProperty);
@@ -807,69 +810,100 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     <Box sx={{ minHeight: '100vh', pt: { xs: 1, sm: 2 }, pb: { xs: 4, sm: 6 }, bgcolor: '#F2F4F7' }}>
       <Container maxWidth="lg" sx={{ px: { xs: 1.25, sm: 2.5 } }}>
         
-        {/* ─── BREADCRUMBS & BACK BUTTON BAR ─── */}
-        <Box sx={{ py: 0.4, mb: { xs: 0.6, sm: 1.2 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {/* Back Button */}
-          <Button
-            startIcon={<ArrowBackIcon sx={{ fontSize: '1rem !important' }} />}
-            onClick={handleGoBack}
-            size="small"
-            sx={{
-              color: '#0F172A',
-              bgcolor: '#FFFFFF',
-              borderRadius: '20px',
-              px: 1.8,
-              py: 0.35,
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              textTransform: 'none',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-              border: '1px solid #CBD5E1',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              '&:hover': {
-                bgcolor: '#F1F5F9',
-                borderColor: '#94A3B8',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-              },
-            }}
-          >
-            Back
-          </Button>
-
-          {/* Breadcrumbs Trail */}
-          <Box sx={{ overflowX: 'auto', whiteSpace: 'nowrap', flex: 1, display: { xs: 'none', sm: 'block' } }}>
-            <Breadcrumbs
-              separator={<NavigateNextIcon sx={{ fontSize: 14, color: '#94A3B8' }} />}
-              aria-label="breadcrumb"
-              sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' }, color: '#64748B' }}
+        {/* ─── BREADCRUMBS, BACK BUTTON & GET APP BAR ─── */}
+        <Box sx={{ py: 0.4, mb: { xs: 0.6, sm: 1.2 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+          {/* Left side: Back Button & Breadcrumbs */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
+            {/* Back Button */}
+            <Button
+              startIcon={<ArrowBackIcon sx={{ fontSize: '1rem !important' }} />}
+              onClick={handleGoBack}
+              size="small"
+              sx={{
+                color: '#0F172A',
+                bgcolor: '#FFFFFF',
+                borderRadius: '20px',
+                px: 1.8,
+                py: 0.35,
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                textTransform: 'none',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                border: '1px solid #CBD5E1',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                '&:hover': {
+                  bgcolor: '#F1F5F9',
+                  borderColor: '#94A3B8',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                },
+              }}
             >
-              <Link href="/" style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
-                Home
-              </Link>
-              <Link href={categoryHref} style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
-                {categoryTitle}
-              </Link>
-              {subcategoryTitle && subcategoryTitle.toLowerCase() !== categoryTitle.toLowerCase() && (
-                <Link href={subcategoryHref} style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
-                  {subcategoryTitle}
-                </Link>
-              )}
-              <Typography
-                sx={{
-                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  color: '#0F172A',
-                  fontWeight: 600,
-                  maxWidth: { xs: 180, sm: 320 },
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+              Back
+            </Button>
+
+            {/* Breadcrumbs Trail */}
+            <Box sx={{ overflowX: 'auto', whiteSpace: 'nowrap', flex: 1, display: { xs: 'none', sm: 'block' } }}>
+              <Breadcrumbs
+                separator={<NavigateNextIcon sx={{ fontSize: 14, color: '#94A3B8' }} />}
+                aria-label="breadcrumb"
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' }, color: '#64748B' }}
               >
-                {property.title}
-              </Typography>
-            </Breadcrumbs>
+                <Link href="/" style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
+                  Home
+                </Link>
+                <Link href={categoryHref} style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
+                  {categoryTitle}
+                </Link>
+                {subcategoryTitle && subcategoryTitle.toLowerCase() !== categoryTitle.toLowerCase() && (
+                  <Link href={subcategoryHref} style={{ color: '#475569', textDecoration: 'none', fontWeight: 500 }}>
+                    {subcategoryTitle}
+                  </Link>
+                )}
+                <Typography
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                    color: '#0F172A',
+                    fontWeight: 600,
+                    maxWidth: { xs: 180, sm: 320 },
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {property.title}
+                </Typography>
+              </Breadcrumbs>
+            </Box>
           </Box>
+
+          {/* Right side: Get App Button (Shown only if NOT running standalone PWA and NOT installed) */}
+          {canInstall && (
+            <Button
+              startIcon={<GetAppIcon sx={{ fontSize: '1rem !important' }} />}
+              onClick={promptInstall}
+              size="small"
+              sx={{
+                color: '#FFFFFF',
+                bgcolor: '#1B4FD8',
+                borderRadius: '20px',
+                px: { xs: 1.6, sm: 2.2 },
+                py: 0.35,
+                fontSize: '0.78rem',
+                fontWeight: 750,
+                textTransform: 'none',
+                boxShadow: '0 2px 8px rgba(27, 79, 216, 0.35)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                '&:hover': {
+                  bgcolor: '#1D4ED8',
+                  boxShadow: '0 4px 12px rgba(27, 79, 216, 0.45)',
+                },
+              }}
+            >
+              Get App
+            </Button>
+          )}
         </Box>
 
         {/* ─── STATUS BANNER for Owner Preview (Non-Published) ─── */}

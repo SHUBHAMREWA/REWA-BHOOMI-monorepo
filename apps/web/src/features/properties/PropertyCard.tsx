@@ -401,19 +401,20 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
           textDecoration: 'none',
           color: 'inherit',
           bgcolor: '#FFFFFF',
-          borderRadius: '16px',
+          borderRadius: { xs: '12px', sm: '16px' },
           border: '1.5px solid #80DEEA',
           overflow: 'hidden',
           transition: 'all 0.25s ease',
+          boxShadow: '0 2px 8px rgba(0, 188, 212, 0.06)',
           '&:hover': {
-            transform: 'translateY(-4px)',
+            transform: 'translateY(-3px)',
             borderColor: '#00BCD4',
-            boxShadow: '0 12px 32px rgba(0, 188, 212, 0.16)',
+            boxShadow: '0 10px 24px rgba(0, 188, 212, 0.16)',
           },
         }}
       >
         {/* Media Top */}
-        <Box sx={{ position: 'relative', height: 200, bgcolor: '#F0F4FF' }}>
+        <Box sx={{ position: 'relative', height: { xs: 115, sm: 165, md: 195 }, bgcolor: '#F0F4FF' }}>
           {activeImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -426,47 +427,84 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             />
           ) : (
             <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#E2E8F0' }}>
-              <Typography color="text.secondary" variant="caption">No Image</Typography>
+              <Typography color="text.secondary" variant="caption" sx={{ fontSize: '0.7rem' }}>No Image</Typography>
             </Box>
           )}
           
           {property.status === 'SOLD' && (
             <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-              <Typography variant="h3" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 4, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 2, py: 0.5, borderRadius: 2 }}>
+              <Typography component="span" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 2, transform: 'rotate(-15deg)', border: '2px solid #F87171', px: 1, py: 0.2, borderRadius: 1.5, fontSize: { xs: '1rem', sm: '1.5rem' } }}>
                 SOLD
               </Typography>
             </Box>
           )}
 
-
-          {/* Badges */}
-          <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1, zIndex: 2 }}>
-            <Box sx={{ bgcolor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4 }}>
-              <PhotoCameraIcon sx={{ fontSize: 13 }} />
-              {photoCount}+ Photos
+          {/* Badges: Photos & Video */}
+          <Box sx={{ position: 'absolute', top: { xs: 5, sm: 8 }, left: { xs: 5, sm: 8 }, display: 'flex', gap: 0.5, zIndex: 2 }}>
+            <Box sx={{ bgcolor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: 'white', px: { xs: 0.5, sm: 0.8 }, py: 0.2, borderRadius: '4px', fontSize: { xs: '0.6rem', sm: '0.72rem' }, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.3 }}>
+              <PhotoCameraIcon sx={{ fontSize: { xs: 10, sm: 13 } }} />
+              <span>{photoCount}+</span>
             </Box>
             {property.video_url && (
               <Box 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVideoOpen(true); }}
-                sx={{ bgcolor: '#EF4444', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4, cursor: 'pointer', '&:hover': { bgcolor: '#DC2626' } }}
+                sx={{ bgcolor: '#EF4444', color: 'white', px: { xs: 0.5, sm: 0.8 }, py: 0.2, borderRadius: '4px', fontSize: { xs: '0.6rem', sm: '0.72rem' }, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.3, cursor: 'pointer', '&:hover': { bgcolor: '#DC2626' } }}
               >
-                <PlayArrowIcon sx={{ fontSize: 13 }} />
-                Video
+                <PlayArrowIcon sx={{ fontSize: { xs: 10, sm: 13 } }} />
+                <span>Video</span>
               </Box>
             )}
             {showStatusBadge && property.status && (
-              <Box sx={{ bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main', color: 'white', px: 1, py: 0.3, borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ bgcolor: property.status === 'PUBLISHED' ? 'success.main' : property.status === 'REJECTED' ? 'error.main' : 'warning.main', color: 'white', px: 0.6, py: 0.2, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                 {property.status === 'PUBLISHED' ? 'APPROVED' : property.status.replace('_', ' ')}
               </Box>
             )}
           </Box>
 
-          {/* Left & Right Navigation Arrows */}
+          {/* Top-Right Action Buttons: Share & Favorite */}
+          <Box sx={{ position: 'absolute', top: { xs: 5, sm: 8 }, right: { xs: 5, sm: 8 }, display: 'flex', gap: { xs: 0.6, sm: 0.8 }, zIndex: 2 }}>
+            <IconButton
+              onClick={handleShare}
+              size="small"
+              aria-label="Share property"
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(4px)',
+                width: { xs: 34, sm: 38 },
+                height: { xs: 34, sm: 38 },
+                color: '#334155',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                '&:hover': { bgcolor: '#FFFFFF', color: '#1B4FD8', transform: 'scale(1.08)' },
+              }}
+            >
+              <ShareIcon sx={{ fontSize: { xs: 14, sm: 17 } }} />
+            </IconButton>
+
+            <IconButton
+              onClick={handleToggleFavorite}
+              size="small"
+              aria-label="Save property"
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(4px)',
+                width: { xs: 34, sm: 38 },
+                height: { xs: 34, sm: 38 },
+                color: isFavorited ? '#EF4444' : '#334155',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                '&:hover': { bgcolor: '#FFFFFF', transform: 'scale(1.08)' },
+              }}
+            >
+              {isFavorited ? <FavoriteIcon sx={{ fontSize: { xs: 15, sm: 18 } }} /> : <FavoriteBorderIcon sx={{ fontSize: { xs: 15, sm: 18 } }} />}
+            </IconButton>
+          </Box>
+
+          {/* Left & Right Navigation Arrows (Desktop / Hover) */}
           {imageList.length > 1 && (
-            <>
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
               <IconButton
                 onClick={handlePrevImage}
                 size="small"
+                aria-label="Previous image"
                 sx={{
                   position: 'absolute',
                   top: '50%',
@@ -474,16 +512,18 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                   transform: 'translateY(-50%)',
                   bgcolor: 'rgba(15, 23, 42, 0.55)',
                   color: '#FFFFFF',
-                  p: 0.3,
+                  width: 36,
+                  height: 36,
                   zIndex: 3,
                   '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.85)' },
                 }}
               >
-                <ChevronLeftIcon sx={{ fontSize: 18 }} />
+                <ChevronLeftIcon sx={{ fontSize: 20 }} />
               </IconButton>
               <IconButton
                 onClick={handleNextImage}
                 size="small"
+                aria-label="Next image"
                 sx={{
                   position: 'absolute',
                   top: '50%',
@@ -491,74 +531,89 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                   transform: 'translateY(-50%)',
                   bgcolor: 'rgba(15, 23, 42, 0.55)',
                   color: '#FFFFFF',
-                  p: 0.3,
+                  width: 36,
+                  height: 36,
                   zIndex: 3,
                   '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.85)' },
                 }}
               >
-                <ChevronRightIcon sx={{ fontSize: 18 }} />
+                <ChevronRightIcon sx={{ fontSize: 20 }} />
               </IconButton>
-            </>
+            </Box>
           )}
         </Box>
 
         {/* Content */}
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+        <Box sx={{ p: { xs: 1, sm: 1.5, md: 2 }, display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
           <Box>
-            <Typography variant="h6" fontWeight={700} sx={{ 
-              fontSize: '1rem', 
-              lineHeight: 1.35, 
-              mb: 0.5, 
+            {/* Title */}
+            <Typography variant="h6" component="h3" fontWeight={700} sx={{ 
+              fontSize: { xs: '0.8rem', sm: '0.95rem' }, 
+              lineHeight: 1.25, 
+              mb: 0.3, 
               color: '#0F172A',
               display: '-webkit-box',
-              WebkitLineClamp: 2,
+              WebkitLineClamp: { xs: 1, sm: 2 },
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden' 
             }}>
               {property.title}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, gap: 1 }}>
-              <Typography variant="body2" color="text.secondary" noWrap title={property.address || `${property.city}, ${property.state}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.82rem', minWidth: 0, overflow: 'hidden' }}>
-                <LocationOnIcon sx={{ fontSize: 16, color: '#EF4444', flexShrink: 0 }} />
+
+            {/* Location */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 0.4, sm: 1 }, gap: 0.5 }}>
+              <Typography variant="body2" noWrap title={property.address || `${property.city}, ${property.state}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.3, fontSize: { xs: '0.66rem', sm: '0.78rem' }, minWidth: 0, overflow: 'hidden', color: '#334155' }}>
+                <LocationOnIcon sx={{ fontSize: { xs: 13, sm: 15 }, color: '#EF4444', flexShrink: 0 }} />
                 <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {property.address || `${property.city}, ${property.state}`}
                 </Box>
               </Typography>
-              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.72rem', fontWeight: 600, flexShrink: 0 }}>
+              <Typography variant="caption" sx={{ color: '#475569', fontSize: '0.65rem', fontWeight: 600, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
                 {formatDaysAgo(property.created_at)}
               </Typography>
             </Box>
 
-            {/* Spec Box */}
-            <Box sx={{ bgcolor: '#F4F5F7', borderRadius: '8px', p: 1, mb: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+            {/* Compact Specs: On Mobile, sleek pill; On Desktop, 2-column box */}
+            <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', gap: 0.4, bgcolor: '#F1F5F9', borderRadius: '6px', px: 0.6, py: 0.25, mb: 0.6, overflow: 'hidden' }}>
+              <SquareFootIcon sx={{ fontSize: 12, color: '#334155', flexShrink: 0 }} />
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {col1Value} • {baseType}
+              </Typography>
+            </Box>
+
+            {/* Desktop Spec Box */}
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, bgcolor: '#F4F5F7', borderRadius: '8px', p: 1, mb: 1.5, justifyContent: 'space-between' }}>
               <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', fontWeight: 700 }}>{col1Title}</Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: '#334155', fontWeight: 700 }}>{col1Title}</Typography>
                 <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>{col1Value}</Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', fontWeight: 700 }}>{col2Title}</Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: '#334155', fontWeight: 700 }}>{col2Title}</Typography>
                 <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>{col2Value}</Typography>
               </Box>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1, borderTop: '1px solid #F1F5F9' }}>
-            <Typography variant="h6" color="primary" fontWeight={800} sx={{ fontSize: '1.15rem' }}>
+          {/* Price & Details Row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: { xs: 0.5, sm: 1 }, borderTop: '1px solid #F1F5F9' }}>
+            <Typography variant="h6" component="span" color="primary" fontWeight={800} sx={{ fontSize: { xs: '0.9rem', sm: '1.15rem' }, lineHeight: 1.1 }}>
               {formattedPrice}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
               {onEdit && (
                 <IconButton 
                   size="small" 
+                  aria-label="Edit property"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(property.id); }} 
                   color="primary" 
-                  sx={{ border: '1px solid', borderColor: 'primary.main', p: 0.5 }}
+                  sx={{ border: '1px solid', borderColor: 'primary.main', width: 34, height: 34, p: 0.4 }}
                 >
-                  <EditIcon fontSize="small" />
+                  <EditIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               )}
-              <Typography variant="caption" color="primary" fontWeight={700} sx={{ textDecoration: 'underline' }}>
-                View Details →
+              <Typography variant="caption" color="primary" fontWeight={700} sx={{ fontSize: { xs: '0.68rem', sm: '0.75rem' }, textDecoration: 'underline' }}>
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>View Details →</Box>
+                <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>View →</Box>
               </Typography>
             </Box>
           </Box>
@@ -642,7 +697,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             
             {property.status === 'SOLD' && (
               <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                <Typography variant="h4" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                <Typography component="span" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                   SOLD
                 </Typography>
               </Box>
@@ -722,6 +777,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 <IconButton
                   onClick={handlePrevImage}
                   size="small"
+                  aria-label="Previous image"
                   sx={{
                     position: 'absolute',
                     top: '50%',
@@ -729,16 +785,19 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(15, 23, 42, 0.55)',
                     color: '#FFFFFF',
-                    p: 0.2,
+                    width: 32,
+                    height: 32,
+                    p: 0,
                     zIndex: 3,
                     '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.85)' },
                   }}
                 >
-                  <ChevronLeftIcon sx={{ fontSize: 15 }} />
+                  <ChevronLeftIcon sx={{ fontSize: 18 }} />
                 </IconButton>
                 <IconButton
                   onClick={handleNextImage}
                   size="small"
+                  aria-label="Next image"
                   sx={{
                     position: 'absolute',
                     top: '50%',
@@ -746,12 +805,14 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(15, 23, 42, 0.55)',
                     color: '#FFFFFF',
-                    p: 0.2,
+                    width: 32,
+                    height: 32,
+                    p: 0,
                     zIndex: 3,
                     '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.85)' },
                   }}
                 >
-                  <ChevronRightIcon sx={{ fontSize: 15 }} />
+                  <ChevronRightIcon sx={{ fontSize: 18 }} />
                 </IconButton>
               </>
             )}
@@ -761,15 +822,15 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
           <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             {/* Price & Action Icons */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 0.5 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: { xs: '1.1rem', sm: '1.25rem' }, lineHeight: 1.1, flex: 1, minWidth: 0 }}>
+              <Typography variant="h6" component="span" sx={{ fontWeight: 800, color: '#0F172A', fontSize: { xs: '1.1rem', sm: '1.25rem' }, lineHeight: 1.1, flex: 1, minWidth: 0 }}>
                 {formattedPrice}
               </Typography>
 
-              <Box sx={{ display: 'flex', gap: 0.2, mt: -0.4, flexShrink: 0 }}>
-                <IconButton onClick={handleShare} size="small" sx={{ p: 0.4, color: '#64748B' }}>
+              <Box sx={{ display: 'flex', gap: 0.5, mt: -0.4, flexShrink: 0 }}>
+                <IconButton onClick={handleShare} size="small" aria-label="Share property" sx={{ width: 36, height: 36, color: '#334155' }}>
                   <ShareIcon sx={{ fontSize: 17 }} />
                 </IconButton>
-                <IconButton onClick={handleToggleFavorite} size="small" sx={{ p: 0.4, color: isFavorited ? '#EF4444' : '#64748B' }}>
+                <IconButton onClick={handleToggleFavorite} size="small" aria-label="Save property" sx={{ width: 36, height: 36, color: isFavorited ? '#EF4444' : '#334155' }}>
                   {isFavorited ? <FavoriteIcon sx={{ fontSize: 17 }} /> : <FavoriteBorderIcon sx={{ fontSize: 17 }} />}
                 </IconButton>
               </Box>
@@ -777,6 +838,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
 
             {/* Title */}
             <Typography
+              component="h3"
               sx={{
                 fontSize: '0.82rem',
                 fontWeight: 600,
@@ -797,11 +859,11 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             {/* Plot Area & Dimensions Specs */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1.2, sm: 1.8 }, mt: 0.3, alignItems: 'center' }}>
               <Box sx={{ minWidth: 'fit-content' }}>
-                <Typography sx={{ fontSize: '0.62rem', color: '#64748B', fontWeight: 600, lineHeight: 1.1 }}>{col1Title}</Typography>
+                <Typography sx={{ fontSize: '0.62rem', color: '#334155', fontWeight: 700, lineHeight: 1.1 }}>{col1Title}</Typography>
                 <Typography sx={{ fontSize: '0.78rem', fontWeight: 750, color: '#0F172A' }}>{col1Value}</Typography>
               </Box>
               <Box sx={{ minWidth: 'fit-content' }}>
-                <Typography sx={{ fontSize: '0.62rem', color: '#64748B', fontWeight: 600, lineHeight: 1.1 }}>{col2Title}</Typography>
+                <Typography sx={{ fontSize: '0.62rem', color: '#334155', fontWeight: 700, lineHeight: 1.1 }}>{col2Title}</Typography>
                 <Typography sx={{ fontSize: '0.78rem', fontWeight: 750, color: '#0F172A' }}>{col2Value}</Typography>
               </Box>
             </Box>
@@ -832,7 +894,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             </Typography>
           </Box>
           {property.created_at && (
-            <Typography variant="caption" sx={{ color: '#64748B', fontSize: '0.65rem', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <Typography variant="caption" sx={{ color: '#334155', fontSize: '0.65rem', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
               {formatDaysAgo(property.created_at)}
             </Typography>
           )}
@@ -851,7 +913,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             justifyContent: 'space-between',
             cursor: 'pointer',
             py: 0.3,
-            color: '#475569',
+            color: '#334155',
           }}
         >
           <Typography
@@ -910,7 +972,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             
             {property.status === 'SOLD' && (
               <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                <Typography variant="h4" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                <Typography component="span" fontWeight={900} sx={{ color: '#F87171', letterSpacing: 3, transform: 'rotate(-20deg)', border: '4px solid #F87171', px: 1.5, py: 0.2, borderRadius: 2, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
                   SOLD
                 </Typography>
               </Box>
@@ -1004,6 +1066,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 <IconButton
                   onClick={handlePrevImage}
                   size="small"
+                  aria-label="Previous image"
                   sx={{
                     position: 'absolute',
                     top: '50%',
@@ -1011,7 +1074,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(15, 23, 42, 0.55)',
                     color: '#FFFFFF',
-                    p: 0.4,
+                    width: 38,
+                    height: 38,
                     zIndex: 3,
                     '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.85)' },
                   }}
@@ -1021,6 +1085,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                 <IconButton
                   onClick={handleNextImage}
                   size="small"
+                  aria-label="Next image"
                   sx={{
                     position: 'absolute',
                     top: '50%',
@@ -1028,7 +1093,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(15, 23, 42, 0.55)',
                     color: '#FFFFFF',
-                    p: 0.4,
+                    width: 38,
+                    height: 38,
                     zIndex: 3,
                     '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.85)' },
                   }}
@@ -1054,9 +1120,8 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
               <Typography
-
-
                 variant="h6"
+                component="h3"
                 sx={{
                   fontWeight: 600,
                   color: '#1E293B',
@@ -1076,12 +1141,12 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               {/* Action Buttons: Heart & Share */}
               <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                 <Tooltip title={isFavorited ? 'Saved' : 'Save Property'}>
-                  <IconButton onClick={handleToggleFavorite} size="small" sx={{ color: isFavorited ? '#EF4444' : '#64748B', '&:hover': { bgcolor: '#FEF2F2' } }}>
+                  <IconButton onClick={handleToggleFavorite} size="small" aria-label="Save property" sx={{ width: 36, height: 36, color: isFavorited ? '#EF4444' : '#334155', '&:hover': { bgcolor: '#FEF2F2' } }}>
                     {isFavorited ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Share Property">
-                  <IconButton onClick={handleShare} size="small" sx={{ color: '#64748B', '&:hover': { bgcolor: '#F1F5F9' } }}>
+                  <IconButton onClick={handleShare} size="small" aria-label="Share property" sx={{ width: 36, height: 36, color: '#334155', '&:hover': { bgcolor: '#F1F5F9' } }}>
                     <ShareIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -1097,7 +1162,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                   noWrap
                   title={property.address || `${property.city}, ${property.state}`}
                   sx={{
-                    color: '#475569',
+                    color: '#334155',
                     fontSize: '0.85rem',
                     fontWeight: 500,
                     textDecoration: 'none',
@@ -1108,7 +1173,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                   {property.address || `${property.city}, ${property.state}`}
                 </Typography>
               </Box>
-              <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600, mr: 2 }}>
+              <Typography variant="caption" sx={{ color: '#475569', fontSize: '0.75rem', fontWeight: 600, mr: 2 }}>
                 {formatDaysAgo(property.created_at)}
               </Typography>
             </Box>
@@ -1130,7 +1195,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               <Box sx={{ borderRight: '1px solid #E2E8F0', pr: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
                   <Col1Icon sx={{ fontSize: 18, color: '#E53935' }} />
-                  <Typography sx={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.04em' }}>
+                  <Typography sx={{ fontSize: '0.68rem', color: '#334155', fontWeight: 700, letterSpacing: '0.04em' }}>
                     {col1Title}
                   </Typography>
                 </Box>
@@ -1143,7 +1208,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               <Box sx={{ borderRight: '1px solid #E2E8F0', px: { sm: 1 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
                   <Col2Icon sx={{ fontSize: 18, color: '#E53935' }} />
-                  <Typography sx={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.04em' }}>
+                  <Typography sx={{ fontSize: '0.68rem', color: '#334155', fontWeight: 700, letterSpacing: '0.04em' }}>
                     {col2Title}
                   </Typography>
                 </Box>
@@ -1156,7 +1221,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               <Box sx={{ pl: { sm: 1 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
                   <Col3Icon sx={{ fontSize: 18, color: '#E53935' }} />
-                  <Typography sx={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.04em' }}>
+                  <Typography sx={{ fontSize: '0.68rem', color: '#334155', fontWeight: 700, letterSpacing: '0.04em' }}>
                     {col3Title}
                   </Typography>
                 </Box>
@@ -1180,7 +1245,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
                   gap: 0.5,
                   cursor: 'pointer',
                   userSelect: 'none',
-                  color: '#475569',
+                  color: '#334155',
                   '&:hover': { color: '#0F172A' },
                 }}
               >
@@ -1224,7 +1289,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#1B4FD8', fontSize: { sm: '1.25rem', md: '1.35rem' } }}>
+              <Typography variant="h5" component="span" sx={{ fontWeight: 800, color: '#1B4FD8', fontSize: { sm: '1.25rem', md: '1.35rem' } }}>
                 {formattedPrice}
               </Typography>
               {property.area && (
@@ -1238,9 +1303,10 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
               {onEdit && (
                 <IconButton 
                   size="small" 
+                  aria-label="Edit property"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(property.id); }} 
                   color="primary" 
-                  sx={{ border: '1px solid', borderColor: 'primary.main', p: 0.5 }}
+                  sx={{ border: '1px solid', borderColor: 'primary.main', width: 36, height: 36, p: 0.5 }}
                 >
                   <EditIcon fontSize="small" />
                 </IconButton>

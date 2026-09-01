@@ -20,9 +20,11 @@ import AddIcon from '@mui/icons-material/Add';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ArticleIcon from '@mui/icons-material/Article';
 import ChatIcon from '@mui/icons-material/Chat';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
+import { usePwaInstall } from '@/features/pwa/usePwaInstall';
 
 const navLinks = [
   { name: 'Properties', href: '/properties', icon: HomeWorkIcon },
@@ -37,15 +39,27 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
+  const [searchError, setSearchError] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [wordIndex, setWordIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const mobileSearchContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-reset search error after 3 seconds
+  useEffect(() => {
+    if (searchError) {
+      const timer = setTimeout(() => {
+        setSearchError(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchError]);
   
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
   const { isSupported, isSubscribed, enableNotifications, disableNotifications } = usePushNotifications();
+  const { canInstall, promptInstall } = usePwaInstall();
 
   // Close mobile search when clicking / tapping outside of it
   useEffect(() => {
@@ -124,7 +138,7 @@ export default function Navbar() {
           <img src="/favicon.png" alt="Rewa Bhoomi Logo" style={{ width: '80px', height: '80px', margin: '-15px -20px -15px -15px', objectFit: 'contain' }} />
           <span style={{ fontSize: '20px', fontWeight: 800 }}>Rewa Bhoomi</span>
         </Link>
-        <IconButton onClick={handleDrawerToggle}>
+        <IconButton onClick={handleDrawerToggle} aria-label="Close navigation menu" sx={{ width: 44, height: 44 }}>
           <CloseIcon />
         </IconButton>
       </Box>
@@ -165,6 +179,35 @@ export default function Navbar() {
             <ListItemText primary="Sell Property" primaryTypographyProps={{ fontWeight: 700 }} />
           </ListItemButton>
         </ListItem>
+
+        {/* Get App / Install PWA Option (shown if user has not downloaded/installed PWA) */}
+        {canInstall && (
+          <ListItem disablePadding sx={{ mb: 1 }}>
+            <ListItemButton
+              onClick={() => {
+                handleDrawerToggle();
+                promptInstall();
+              }}
+              sx={{
+                borderRadius: 2,
+                bgcolor: 'rgba(27, 79, 216, 0.08)',
+                border: '1px solid rgba(27, 79, 216, 0.22)',
+                color: '#1B4FD8',
+                '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.15)' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32, color: '#1B4FD8' }}>
+                <GetAppIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Get App"
+                secondary="Install on your phone"
+                primaryTypographyProps={{ fontWeight: 750, fontSize: '0.9rem', color: '#1B4FD8' }}
+                secondaryTypographyProps={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 500 }}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
       </List>
 
       {user && (
@@ -212,14 +255,14 @@ export default function Navbar() {
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <ListItemIcon sx={{ minWidth: 36, color: isSubscribed ? '#1B4FD8' : '#D97706' }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: isSubscribed ? '#1B4FD8' : '#92400E' }}>
                     {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
                   </ListItemIcon>
                   <ListItemText
                     primary="Notifications"
                     secondary={isSubscribed ? "Enabled" : "Disabled"}
                     primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem', color: '#0F172A' }}
-                    secondaryTypographyProps={{ fontSize: '0.72rem', color: isSubscribed ? '#16A34A' : '#D97706', fontWeight: 600 }}
+                    secondaryTypographyProps={{ fontSize: '0.72rem', color: isSubscribed ? '#16A34A' : '#92400E', fontWeight: 600 }}
                   />
                 </Box>
                 <Switch
@@ -345,17 +388,18 @@ export default function Navbar() {
               <Box
                 ref={mobileSearchContainerRef}
                 component="form"
-
                 onSubmit={(e) => {
                   e.preventDefault();
                   const q = mobileSearchQuery.trim();
                   if (q) {
+                    setSearchError(false);
                     router.push(`/properties?keyword=${encodeURIComponent(q)}`);
                     setMobileSearchOpen(false);
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(new CustomEvent('nav-search-keyword', { detail: { keyword: q } }));
                     }
                   } else {
+                    setSearchError(true);
                     searchInputRef.current?.focus();
                   }
                 }}
@@ -364,18 +408,27 @@ export default function Navbar() {
                   alignItems: 'center',
                   flex: 1,
                   minWidth: 0,
-                  bgcolor: '#F1F5F9',
+                  bgcolor: searchError ? '#FEF2F2' : '#F1F5F9',
                   borderRadius: '24px',
                   pl: 1.5,
                   pr: 0.4,
                   py: 0.25,
                   mx: 1,
-                  border: '1.5px solid #1B4FD8',
-                  boxShadow: '0 2px 10px rgba(27, 79, 216, 0.16)',
-                  animation: 'stretchSearch 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  border: searchError ? '1.5px solid #EF4444' : '1.5px solid #1B4FD8',
+                  boxShadow: searchError ? '0 2px 10px rgba(239, 68, 68, 0.28)' : '0 2px 10px rgba(27, 79, 216, 0.16)',
+                  transition: 'background-color 0.2s, border 0.2s, box-shadow 0.2s',
+                  animation: searchError
+                    ? 'shakeSearch 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both'
+                    : 'stretchSearch 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   '@keyframes stretchSearch': {
                     '0%': { width: '40px', opacity: 0.3 },
                     '100%': { width: '100%', opacity: 1 },
+                  },
+                  '@keyframes shakeSearch': {
+                    '10%, 90%': { transform: 'translateX(-2px)' },
+                    '20%, 80%': { transform: 'translateX(3px)' },
+                    '30%, 50%, 70%': { transform: 'translateX(-4px)' },
+                    '40%, 60%': { transform: 'translateX(4px)' },
                   },
                 }}
               >
@@ -384,14 +437,23 @@ export default function Navbar() {
                   autoFocus
                   inputRef={searchInputRef}
                   value={mobileSearchQuery}
-                  onChange={(e) => setMobileSearchQuery(e.target.value)}
-                  placeholder="Search locality, house, plot..."
+                  onChange={(e) => {
+                    setMobileSearchQuery(e.target.value);
+                    if (searchError) setSearchError(false);
+                  }}
+                  placeholder={searchError ? 'Please write something to search...' : 'Search locality, house, plot...'}
                   sx={{
                     flex: 1,
                     minWidth: 0,
                     fontSize: '0.82rem',
-                    color: '#0F172A',
+                    color: searchError ? '#DC2626' : '#0F172A',
                     '& input': { py: 0.3, px: 0 },
+                    '& input::placeholder': {
+                      color: searchError ? '#DC2626' : '#475569',
+                      opacity: 1,
+                      fontWeight: searchError ? 600 : 400,
+                      transition: 'color 0.2s ease',
+                    },
                   }}
                 />
 
@@ -399,8 +461,11 @@ export default function Navbar() {
                 {mobileSearchQuery && (
                   <IconButton
                     size="small"
-                    onClick={() => setMobileSearchQuery('')}
-                    sx={{ p: 0.4, mr: 0.2, color: '#64748B' }}
+                    onClick={() => {
+                      setMobileSearchQuery('');
+                      if (searchError) setSearchError(false);
+                    }}
+                    sx={{ width: 36, height: 36, mr: 0.2, color: '#334155' }}
                     aria-label="Clear text"
                   >
                     <CloseIcon sx={{ fontSize: 15 }} />
@@ -413,13 +478,14 @@ export default function Navbar() {
                   size="small"
                   aria-label="Search properties"
                   sx={{
-                    p: 0.6,
+                    width: 38,
+                    height: 38,
                     mr: 0.3,
                     color: '#FFFFFF',
-                    bgcolor: '#1B4FD8',
+                    bgcolor: searchError ? '#EF4444' : '#1B4FD8',
                     borderRadius: '50%',
                     transition: 'all 0.2s',
-                    '&:hover': { bgcolor: '#1338A8', transform: 'scale(1.06)' },
+                    '&:hover': { bgcolor: searchError ? '#DC2626' : '#1338A8', transform: 'scale(1.06)' },
                   }}
                 >
                   <SearchIcon sx={{ fontSize: 16 }} />
@@ -428,8 +494,11 @@ export default function Navbar() {
                 {/* Close search button */}
                 <IconButton
                   size="small"
-                  onClick={() => setMobileSearchOpen(false)}
-                  sx={{ p: 0.4, bgcolor: '#E2E8F0', color: '#334155', '&:hover': { bgcolor: '#CBD5E1' } }}
+                  onClick={() => {
+                    setMobileSearchOpen(false);
+                    setSearchError(false);
+                  }}
+                  sx={{ width: 38, height: 38, bgcolor: '#E2E8F0', color: '#334155', '&:hover': { bgcolor: '#CBD5E1' } }}
                   aria-label="Close search"
                 >
                   <CloseIcon sx={{ fontSize: 15 }} />
@@ -565,9 +634,12 @@ export default function Navbar() {
                     <IconButton
                       component={Link}
                       href="/profile?tab=favorites"
+                      aria-label="Saved properties"
                       sx={{
                         bgcolor: 'rgba(239, 68, 68, 0.08)',
                         color: '#EF4444',
+                        width: 44,
+                        height: 44,
                         '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.16)' },
                         mr: 0.5,
                       }}
@@ -576,7 +648,11 @@ export default function Navbar() {
                     </IconButton>
                   </Tooltip>
 
-                  <IconButton onClick={handleMenuOpen} sx={{ p: 0, border: '2px solid #E2E8F0' }}>
+                  <IconButton 
+                    onClick={handleMenuOpen} 
+                    aria-label="User account menu"
+                    sx={{ p: 0, border: '2px solid #E2E8F0', width: 44, height: 44 }}
+                  >
                     <Avatar sx={{ bgcolor: '#1B4FD8', color: 'white', width: 40, height: 40, fontWeight: 700 }}>
                       {user.name?.charAt(0).toUpperCase()}
                     </Avatar>
@@ -642,7 +718,8 @@ export default function Navbar() {
                   aria-label="Search properties"
                   sx={{
                     color: '#1B4FD8',
-                    p: 0.8,
+                    width: 44,
+                    height: 44,
                     bgcolor: 'rgba(27, 79, 216, 0.08)',
                     borderRadius: '10px',
                     '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.16)' },
@@ -653,10 +730,10 @@ export default function Navbar() {
               )}
               <IconButton
                 color="inherit"
-                aria-label="open drawer"
+                aria-label="Open navigation menu"
                 edge="end"
                 onClick={handleDrawerToggle}
-                sx={{ color: '#0F172A', p: 0.8 }}
+                sx={{ color: '#0F172A', width: 44, height: 44 }}
               >
                 <MenuIcon />
               </IconButton>

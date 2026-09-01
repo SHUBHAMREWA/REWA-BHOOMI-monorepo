@@ -35,7 +35,7 @@ export default function StatsBar() {
                   {stat.icon}
                 </Box>
                 <Box>
-                  <Typography variant="h5" fontWeight={800} color="text.primary">
+                  <Typography variant="h5" component="div" fontWeight={800} color="text.primary">
                     {stat.value}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" fontWeight={500}>

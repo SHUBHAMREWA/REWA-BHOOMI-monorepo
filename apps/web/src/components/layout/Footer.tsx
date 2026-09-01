@@ -50,7 +50,7 @@ export default function Footer() {
                   style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.6)' }}
                 />
               </Box>
-              <Typography variant="h6" fontWeight={800}>
+              <Typography variant="h6" component="p" fontWeight={800}>
                 Rewa Bhoomi
               </Typography>
             </Box>
@@ -70,6 +70,8 @@ export default function Footer() {
                   sx={{
                     bgcolor: 'rgba(37, 211, 102, 0.15)',
                     color: '#25D366',
+                    width: 40,
+                    height: 40,
                     '&:hover': { bgcolor: '#25D366', color: 'white' },
                   }}
                   size="small"
@@ -87,6 +89,8 @@ export default function Footer() {
                   sx={{
                     bgcolor: 'rgba(228, 64, 95, 0.15)',
                     color: '#E4405F',
+                    width: 40,
+                    height: 40,
                     '&:hover': { bgcolor: '#E4405F', color: 'white' },
                   }}
                   size="small"
@@ -104,6 +108,8 @@ export default function Footer() {
                   sx={{
                     bgcolor: 'rgba(255, 0, 0, 0.15)',
                     color: '#FF0000',
+                    width: 40,
+                    height: 40,
                     '&:hover': { bgcolor: '#FF0000', color: 'white' },
                   }}
                   size="small"
@@ -121,6 +127,8 @@ export default function Footer() {
                   sx={{
                     bgcolor: 'rgba(29, 161, 242, 0.15)',
                     color: '#1DA1F2',
+                    width: 40,
+                    height: 40,
                     '&:hover': { bgcolor: '#1DA1F2', color: 'white' },
                   }}
                   size="small"
@@ -138,6 +146,8 @@ export default function Footer() {
                   sx={{
                     bgcolor: 'rgba(24, 119, 242, 0.15)',
                     color: '#1877F2',
+                    width: 40,
+                    height: 40,
                     '&:hover': { bgcolor: '#1877F2', color: 'white' },
                   }}
                   size="small"
@@ -155,6 +165,8 @@ export default function Footer() {
                   sx={{
                     bgcolor: 'rgba(10, 102, 194, 0.15)',
                     color: '#0A66C2',
+                    width: 40,
+                    height: 40,
                     '&:hover': { bgcolor: '#0A66C2', color: 'white' },
                   }}
                   size="small"
@@ -167,7 +179,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <Grid item xs={12} sm={6} md={2}>
-            <Typography variant="subtitle1" fontWeight={700} mb={2}>
+            <Typography variant="subtitle1" component="p" fontWeight={700} mb={2}>
               Quick Links
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
@@ -188,7 +200,7 @@ export default function Footer() {
 
           {/* Support */}
           <Grid item xs={12} sm={6} md={2}>
-            <Typography variant="subtitle1" fontWeight={700} mb={2}>
+            <Typography variant="subtitle1" component="p" fontWeight={700} mb={2}>
               Support
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
@@ -206,7 +218,7 @@ export default function Footer() {
 
             {/* Contact Details */}
             <Grid item xs={12} sm={6} md={4}>
-              <Typography variant="subtitle1" fontWeight={700} mb={2}>
+              <Typography variant="subtitle1" component="p" fontWeight={700} mb={2}>
                 Contact Us
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -267,10 +279,10 @@ export default function Footer() {
             gap: 2,
           }}
         >
-          <Typography variant="body2" color="#64748B">
+          <Typography variant="body2" color="#94A3B8">
             © {new Date().getFullYear()} Rewa Bhoomi. All rights reserved.
           </Typography>
-          <Typography variant="body2" color="#64748B">
+          <Typography variant="body2" color="#94A3B8">
             Made with ❤️ for Rewa
           </Typography>
         </Box>

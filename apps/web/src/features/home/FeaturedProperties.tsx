@@ -24,11 +24,11 @@ export default async function FeaturedProperties() {
   const properties = await fetchFeaturedProperties();
 
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#FFFFFF' }}>
+    <Box component="section" sx={{ pt: { xs: 2, sm: 2.5, md: 3.5 }, pb: { xs: 5, md: 8 }, bgcolor: '#FFFFFF' }}>
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 5, flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: { xs: 2.5, sm: 3, md: 4 }, flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="caption" sx={{ color: '#1B4FD8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <Typography variant="caption" sx={{ color: '#1E40AF', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               Top Picks
             </Typography>
             <Typography variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, fontWeight: 800, mt: 0.5 }}>
@@ -46,23 +46,51 @@ export default async function FeaturedProperties() {
         </Box>
 
         {properties.length === 0 ? (
-          <Grid container spacing={3}>
-            {[1, 2, 3].map((i) => (
-              <Grid item xs={12} sm={6} md={4} key={i}>
+          <Grid container spacing={{ xs: 1.2, sm: 2, md: 3 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Grid item xs={6} sm={6} md={4} key={i}>
                 <PropertyCardSkeleton />
               </Grid>
             ))}
           </Grid>
-
         ) : (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 1.2, sm: 2, md: 3 }}>
             {properties.map((property) => (
-              <Grid item xs={12} sm={6} md={4} key={property.id}>
+              <Grid item xs={6} sm={6} md={4} key={property.id}>
                 <PropertyCard property={property} viewMode="grid" />
               </Grid>
             ))}
           </Grid>
         )}
+
+        {/* Explore All Properties Button */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: { xs: 3.5, sm: 4.5, md: 5 } }}>
+          <Button
+            component={Link}
+            href="/properties"
+            variant="contained"
+            endIcon={<ArrowForwardIcon />}
+            sx={{
+              bgcolor: '#1B4FD8',
+              color: '#FFFFFF',
+              px: { xs: 3.5, sm: 4.5 },
+              py: { xs: 1.1, sm: 1.3 },
+              borderRadius: '28px',
+              fontSize: { xs: '0.88rem', sm: '0.96rem' },
+              fontWeight: 700,
+              textTransform: 'none',
+              boxShadow: '0 4px 16px rgba(27, 79, 216, 0.28)',
+              transition: 'all 0.25s ease-in-out',
+              '&:hover': {
+                bgcolor: '#1338A8',
+                boxShadow: '0 6px 22px rgba(27, 79, 216, 0.4)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            Explore All Properties
+          </Button>
+        </Box>
       </Container>
     </Box>
   );
