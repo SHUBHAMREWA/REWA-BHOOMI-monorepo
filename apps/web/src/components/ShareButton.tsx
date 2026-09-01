@@ -28,7 +28,12 @@ export default function ShareButton({ url, title, text, sx }: ShareButtonProps) 
   };
 
   return (
-    <IconButton onClick={handleShare} sx={sx} size="small">
+    <IconButton 
+      onClick={handleShare} 
+      aria-label={`Share ${title || 'content'}`}
+      size="small"
+      sx={{ minWidth: 40, minHeight: 40, ...sx }}
+    >
       <ShareIcon fontSize="small" />
     </IconButton>
   );

@@ -100,8 +100,17 @@ export default function PropertiesSearchPage() {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSearchSticky(window.scrollY > 60);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Parse initial state from URL params
   const rawCat = searchParams.get('categoryType') || searchParams.get('category') || '';
@@ -456,16 +465,22 @@ export default function PropertiesSearchPage() {
         {/* ─── SEARCH & QUICK FILTERS BAR (Pill styled like nav input) ─── */}
         <Box
           sx={{
+            position: 'sticky',
+            top: { xs: 60, sm: 70, md: 80 },
+            zIndex: 100,
             p: { xs: 0.6, sm: 1.2 },
-            bgcolor: '#F8FAFC',
+            bgcolor: isSearchSticky ? 'rgba(255, 255, 255, 0.97)' : '#F8FAFC',
+            backdropFilter: isSearchSticky ? 'blur(10px)' : 'none',
             borderRadius: { xs: 2, sm: 3 },
-            border: '1px solid #E2E8F0',
+            border: '1px solid',
+            borderColor: isSearchSticky ? '#CBD5E1' : '#E2E8F0',
             mb: { xs: 0.6, sm: 1.5 },
             display: 'flex',
             gap: { xs: 0.6, sm: 1 },
             alignItems: 'center',
             flexWrap: { xs: 'nowrap', sm: 'wrap' },
-            boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+            boxShadow: isSearchSticky ? '0 8px 24px rgba(0,0,0,0.08)' : '0 2px 10px rgba(0,0,0,0.03)',
+            transition: 'background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
           }}
         >
           {/* Pill-shaped Search Input Form - Styled like Nav Input */}
@@ -888,9 +903,9 @@ export default function PropertiesSearchPage() {
               ))}
             </Box>
           ) : (
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 1.2, sm: 2, md: 3 }}>
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
+                <Grid item xs={6} sm={6} md={4} key={i}>
                   <PropertyGridCardSkeleton />
                 </Grid>
               ))}
@@ -914,9 +929,9 @@ export default function PropertiesSearchPage() {
                 ))}
               </Box>
             ) : (
-              <Grid container spacing={3}>
+              <Grid container spacing={{ xs: 1.2, sm: 2, md: 3 }}>
                 {properties.map(property => (
-                  <Grid item xs={12} sm={6} md={4} key={property.id}>
+                  <Grid item xs={6} sm={6} md={4} key={property.id}>
                     <PropertyCard property={property} viewMode="grid" />
                   </Grid>
                 ))}

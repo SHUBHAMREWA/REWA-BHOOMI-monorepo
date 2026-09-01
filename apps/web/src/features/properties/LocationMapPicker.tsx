@@ -144,12 +144,12 @@ export default function LocationMapPicker({
   };
 
   return (
-    <Box sx={{ width: '100%', mt: 2 }}>
-      <Typography variant="subtitle2" fontWeight={600} mb={1}>
+    <Box sx={{ width: '100%', mt: { xs: 1.2, sm: 2 } }}>
+      <Typography variant="subtitle2" fontWeight={600} mb={0.8} sx={{ fontSize: { xs: '0.82rem', sm: '0.9rem' } }}>
         Pinpoint Property Location on Map
       </Typography>
 
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, mb: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 0.8, mb: 1.5 }}>
         <Autocomplete
           freeSolo
           fullWidth
@@ -179,17 +179,18 @@ export default function LocationMapPicker({
           renderInput={(params) => (
             <TextField
               {...params}
+              size="small"
               placeholder="Search landmark, city (e.g., Lucknow)..."
               InputProps={{
                 ...params.InputProps,
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" sx={{ color: '#94A3B8' }} />
+                    <SearchIcon fontSize="small" sx={{ color: '#94A3B8', fontSize: { xs: '1rem', sm: '1.25rem' } }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
                   <>
-                    {loadingSuggestions ? <CircularProgress color="inherit" size={20} /> : null}
+                    {loadingSuggestions ? <CircularProgress color="inherit" size={16} /> : null}
                     {params.InputProps.endAdornment}
                   </>
                 ),
@@ -198,16 +199,16 @@ export default function LocationMapPicker({
             />
           )}
         />
-        <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-          <Button variant="contained" size="small" onClick={handleSearchLocation} sx={{ px: { xs: 2, sm: 3 }, flex: { xs: 1, sm: 'auto' }, textTransform: 'none' }}>
+        <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0 }}>
+          <Button variant="contained" size="small" onClick={handleSearchLocation} sx={{ px: { xs: 1.5, sm: 3 }, height: { xs: 32, sm: 36 }, fontSize: { xs: '0.78rem', sm: '0.85rem' }, flex: { xs: 1, sm: 'auto' }, textTransform: 'none' }}>
             Search
           </Button>
           <Button
             variant="outlined"
             size="small"
-            startIcon={<MyLocationIcon />}
+            startIcon={<MyLocationIcon sx={{ fontSize: { xs: '0.95rem', sm: '1.15rem' } }} />}
             onClick={handleGetCurrentLocation}
-            sx={{ textTransform: 'none', flex: { xs: 1, sm: 'auto' }, whiteSpace: 'nowrap' }}
+            sx={{ textTransform: 'none', height: { xs: 32, sm: 36 }, fontSize: { xs: '0.78rem', sm: '0.85rem' }, flex: { xs: 1, sm: 'auto' }, whiteSpace: 'nowrap' }}
           >
             Use Current GPS
           </Button>
@@ -215,7 +216,7 @@ export default function LocationMapPicker({
       </Box>
 
       {/* Embedded OpenStreetMap Leaflet Map */}
-      <Paper elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: 2, overflow: 'hidden', height: 320, position: 'relative' }}>
+      <Paper elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: 2, overflow: 'hidden', height: { xs: 220, sm: 320 }, position: 'relative' }}>
         {isClient ? (
           <InteractiveMap lat={lat} lng={lng} onChange={handleMapChange} />
         ) : (

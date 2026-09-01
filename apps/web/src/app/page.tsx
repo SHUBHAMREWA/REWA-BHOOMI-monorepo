@@ -5,7 +5,6 @@ import PosterBannerSection from '@/features/home/PosterBannerSection';
 import FeaturedProperties from '@/features/home/FeaturedProperties';
 import PopularProjects from '@/features/home/PopularProjects';
 import WhyChooseUs from '@/features/home/WhyChooseUs';
-import StatsBar from '@/features/home/StatsBar';
 import {
   FeaturedPropertiesSkeleton,
   PopularProjectsSkeleton,
@@ -25,7 +24,6 @@ export default function HomePage() {
     <main>
       <HeroSection />
       <PosterBannerSection />
-      <StatsBar />
       <Suspense fallback={<FeaturedPropertiesSkeleton />}>
         <FeaturedProperties />
       </Suspense>

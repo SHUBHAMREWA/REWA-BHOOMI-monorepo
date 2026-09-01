@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import { UpdateProfileSchema, type UpdateProfileInput } from '@rewa-bhoomi/validation';
 import { useAuth } from '../auth/AuthContext';
 import { apiPatch, apiClient } from '@/lib/api';
-import PropertyCard from '@/features/properties/PropertyCard';
+import PropertyCard, { formatPrice } from '@/features/properties/PropertyCard';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 
 interface TabPanelProps {
@@ -180,6 +180,19 @@ export default function ProfilePage() {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleShareProperty = (e: React.MouseEvent, propertySlug: string, propertyTitle: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/property/${propertySlug}` : '';
+    if (navigator.share) {
+      navigator.share({ title: propertyTitle, url: shareUrl }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Property link copied to clipboard!');
+    }
   };
 
   const handleEditClick = () => {
@@ -691,15 +704,25 @@ export default function ProfilePage() {
                       </Button>
                     </Box>
                   ) : (
-                    <Grid container spacing={1.5}>
+                    <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                       {myProperties.map((property: any) => (
-                        <Grid item xs={12} sm={6} key={property.id}>
+                        <Grid item xs={6} sm={6} md={4} key={property.id}>
                           <Paper 
                             elevation={0} 
-                            sx={{ borderRadius: 2.5, border: '1px solid #E2E8F0', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', '&:hover': { borderColor: '#1B4FD8', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}
+                            sx={{
+                              borderRadius: { xs: 2, sm: 2.5 },
+                              border: '1px solid #E2E8F0',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              height: '100%',
+                              transition: 'all 0.2s',
+                              '&:hover': { borderColor: '#1B4FD8', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+                            }}
                             onClick={() => router.push(`/property/${property.slug}`)}
                           >
-                            <Box sx={{ height: 135, bgcolor: '#F1F5F9', position: 'relative' }}>
+                            <Box sx={{ height: { xs: 105, sm: 135, md: 155 }, bgcolor: '#F1F5F9', position: 'relative' }}>
                               {property.thumbnail ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={property.thumbnail} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -708,23 +731,92 @@ export default function ProfilePage() {
                                   <MapsHomeWork sx={{ fontSize: 36, color: '#94A3B8' }} />
                                 </Box>
                               )}
-                              <Box sx={{ position: 'absolute', top: 8, right: 8, bgcolor: property.status === 'PUBLISHED' ? '#22C55E' : property.status === 'REJECTED' ? '#EF4444' : '#EAB308', color: 'white', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.68rem', fontWeight: 700 }}>
+
+                              {/* Share Button on Image */}
+                              <IconButton
+                                onClick={(e) => handleShareProperty(e, property.slug, property.title)}
+                                size="small"
+                                aria-label="Share property"
+                                sx={{
+                                  position: 'absolute',
+                                  top: { xs: 5, sm: 8 },
+                                  left: { xs: 5, sm: 8 },
+                                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                  backdropFilter: 'blur(4px)',
+                                  p: { xs: 0.35, sm: 0.5 },
+                                  color: '#64748B',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                                  zIndex: 2,
+                                  '&:hover': { bgcolor: '#FFFFFF', color: '#1B4FD8', transform: 'scale(1.08)' },
+                                }}
+                              >
+                                <Share sx={{ fontSize: { xs: 13, sm: 16 } }} />
+                              </IconButton>
+
+                              {/* Status Badge */}
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: { xs: 5, sm: 8 },
+                                  right: { xs: 5, sm: 8 },
+                                  bgcolor: property.status === 'PUBLISHED' ? '#22C55E' : property.status === 'REJECTED' ? '#EF4444' : '#EAB308',
+                                  color: 'white',
+                                  px: { xs: 0.6, sm: 1 },
+                                  py: { xs: 0.15, sm: 0.3 },
+                                  borderRadius: 1,
+                                  fontSize: { xs: '0.6rem', sm: '0.68rem' },
+                                  fontWeight: 700,
+                                  zIndex: 2,
+                                }}
+                              >
                                 {property.status}
                               </Box>
                             </Box>
-                            <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+
+                            <Box sx={{ p: { xs: 1, sm: 1.5 }, display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
                               <Box sx={{ overflow: 'hidden', flex: 1 }}>
-                                <Typography variant="subtitle2" fontWeight={750} noWrap sx={{ fontSize: '0.88rem' }}>{property.title}</Typography>
-                                <Typography variant="caption" color="text.secondary" noWrap mb={0.5} sx={{ display: 'block' }}>{property.city}, {property.state}</Typography>
-                                <Typography variant="subtitle1" color="#1B4FD8" fontWeight={800} sx={{ fontSize: '0.95rem' }}>₹{property.price.toLocaleString()}</Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.2 }}>
+                                  <Typography
+                                    variant="subtitle2"
+                                    fontWeight={750}
+                                    sx={{
+                                      fontSize: { xs: '0.78rem', sm: '0.88rem' },
+                                      lineHeight: 1.25,
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 1,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden',
+                                      flex: 1,
+                                      mr: 0.5,
+                                    }}
+                                  >
+                                    {property.title}
+                                  </Typography>
+                                  <IconButton
+                                    onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, property.id, property.slug, property.status); }}
+                                    size="small"
+                                    sx={{ color: '#64748B', p: 0.2, mt: -0.3, mr: -0.4 }}
+                                    aria-label="More options"
+                                  >
+                                    <MoreVert sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                                  </IconButton>
+                                </Box>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  noWrap
+                                  sx={{ display: 'block', fontSize: { xs: '0.66rem', sm: '0.75rem' }, mb: { xs: 0.3, sm: 0.6 } }}
+                                >
+                                  {property.city}, {property.state}
+                                </Typography>
                               </Box>
-                              <IconButton
-                                onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, property.id, property.slug, property.status); }}
-                                size="small"
-                                sx={{ ml: 0.5, color: 'text.secondary', p: 0.5 }}
+                              <Typography
+                                color="#1B4FD8"
+                                fontWeight={800}
+                                sx={{ fontSize: { xs: '0.88rem', sm: '0.98rem' }, lineHeight: 1.1 }}
                               >
-                                <MoreVert fontSize="small" />
-                              </IconButton>
+                                {formatPrice(property.price)}
+                              </Typography>
                             </Box>
                           </Paper>
                         </Grid>
@@ -760,11 +852,13 @@ export default function ProfilePage() {
                       </Button>
                     </Box>
                   ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Grid container spacing={{ xs: 1, sm: 1.5 }}>
                       {favoriteProperties.map((property: any) => (
-                        <PropertyCard key={property.id} property={property} viewMode="list" showStatusBadge={true} />
+                        <Grid item xs={6} sm={6} md={4} key={property.id}>
+                          <PropertyCard property={property} viewMode="grid" showStatusBadge={true} />
+                        </Grid>
                       ))}
-                    </Box>
+                    </Grid>
                   )}
                 </Box>
               </CustomTabPanel>
@@ -777,6 +871,14 @@ export default function ProfilePage() {
                 transformOrigin={{ horizontal: 'left', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
               >
+                <MenuItem onClick={(e) => {
+                  if (selectedPropertySlug) {
+                    handleShareProperty(e, selectedPropertySlug, 'Check out this property on Rewa Bhoomi');
+                  }
+                  handleMenuClose();
+                }}>
+                  <Share fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> Share Listing
+                </MenuItem>
                 <MenuItem onClick={handleToggleSoldStatus}>
                   <MapsHomeWork fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> {selectedPropertyStatus === 'SOLD' ? 'Mark as Available' : 'Mark as Sold'}
                 </MenuItem>
