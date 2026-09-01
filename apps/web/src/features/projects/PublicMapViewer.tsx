@@ -6,6 +6,11 @@ import { Box, Typography, Chip, Paper, IconButton, TextField, Button, Drawer, Di
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import jsPDF from 'jspdf';
+import toast from 'react-hot-toast';
 import { PLOT_COLORS, MAP_OBJECT_COLORS } from '../admin/ProjectMapEditor/types';
 import { polygonToKonvaPoints, polygonCenter, normalizeGeometry } from '../admin/ProjectMapEditor/geometry';
 
@@ -35,6 +40,42 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
   const [showLayers, setShowLayers] = useState({ plots: true, mapObjects: true });
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [stageScale, setStageScale] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        setCanvasSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+    }, 60);
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   useEffect(() => {
     const resize = () => {
@@ -46,6 +87,258 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
+
+  const handleDownloadPdf = async () => {
+    const stage = stageRef.current;
+    if (!stage) {
+      toast.error('Map is not ready yet.');
+      return;
+    }
+
+    try {
+      setIsExportingPdf(true);
+      toast.loading('Generating high-quality Map PDF...', { id: 'map-pdf' });
+
+      // 1. Save current view configuration
+      const prevScale = { x: stage.scaleX(), y: stage.scaleY() };
+      const prevPos = { x: stage.x(), y: stage.y() };
+      const prevSize = { width: stage.width(), height: stage.height() };
+
+      // 2. Set stage to board coordinates (1600 x 1000) for clean full layout capture
+      stage.width(1600);
+      stage.height(1000);
+      stage.scale({ x: 1, y: 1 });
+      stage.position({ x: 0, y: 0 });
+      stage.draw();
+
+      // 3. Export crisp 2x resolution image (3200 x 2000 px)
+      const mapImgData = stage.toDataURL({
+        x: 0,
+        y: 0,
+        width: 1600,
+        height: 1000,
+        pixelRatio: 2,
+        mimeType: 'image/jpeg',
+        quality: 0.95,
+      });
+
+      // 4. Restore original viewport view
+      stage.width(prevSize.width);
+      stage.height(prevSize.height);
+      stage.scale(prevScale);
+      stage.position(prevPos);
+      stage.draw();
+
+      // 5. Build PDF Document (A4 Landscape: 297mm x 210mm)
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = 297;
+      const pageHeight = 210;
+      const sidebarWidth = 84;
+
+      // ─── LEFT SIDEBAR: Brand & Project Details ───
+      pdf.setFillColor(15, 23, 42); // #0F172A Dark Navy
+      pdf.rect(0, 0, sidebarWidth, pageHeight, 'F');
+
+      // Load & Render Brand Logo
+      const logoDataUrl = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve('');
+          }
+        };
+        img.onerror = () => resolve('');
+        img.src = '/brand-logo.png';
+      });
+
+      if (logoDataUrl) {
+        // Embed official round brand logo
+        pdf.addImage(logoDataUrl, 'PNG', 10, 9, 15, 15);
+
+        pdf.setTextColor(56, 189, 248); // #38BDF8 Cyan
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.text('REWA BHOOMI', 28, 17);
+
+        pdf.setTextColor(148, 163, 184); // #94A3B8
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(6.8);
+        pdf.text('REAL ESTATE & PLOTTED DEVS', 28, 22);
+      } else {
+        pdf.setTextColor(56, 189, 248); // #38BDF8 Cyan
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(18);
+        pdf.text('REWA BHOOMI', 10, 18);
+
+        pdf.setTextColor(148, 163, 184); // #94A3B8
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7.5);
+        pdf.text('REAL ESTATE & PLOTTED DEVELOPMENTS', 10, 23);
+      }
+
+      // Divider Line
+      pdf.setDrawColor(51, 65, 85); // #334155
+      pdf.setLineWidth(0.4);
+      pdf.line(10, 27, sidebarWidth - 10, 27);
+
+      // Section Tag
+      pdf.setTextColor(56, 189, 248);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7.5);
+      pdf.text('PROJECT OVERVIEW', 10, 34);
+
+      // Project Name
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      const splitTitle = pdf.splitTextToSize(project?.name || 'Project Layout', sidebarWidth - 20);
+      pdf.text(splitTitle, 10, 41);
+
+      let currentY = 41 + splitTitle.length * 5.5;
+
+      // Status Badge
+      const statusText = project?.status || 'ACTIVE';
+      if (statusText === 'ONGOING') pdf.setFillColor(6, 95, 70);
+      else if (statusText === 'UPCOMING') pdf.setFillColor(146, 64, 14);
+      else pdf.setFillColor(30, 58, 138);
+      pdf.roundedRect(10, currentY, 30, 5.5, 1.2, 1.2, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      pdf.text(statusText, 12.5, currentY + 3.8);
+
+      currentY += 10;
+
+      // Key details
+      const details = [
+        { label: 'Developer', value: project?.developer || 'N/A' },
+        { label: 'Location', value: project?.address || `${project?.city || 'Rewa'}, ${project?.state || 'Madhya Pradesh'}` },
+        { label: 'Total Area', value: project?.total_area ? `${project.total_area} Sq Ft` : 'N/A' },
+        { label: 'Total Plots', value: `${project?.total_plots || plots.length}` },
+      ];
+
+      details.forEach((item) => {
+        pdf.setTextColor(148, 163, 184);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.text(item.label, 10, currentY);
+
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8.5);
+        const splitVal = pdf.splitTextToSize(item.value, sidebarWidth - 20);
+        pdf.text(splitVal, 10, currentY + 4);
+        currentY += 6 + splitVal.length * 3.5;
+      });
+
+      // Plots Breakdown
+      const availableCount = plots.filter((p: any) => p.status === 'AVAILABLE').length;
+      const bookedCount = plots.filter((p: any) => p.status === 'BOOKED').length;
+      const soldCount = plots.filter((p: any) => p.status === 'SOLD').length;
+
+      pdf.setFillColor(30, 41, 59);
+      pdf.roundedRect(10, currentY + 1, sidebarWidth - 20, 18, 1.5, 1.5, 'F');
+
+      pdf.setTextColor(56, 189, 248);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7.5);
+      pdf.text('PLOT INVENTORY', 14, currentY + 7);
+
+      pdf.setTextColor(203, 213, 225);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.text(`Available: ${availableCount}  |  Booked: ${bookedCount}  |  Sold: ${soldCount}`, 14, currentY + 13.5);
+
+      // Contact Box at bottom
+      pdf.setFillColor(27, 79, 216); // #1B4FD8
+      pdf.roundedRect(10, 168, sidebarWidth - 20, 26, 2, 2, 'F');
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.text('For Booking & Enquiries:', 14, 174);
+
+      pdf.setFontSize(10);
+      pdf.text('+91 8889999120', 14, 180);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.text('Visit: rewabhoomi.com', 14, 186);
+
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFontSize(6.5);
+      pdf.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 10, 202);
+
+      // ─── RIGHT MAIN CANVAS: Map Layout Card ───
+      const mapAreaX = sidebarWidth + 5;
+      const mapAreaY = 8;
+      const mapAreaWidth = pageWidth - mapAreaX - 6;
+      const mapAreaHeight = 194;
+
+      // Card Background
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.4);
+      pdf.roundedRect(mapAreaX, mapAreaY, mapAreaWidth, mapAreaHeight, 2.5, 2.5, 'FD');
+
+      // Card Header
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text(`${project?.name || 'Project'} - Master Layout Plan`, mapAreaX + 6, mapAreaY + 8);
+
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.text('High-Definition Architectural Master Plan', mapAreaX + 6, mapAreaY + 12.5);
+
+      // Map Aspect Ratio: 1600 / 1000 = 1.6
+      const maxImgW = mapAreaWidth - 8;
+      const maxImgH = mapAreaHeight - 21;
+      let imgW = maxImgW;
+      let imgH = imgW / 1.6;
+
+      if (imgH > maxImgH) {
+        imgH = maxImgH;
+        imgW = imgH * 1.6;
+      }
+
+      const imgX = mapAreaX + (mapAreaWidth - imgW) / 2;
+      const imgY = mapAreaY + 15 + (maxImgH - imgH) / 2;
+
+      pdf.addImage(mapImgData, 'JPEG', imgX, imgY, imgW, imgH);
+
+      // Footer Disclaimer
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(6);
+      pdf.text('Disclaimer: This layout plan is for illustrative and informational purposes only. Plot dimensions and availability subject to change.', mapAreaX + 6, mapAreaY + mapAreaHeight - 2.5);
+
+      // Save PDF file
+      const safeName = (project?.slug || project?.name || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      pdf.save(`${safeName}-layout-map.pdf`);
+
+      toast.success('Map PDF downloaded successfully!', { id: 'map-pdf' });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      toast.error('Failed to generate PDF. Please try again.', { id: 'map-pdf' });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   // Center map on public stage (0.4 scale on mobile, 1.0 scale on desktop)
   const centerMap = useCallback(() => {
@@ -190,43 +483,54 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     stage.batchDraw();
   };
 
-  // Smooth Multi-Touch Pinch Zoom Handler
-  const getTouchDistance = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
-    return Math.hypot(p2.x - p1.x, p2.y - p1.y);
-  };
-
-  const getTouchCenter = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
-    return {
-      x: (p1.x + p2.x) / 2,
-      y: (p1.y + p2.y) / 2,
-    };
-  };
+  // Ultra-Smooth Google-Maps Style Multi-Touch Pinch Zoom Handler
+  const zoomTextRef = useRef<HTMLSpanElement>(null);
 
   const touchState = useRef<{
-    lastDist: number;
-    lastCenter: { x: number; y: number } | null;
-    rafId: number | null;
-  }>({ lastDist: 0, lastCenter: null, rafId: null });
+    startDist: number;
+    startScale: number;
+    startPointTo: { x: number; y: number };
+    isPinching: boolean;
+  }>({
+    startDist: 0,
+    startScale: 1,
+    startPointTo: { x: 0, y: 0 },
+    isPinching: false,
+  });
 
   const handleTouchStart = (e: any) => {
     const evt = e.evt as TouchEvent;
     const stage = stageRef.current;
+    if (!stage) return;
+
     if (evt.touches.length >= 2) {
-      if (stage) {
-        if (stage.isDragging()) {
-          stage.stopDrag();
-        }
-        stage.draggable(false);
+      if (stage.isDragging()) {
+        stage.stopDrag();
       }
+      stage.draggable(false);
+
       const container = containerRef.current;
       const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
       const touch1 = evt.touches[0];
       const touch2 = evt.touches[1];
       const p1 = { x: touch1.clientX - rect.left, y: touch1.clientY - rect.top };
       const p2 = { x: touch2.clientX - rect.left, y: touch2.clientY - rect.top };
-      touchState.current.lastDist = getTouchDistance(p1, p2);
-      touchState.current.lastCenter = getTouchCenter(p1, p2);
-    } else if (stage) {
+
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      const currentScale = stage.scaleX();
+
+      touchState.current = {
+        startDist: Math.max(1, dist),
+        startScale: currentScale,
+        startPointTo: {
+          x: (center.x - stage.x()) / currentScale,
+          y: (center.y - stage.y()) / currentScale,
+        },
+        isPinching: true,
+      };
+    } else {
+      touchState.current.isPinching = false;
       stage.draggable(true);
     }
   };
@@ -253,69 +557,57 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
       const p1 = { x: touch1.clientX - rect.left, y: touch1.clientY - rect.top };
       const p2 = { x: touch2.clientX - rect.left, y: touch2.clientY - rect.top };
 
-      const dist = getTouchDistance(p1, p2);
-      const newCenter = getTouchCenter(p1, p2);
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
 
-      const lastDist = touchState.current.lastDist;
-      const lastCenter = touchState.current.lastCenter;
+      const { startDist, startScale, startPointTo, isPinching } = touchState.current;
 
-      if (!lastDist || !lastCenter || lastDist <= 0) {
-        touchState.current.lastDist = dist;
-        touchState.current.lastCenter = newCenter;
+      if (!isPinching || startDist <= 0) {
+        const currentScale = stage.scaleX();
+        touchState.current = {
+          startDist: Math.max(1, dist),
+          startScale: currentScale,
+          startPointTo: {
+            x: (center.x - stage.x()) / currentScale,
+            y: (center.y - stage.y()) / currentScale,
+          },
+          isPinching: true,
+        };
         return;
       }
 
-      const distRatio = dist / lastDist;
-      if (distRatio < 0.2 || distRatio > 5.0) {
-        touchState.current.lastDist = dist;
-        touchState.current.lastCenter = newCenter;
-        return;
-      }
+      // Smooth reference-anchored zoom (tracks fingers 1:1 without compounding drift)
+      const scaleRatio = dist / startDist;
+      const newScale = Math.max(0.15, Math.min(6, startScale * scaleRatio));
 
-      const oldScale = stage.scaleX();
-      const newScale = Math.max(0.2, Math.min(5, oldScale * distRatio));
-
-      // Local coordinates of center point before zoom
-      const pointTo = {
-        x: (newCenter.x - stage.x()) / oldScale,
-        y: (newCenter.y - stage.y()) / oldScale,
+      // Anchor midpoint between fingers
+      const newPos = {
+        x: center.x - startPointTo.x * newScale,
+        y: center.y - startPointTo.y * newScale,
       };
 
-      // Translation delta for simultaneous pan
-      const dx = newCenter.x - lastCenter.x;
-      const dy = newCenter.y - lastCenter.y;
-
       stage.scale({ x: newScale, y: newScale });
-      stage.position({
-        x: newCenter.x - pointTo.x * newScale + dx,
-        y: newCenter.y - pointTo.y * newScale + dy,
-      });
+      stage.position(newPos);
       stage.batchDraw();
 
-      touchState.current.lastDist = dist;
-      touchState.current.lastCenter = newCenter;
-
-      // Throttle React state update so UI chip doesn't lag the canvas
-      if (!touchState.current.rafId) {
-        touchState.current.rafId = requestAnimationFrame(() => {
-          setStageScale(newScale);
-          touchState.current.rafId = null;
-        });
+      // Zero-overhead direct DOM update for percentage badge
+      if (zoomTextRef.current) {
+        zoomTextRef.current.textContent = `${Math.round(newScale * 100)}%`;
       }
     }
   };
 
   const handleTouchEnd = () => {
-    touchState.current.lastDist = 0;
-    touchState.current.lastCenter = null;
-    if (touchState.current.rafId) {
-      cancelAnimationFrame(touchState.current.rafId);
-      touchState.current.rafId = null;
-    }
+    touchState.current.isPinching = false;
+    touchState.current.startDist = 0;
     const stage = stageRef.current;
     if (stage) {
       stage.draggable(true);
-      setStageScale(stage.scaleX());
+      const finalScale = stage.scaleX();
+      setStageScale(finalScale);
+      if (zoomTextRef.current) {
+        zoomTextRef.current.textContent = `${Math.round(finalScale * 100)}%`;
+      }
     }
   };
 
@@ -344,10 +636,10 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
   return (
     <Box sx={{ minHeight: { xs: 'auto', md: 620 }, width: '100%', display: 'flex', flexDirection: 'column' }}>
       
-      {/* ─── TOP FILTER BAR ─── */}
-      <Box sx={{ p: 1.5, bgcolor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+      {/* ─── TOP FILTER BAR (Compact on mobile) ─── */}
+      <Box sx={{ p: { xs: 1, sm: 1.5 }, bgcolor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: { xs: 0.8, sm: 1.5 }, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
         {/* Left: Filter Status Chips */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 0.8 }, flexWrap: 'wrap' }}>
           {statuses.map((s) => {
             const isSelected = filterStatus.includes(s.key);
             const count = plots.filter((p: any) => p.status === s.key).length;
@@ -363,9 +655,10 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                   border: isSelected ? '1.5px solid #1B4FD8' : '1px solid #CBD5E1',
                   cursor: 'pointer',
                   fontWeight: 700,
-                  fontSize: '0.75rem',
-                  height: 28,
-                  transition: 'all 0.2s ease',
+                  fontSize: { xs: '0.67rem', sm: '0.74rem' },
+                  height: { xs: 23, sm: 27 },
+                  px: { xs: 0.2, sm: 0.5 },
+                  transition: 'all 0.15s ease',
                   '&:hover': { bgcolor: isSelected ? '#1541B5' : '#E2E8F0' },
                 }}
               />
@@ -373,22 +666,24 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
           })}
         </Box>
 
-        {/* Right: Search Plot # Input */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', flex: { xs: 1, sm: 'none' } }}>
+        {/* Right: Search Plot # Input and Action Buttons */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
           <TextField
             size="small"
             placeholder="Plot number likhkar search karein..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             InputProps={{
-              startAdornment: <SearchIcon fontSize="small" sx={{ mr: 0.8, color: '#1B4FD8' }} />,
+              startAdornment: <SearchIcon sx={{ mr: 0.6, color: '#1B4FD8', fontSize: { xs: 17, sm: 20 } }} />,
             }}
             sx={{
-              width: { xs: '100%', sm: 300, md: 340 },
+              flex: { xs: 1, sm: 'none' },
+              width: { xs: 'auto', sm: 220, md: 280 },
+              minWidth: { xs: '150px', sm: 'auto' },
               '& .MuiOutlinedInput-root': {
-                borderRadius: 2.5,
-                height: 38,
-                fontSize: '0.88rem',
+                borderRadius: 2,
+                height: { xs: 32, sm: 36 },
+                fontSize: { xs: '0.78rem', sm: '0.86rem' },
                 fontWeight: 500,
                 bgcolor: '#F8FAFC',
                 '&:hover': { bgcolor: '#FFFFFF' },
@@ -396,24 +691,88 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               },
             }}
           />
+
+          {/* Quick Action Buttons in Top Bar */}
+          <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<FullscreenIcon sx={{ fontSize: 16 }} />}
+              onClick={toggleFullscreen}
+              sx={{
+                bgcolor: isFullscreen ? '#EF4444' : '#0F172A',
+                color: '#FFFFFF',
+                height: { xs: 32, sm: 36 },
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                fontWeight: 700,
+                borderRadius: 2,
+                px: { xs: 1, sm: 1.3 },
+                textTransform: 'none',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                '&:hover': { bgcolor: isFullscreen ? '#DC2626' : '#1E293B' },
+              }}
+            >
+              {isFullscreen ? 'Exit' : 'Full Screen'}
+            </Button>
+
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<PictureAsPdfIcon sx={{ fontSize: 15 }} />}
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              sx={{
+                bgcolor: '#1B4FD8',
+                color: '#FFFFFF',
+                height: { xs: 32, sm: 36 },
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                fontWeight: 700,
+                borderRadius: 2,
+                px: { xs: 1, sm: 1.3 },
+                textTransform: 'none',
+                boxShadow: '0 2px 8px rgba(27,79,216,0.25)',
+                '&:hover': { bgcolor: '#1541B5' },
+              }}
+            >
+              {isExportingPdf ? 'Exporting...' : 'PDF'}
+            </Button>
+          </Box>
         </Box>
       </Box>
 
       {/* ─── MAIN CONTENT AREA: MAP (LEFT) & ALL DETAILS (RIGHT) ─── */}
       <Box sx={{ flex: 1, width: '100%', display: 'flex', flexDirection: { xs: 'column', md: 'row' }, position: 'relative' }}>
         
-        {/* ─── LEFT: MAP CANVAS AREA (Strict height lock on mobile so scroll up never expands it) ─── */}
-        <Box sx={{ width: { xs: '100%', md: 'auto' }, flex: { md: 1 }, height: { xs: 320, sm: 360, md: 580 }, maxHeight: { xs: 320, sm: 360, md: 580 }, flexShrink: 0, position: 'relative', overflow: 'hidden', p: { xs: 1, md: 1.5 }, bgcolor: '#F8FAFC' }}>
+        {/* ─── LEFT: MAP CANVAS AREA (+22% height on mobile: 390px vs 320px | Fullscreen capable) ─── */}
+        <Box sx={{
+          width: { xs: '100%', md: 'auto' },
+          flex: { md: 1 },
+          height: { xs: 390, sm: 440, md: 580 },
+          maxHeight: { xs: 390, sm: 440, md: 580 },
+          flexShrink: 0,
+          position: 'relative',
+          overflow: 'hidden',
+          p: { xs: 0.8, md: 1.5 },
+          bgcolor: '#F8FAFC',
+          ...(isFullscreen && {
+            position: 'static',
+          }),
+        }}>
           <Box
             sx={{
-              width: '100%',
-              height: '100%',
-              maxHeight: '100%',
-              position: 'relative',
+              position: isFullscreen ? 'fixed' : 'relative',
+              top: isFullscreen ? 0 : 'auto',
+              left: isFullscreen ? 0 : 'auto',
+              right: isFullscreen ? 0 : 'auto',
+              bottom: isFullscreen ? 0 : 'auto',
+              width: isFullscreen ? '100vw' : '100%',
+              height: isFullscreen ? '100vh' : '100%',
+              maxHeight: isFullscreen ? '100vh' : '100%',
+              zIndex: isFullscreen ? 99999 : 1,
               overflow: 'hidden',
-              borderRadius: 2.5,
-              border: '2.5px solid #1B4FD8',
-              boxShadow: '0 4px 20px rgba(27, 79, 216, 0.12), inset 0 0 10px rgba(15, 23, 42, 0.03)',
+              borderRadius: isFullscreen ? 0 : 2.5,
+              border: isFullscreen ? 'none' : '2.5px solid #1B4FD8',
+              boxShadow: isFullscreen ? 'none' : '0 4px 20px rgba(27, 79, 216, 0.12), inset 0 0 10px rgba(15, 23, 42, 0.03)',
               bgcolor: '#F7F3EB',
               touchAction: 'none',
               userSelect: 'none',
@@ -421,6 +780,56 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
             }}
             ref={containerRef}
           >
+            {/* Top Bar inside Fullscreen */}
+            {isFullscreen && (
+              <Box sx={{
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                right: 12,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                zIndex: 10001,
+                pointerEvents: 'none',
+              }}>
+                <Box sx={{
+                  bgcolor: 'rgba(15, 23, 42, 0.88)',
+                  backdropFilter: 'blur(8px)',
+                  color: '#FFFFFF',
+                  px: 2,
+                  py: 0.8,
+                  borderRadius: 2,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                  pointerEvents: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}>
+                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#38BDF8', fontSize: '0.88rem' }}>
+                    {project?.name || 'Project Layout'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.72rem' }}>
+                    (Full Screen)
+                  </Typography>
+                </Box>
+
+                <IconButton
+                  onClick={toggleFullscreen}
+                  sx={{
+                    bgcolor: 'rgba(239, 68, 68, 0.9)',
+                    color: '#FFFFFF',
+                    pointerEvents: 'auto',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                    '&:hover': { bgcolor: '#DC2626' }
+                  }}
+                  size="small"
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
+
             {canvasSize.width > 0 && (
               <Stage
                 ref={stageRef}
@@ -434,13 +843,10 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                 onClick={(e) => { if (e.target.name() === 'bg') setSelectedPlot(null); }}
               >
                 <Layer>
-                  {/* Soft Faded Brown Outer Backdrop */}
-                  <Rect x={-10000} y={-10000} width={20000} height={20000} fill="#F7F3EB" name="bg" />
-
-                  {/* 📐 Project Map Board */}
+                  {/* 📐 Project Map Board (1600x1000) */}
                   <Rect x={0} y={0} width={1600} height={1000} fill="#EFE8DC" stroke="#CBD5E1" strokeWidth={2} name="bg" />
 
-                  {/* Map Objects / Road / Amenities */}
+                  {/* Map Objects / Road / Amenities (Hit detection disabled for 60fps performance) */}
                   {showLayers.mapObjects && mapObjects.map((obj: any, i: number) => {
                     const geom = obj.geometry;
                     if (!geom?.coordinates?.[0]) return null;
@@ -448,7 +854,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                     const fillColor = obj.display_style?.fillColor ?? MAP_OBJECT_COLORS[obj.type as keyof typeof MAP_OBJECT_COLORS] ?? '#94a3b8';
                     const center = polygonCenter(geom.coordinates[0]);
                     return (
-                      <Group key={obj.id || i}>
+                      <Group key={obj.id || i} listening={false}>
                         <Line points={pts} closed fill={fillColor} opacity={0.35} stroke="#fff" strokeWidth={1.5} />
                         {obj.name && (
                           <Text x={center[0] * 1600 - 40} y={center[1] * 1000 - 7} width={80} text={obj.name} fontSize={11} fill="#334155" align="center" listening={false} />
@@ -495,23 +901,87 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               </Stage>
             )}
 
-            {/* Zoom hints & percentage */}
-            <Box sx={{ position: 'absolute', bottom: 8, right: 8, display: 'flex', gap: 0.5, alignItems: 'center', zIndex: 5 }}>
+            {/* Bottom-Left Controls: Fullscreen & PDF Download */}
+            <Box sx={{
+              position: 'absolute',
+              bottom: { xs: 8, sm: 10 },
+              left: { xs: 8, sm: 10 },
+              display: 'flex',
+              gap: 0.8,
+              alignItems: 'center',
+              zIndex: 15,
+            }}>
+              {/* Fullscreen Toggle Button */}
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={isFullscreen ? <FullscreenExitIcon sx={{ fontSize: 16 }} /> : <FullscreenIcon sx={{ fontSize: 16 }} />}
+                onClick={toggleFullscreen}
+                sx={{
+                  bgcolor: isFullscreen ? '#EF4444' : '#0F172A',
+                  color: '#FFFFFF',
+                  height: { xs: 28, sm: 32 },
+                  fontSize: { xs: '0.7rem', sm: '0.78rem' },
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: { xs: 1, sm: 1.5 },
+                  boxShadow: '0 3px 10px rgba(0,0,0,0.25)',
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: isFullscreen ? '#DC2626' : '#1E293B' },
+                }}
+              >
+                {isFullscreen ? 'Exit' : 'Full Screen'}
+              </Button>
+
+              {/* Download PDF Button */}
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<PictureAsPdfIcon sx={{ fontSize: 15 }} />}
+                onClick={handleDownloadPdf}
+                disabled={isExportingPdf}
+                sx={{
+                  bgcolor: '#1B4FD8',
+                  color: '#FFFFFF',
+                  height: { xs: 28, sm: 32 },
+                  fontSize: { xs: '0.7rem', sm: '0.78rem' },
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: { xs: 1, sm: 1.5 },
+                  boxShadow: '0 3px 10px rgba(27,79,216,0.3)',
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: '#1541B5' },
+                }}
+              >
+                {isExportingPdf ? 'Exporting...' : 'PDF Map'}
+              </Button>
+            </Box>
+
+            {/* Bottom-Right Controls: Zoom & Reset */}
+            <Box sx={{
+              position: 'absolute',
+              bottom: { xs: 8, sm: 10 },
+              right: { xs: 8, sm: 10 },
+              display: 'flex',
+              gap: 0.5,
+              alignItems: 'center',
+              zIndex: 15,
+            }}>
               <Chip
-                label={`${Math.round(stageScale * 100)}%`}
+                label={<span ref={zoomTextRef}>{Math.round(stageScale * 100)}%</span>}
                 size="small"
                 onClick={centerMap}
-                sx={{ cursor: 'pointer', fontWeight: 700, bgcolor: '#0F172A', color: '#38BDF8' }}
+                sx={{ cursor: 'pointer', fontWeight: 700, bgcolor: '#0F172A', color: '#38BDF8', height: { xs: 26, sm: 30 }, fontSize: { xs: '0.7rem', sm: '0.78rem' } }}
               />
-              <Chip label="+" size="small" onClick={() => zoomAtCenter(1.25)} sx={{ cursor: 'pointer', fontWeight: 700 }} />
-              <Chip label="-" size="small" onClick={() => zoomAtCenter(1 / 1.25)} sx={{ cursor: 'pointer', fontWeight: 700 }} />
-              <Chip label="Reset" size="small" onClick={centerMap} sx={{ cursor: 'pointer' }} />
+              <Chip label="+" size="small" onClick={() => zoomAtCenter(1.25)} sx={{ cursor: 'pointer', fontWeight: 700, height: { xs: 26, sm: 30 }, minWidth: { xs: 24, sm: 30 } }} />
+              <Chip label="-" size="small" onClick={() => zoomAtCenter(1 / 1.25)} sx={{ cursor: 'pointer', fontWeight: 700, height: { xs: 26, sm: 30 }, minWidth: { xs: 24, sm: 30 } }} />
+              <Chip label="Reset" size="small" onClick={centerMap} sx={{ cursor: 'pointer', height: { xs: 26, sm: 30 }, fontSize: { xs: '0.7rem', sm: '0.78rem' } }} />
             </Box>
 
             {/* No plots hint */}
             {plots.filter(p => p.polygon_geometry?.coordinates?.[0]).length === 0 && (
               <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                <Typography variant="body2" sx={{ color: '#94A3B8', bgcolor: 'white', px: 3, py: 1.5, borderRadius: 2, boxShadow: 1 }}>
+                <Typography variant="body2" sx={{ color: '#94A3B8', bgcolor: 'white', px: 2.5, py: 1.2, borderRadius: 2, boxShadow: 1, fontSize: '0.8rem' }}>
                   No plot layout available for this project yet.
                 </Typography>
               </Box>
@@ -528,23 +998,23 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
             bgcolor: '#FFFFFF',
             borderLeft: { md: '1px solid #E2E8F0' },
             borderTop: { xs: '2px solid #38BDF8', md: 'none' },
-            p: 2.5,
+            p: { xs: 1.2, md: 2.5 },
             display: { xs: selectedPlot ? 'flex' : 'none', md: 'flex' },
             flexDirection: 'column',
-            gap: 2.5,
+            gap: { xs: 1.2, md: 2.5 },
             overflowY: 'auto',
             maxHeight: { md: 580 },
             zIndex: 10,
           }}
         >
-          {/* 1. SELECTED PLOT DETAILS (If clicked) */}
+          {/* 1. SELECTED PLOT DETAILS (If clicked - Compact on mobile) */}
           {selectedPlot ? (
-            <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderRadius: 2.5, border: '1.5px solid #38BDF8' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, alignItems: 'center' }}>
-                <Typography variant="h6" fontWeight={800} color="#0F172A">
+            <Box sx={{ p: { xs: 1.2, md: 2 }, bgcolor: '#F8FAFC', borderRadius: 2, border: '1.5px solid #38BDF8' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', md: '1.05rem' } }}>
                   Plot #{selectedPlot.plot.plot_number}
                 </Typography>
-                <IconButton size="small" onClick={() => setSelectedPlot(null)}>
+                <IconButton size="small" onClick={() => setSelectedPlot(null)} sx={{ p: 0.4 }}>
                   <CloseIcon fontSize="small" />
                 </IconButton>
               </Box>
@@ -556,45 +1026,47 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                   bgcolor: PLOT_COLORS[selectedPlot.plot.status as keyof typeof PLOT_COLORS] + '22',
                   color: PLOT_COLORS[selectedPlot.plot.status as keyof typeof PLOT_COLORS],
                   fontWeight: 700,
-                  mb: 2,
+                  fontSize: '0.67rem',
+                  height: 22,
+                  mb: 1.2,
                   width: 'fit-content',
                 }}
               />
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
                 {selectedPlot.plot.area && (
-                  <Typography variant="body2" sx={{ color: '#475569' }}>
-                    Area: <Typography component="span" fontWeight={700} color="text.primary">{selectedPlot.plot.area} {selectedPlot.plot.area_unit || 'SQ_FT'}</Typography>
+                  <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.78rem', md: '0.85rem' } }}>
+                    Area: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.area} {selectedPlot.plot.area_unit || 'SQ_FT'}</Typography>
                   </Typography>
                 )}
                 {selectedPlot.plot.width && selectedPlot.plot.length && (
-                  <Typography variant="body2" sx={{ color: '#475569' }}>
-                    Size: <Typography component="span" fontWeight={700} color="text.primary">{selectedPlot.plot.width} ft × {selectedPlot.plot.length} ft</Typography>
+                  <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.78rem', md: '0.85rem' } }}>
+                    Size: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.width} ft × {selectedPlot.plot.length} ft</Typography>
                   </Typography>
                 )}
                 {selectedPlot.plot.facing && (
-                  <Typography variant="body2" sx={{ color: '#475569' }}>
-                    Facing: <Typography component="span" fontWeight={700} color="text.primary">{selectedPlot.plot.facing.replace('_', ' ')}</Typography>
+                  <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.78rem', md: '0.85rem' } }}>
+                    Facing: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.facing.replace('_', ' ')}</Typography>
                   </Typography>
                 )}
                 {selectedPlot.plot.price && (
-                  <Box sx={{ mt: 1, p: 1.5, bgcolor: '#FFFFFF', borderRadius: 2, border: '1px solid #E2E8F0' }}>
-                    <Typography variant="caption" color="text.secondary">Price</Typography>
-                    <Typography variant="h6" sx={{ color: '#1B4FD8', fontWeight: 800 }}>
+                  <Box sx={{ mt: 0.5, p: 1, bgcolor: '#FFFFFF', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', display: 'block' }}>Price</Typography>
+                    <Typography variant="subtitle1" sx={{ color: '#1B4FD8', fontWeight: 800, fontSize: { xs: '0.92rem', md: '1.15rem' }, lineHeight: 1.2 }}>
                       ₹{Number(selectedPlot.plot.price).toLocaleString('en-IN')}
                     </Typography>
                   </Box>
                 )}
                 {selectedPlot.plot.status === 'AVAILABLE' && (
-                  <Button size="medium" variant="contained" fullWidth sx={{ mt: 1.5, py: 1, borderRadius: 2, fontWeight: 700 }}>
+                  <Button size="small" variant="contained" fullWidth sx={{ mt: 1, py: 0.8, borderRadius: 2, fontWeight: 700, fontSize: '0.8rem', textTransform: 'none' }}>
                     Contact for Booking
                   </Button>
                 )}
               </Box>
             </Box>
           ) : (
-            <Box sx={{ p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0', textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            <Box sx={{ p: 1, bgcolor: '#F8FAFC', borderRadius: 1.5, border: '1px solid #E2E8F0', textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.72rem' }}>
                 👉 Click any plot on the map to view specs
               </Typography>
             </Box>

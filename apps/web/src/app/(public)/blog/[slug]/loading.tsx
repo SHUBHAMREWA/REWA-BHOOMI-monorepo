@@ -22,7 +22,16 @@ export default function BlogLoading() {
           </Box>
 
           {/* Featured Image Skeleton */}
-          <Skeleton variant="rectangular" width="100%" height={300} sx={{ borderRadius: 3, mb: 5 }} />
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            sx={{
+              aspectRatio: { xs: '16 / 10', sm: '16 / 9', md: '16 / 9' },
+              maxHeight: 520,
+              borderRadius: 3,
+              mb: 5,
+            }}
+          />
 
           {/* Content Skeleton */}
           <Box mb={6}>

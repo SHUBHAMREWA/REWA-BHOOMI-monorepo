@@ -9,7 +9,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TranslateIcon from '@mui/icons-material/Translate';
 import ShareButtons from '@/features/blogs/components/ShareButtons';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 // ─── Server-side data fetch ──────────────────────────────────────────────────
 
@@ -173,6 +173,17 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <>
+      {/* Preload LCP Featured Image */}
+      {blog.featuredImageUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={blog.featuredImageUrl}
+          // @ts-ignore
+          fetchPriority="high"
+        />
+      )}
+
       {/* Structured Data */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
@@ -229,7 +240,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   sx={{ width: 44, height: 44 }}
                 />
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={700}>
+                  <Typography variant="subtitle2" component="p" fontWeight={700}>
                     {blog.author?.name || APP_NAME}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -250,22 +261,39 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               </Box>
             </Box>
 
-            {/* Featured Image */}
+            {/* Featured Image — Aspect Ratio Contained to completely eliminate CLS */}
             {blog.featuredImageUrl && (
               <Box mb={5}>
                 <Box
-                  component="img"
-                  src={blog.featuredImageUrl}
-                  alt={blog.featuredImageAlt || blog.title}
                   sx={{
                     width: '100%',
-                    height: { xs: 220, sm: 350, md: 'auto' }, // Small rectangular on mobile
-                    maxHeight: 500,
-                    objectFit: 'cover',
+                    aspectRatio: { xs: '16 / 10', sm: '16 / 9', md: '16 / 9' },
+                    maxHeight: 520,
+                    position: 'relative',
                     borderRadius: 3,
-                    display: 'block',
+                    overflow: 'hidden',
+                    bgcolor: '#F1F5F9',
                   }}
-                />
+                >
+                  <Box
+                    component="img"
+                    src={blog.featuredImageUrl}
+                    alt={blog.featuredImageAlt || blog.title}
+                    // @ts-ignore
+                    fetchPriority="high"
+                    loading="eager"
+                    decoding="async"
+                    width={1200}
+                    height={675}
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      aspectRatio: { xs: '16 / 10', sm: '16 / 9', md: '16 / 9' },
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                </Box>
                 {blog.featuredImageCaption && (
                   <Typography
                     variant="caption"
@@ -331,7 +359,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   '& code': { bgcolor: 'transparent', color: 'inherit', fontSize: '0.9em' },
                 },
                 '& hr': { my: 4, border: 'none', borderTop: '2px solid', borderColor: 'divider' },
-                '& img': { maxWidth: '100%', borderRadius: 2, my: 2 },
+                '& img': { maxWidth: '100%', height: 'auto', borderRadius: 2, my: 2, display: 'block' },
                 '& figure': { my: 3, textAlign: 'center' },
                 '& figcaption': { fontSize: '0.875rem', color: 'text.secondary', mt: 1 },
                 '& table': {
@@ -379,7 +407,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                     variant="outlined"
                     sx={{ mb: 2, p: 3, borderRadius: 2 }}
                   >
-                    <Typography variant="subtitle1" fontWeight={700} mb={1} color="primary.main">
+                    <Typography variant="subtitle1" component="h3" fontWeight={700} mb={1} color="primary.main">
                       {faq.question}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" lineHeight={1.7}>
@@ -394,7 +422,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             {displayTags.length > 0 && (
               <Box mt={4}>
                 <Divider sx={{ mb: 3 }} />
-                <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
+                <Typography variant="subtitle2" component="p" fontWeight={700} mb={1.5}>
                   Tags
                 </Typography>
                 <Box display="flex" gap={1} flexWrap="wrap">
@@ -422,7 +450,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 sx={{ width: 56, height: 56 }}
               />
               <Box>
-                <Typography variant="subtitle2" fontWeight={700}>Written by {blog.author?.name || APP_NAME}</Typography>
+                <Typography variant="subtitle2" component="p" fontWeight={700}>Written by {blog.author?.name || APP_NAME}</Typography>
                 <Typography variant="caption" color="text.secondary">{APP_NAME} Real Estate Expert</Typography>
               </Box>
             </Paper>
@@ -443,7 +471,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               }}
             >
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                <Typography variant="subtitle2" fontWeight={700} mb={2} color="text.secondary" sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+                <Typography variant="subtitle2" component="p" fontWeight={700} mb={2} color="text.secondary" sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
                   Table of Contents
                 </Typography>
                 {headings.map((h, i) => (

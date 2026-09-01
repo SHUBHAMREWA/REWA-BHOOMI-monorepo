@@ -86,8 +86,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PropertyRoute({ params }: Props) {
   const property = await getProperty(params.slug);
 
+  let heroPreloadUrl = property?.images?.[0]?.url;
+  if (property?.video_url && property.video_url.trim() !== '') {
+    if (property.video_url.includes('youtu.be/')) {
+      const id = property.video_url.split('youtu.be/')[1].split('?')[0];
+      if (id) heroPreloadUrl = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+    } else if (property.video_url.includes('youtube.com')) {
+      let id = '';
+      if (property.video_url.includes('v=')) id = property.video_url.split('v=')[1].split('&')[0];
+      else if (property.video_url.includes('/shorts/')) id = property.video_url.split('/shorts/')[1].split('?')[0];
+      if (id) heroPreloadUrl = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+    }
+  }
+
   return (
     <>
+      {heroPreloadUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={heroPreloadUrl}
+          // @ts-ignore
+          fetchPriority="high"
+        />
+      )}
       {property && (
         <script
           type="application/ld+json"

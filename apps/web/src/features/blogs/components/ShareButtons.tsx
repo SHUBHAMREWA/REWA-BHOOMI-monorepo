@@ -57,8 +57,9 @@ export default function ShareButtons({ url, title, compact = false }: ShareButto
         <Tooltip title="Share Article">
           <IconButton
             size="small"
+            aria-label="Share Article"
             onClick={handleNativeShare}
-            sx={{ border: '1px solid', borderColor: 'divider' }}
+            sx={{ border: '1px solid', borderColor: 'divider', width: 36, height: 36 }}
           >
             <ShareIcon fontSize="small" sx={{ color: 'text.secondary' }} />
           </IconButton>
@@ -87,8 +88,9 @@ export default function ShareButtons({ url, title, compact = false }: ShareButto
         <Tooltip title="Share on WhatsApp">
           <IconButton 
             size="small" 
+            aria-label="Share on WhatsApp"
             onClick={() => handleShare(shareUrls.whatsapp)}
-            sx={{ bgcolor: '#25D366', color: 'white', '&:hover': { bgcolor: '#128C7E' } }}
+            sx={{ bgcolor: '#25D366', color: 'white', width: 36, height: 36, '&:hover': { bgcolor: '#128C7E' } }}
           >
             <WhatsAppIcon fontSize="small" />
           </IconButton>
@@ -97,8 +99,9 @@ export default function ShareButtons({ url, title, compact = false }: ShareButto
         <Tooltip title="Share on Facebook">
           <IconButton 
             size="small" 
+            aria-label="Share on Facebook"
             onClick={() => handleShare(shareUrls.facebook)}
-            sx={{ bgcolor: '#1877F2', color: 'white', '&:hover': { bgcolor: '#165eab' } }}
+            sx={{ bgcolor: '#1877F2', color: 'white', width: 36, height: 36, '&:hover': { bgcolor: '#165eab' } }}
           >
             <FacebookIcon fontSize="small" />
           </IconButton>
@@ -107,8 +110,9 @@ export default function ShareButtons({ url, title, compact = false }: ShareButto
         <Tooltip title="Share on X (Twitter)">
           <IconButton 
             size="small" 
+            aria-label="Share on X (Twitter)"
             onClick={() => handleShare(shareUrls.twitter)}
-            sx={{ bgcolor: '#000000', color: 'white', '&:hover': { bgcolor: '#333333' } }}
+            sx={{ bgcolor: '#000000', color: 'white', width: 36, height: 36, '&:hover': { bgcolor: '#333333' } }}
           >
             <XIcon fontSize="small" />
           </IconButton>
@@ -117,8 +121,9 @@ export default function ShareButtons({ url, title, compact = false }: ShareButto
         <Tooltip title="Copy Link">
           <IconButton 
             size="small" 
+            aria-label="Copy Link"
             onClick={handleCopyLink}
-            sx={{ bgcolor: 'grey.200', color: 'grey.800', '&:hover': { bgcolor: 'grey.300' } }}
+            sx={{ bgcolor: 'grey.200', color: 'grey.800', width: 36, height: 36, '&:hover': { bgcolor: 'grey.300' } }}
           >
             <LinkIcon fontSize="small" />
           </IconButton>

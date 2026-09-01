@@ -46,7 +46,7 @@ function CustomTabPanel(props: TabPanelProps) {
 export default function ProfilePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user, refreshAuth, logout } = useAuth();
+  const { user, refreshAuth, logout, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -87,6 +87,7 @@ export default function ProfilePage() {
   const watchUsername = watch('username');
 
   useEffect(() => {
+    if (isAuthLoading) return;
     if (!user) {
       router.push('/auth/login');
       return;
@@ -98,7 +99,7 @@ export default function ProfilePage() {
       phone: user.phone || '',
       avatar_url: user.avatar_url,
     });
-  }, [user, reset, router]);
+  }, [user, isAuthLoading, reset, router]);
 
   // Username availability check (debounced)
   useEffect(() => {

@@ -378,7 +378,43 @@ export async function refreshAccessToken(refreshToken: string) {
     [tokenHash],
   );
 
-  if (!stored || stored.revoked_at) {
+  if (!stored) {
+    throw new UnauthorizedError('Invalid refresh token');
+  }
+
+  // Grace Period Handling:
+  // If the token was revoked within the last 60 seconds (due to concurrent network requests or multiple tabs rotating it),
+  // do NOT throw 401. Instead, safely issue a fresh access token for the user.
+  if (stored.revoked_at) {
+    const isWithinGrace = await queryOne<{ id: string }>(
+      `SELECT id FROM refresh_tokens
+       WHERE id = $1 AND revoked_at > NOW() - INTERVAL '60 seconds'`,
+      [stored.id],
+    );
+
+    if (isWithinGrace) {
+      const user = await queryOne<{ id: string; email: string; status: string }>(
+        'SELECT id, email, status FROM users WHERE id = $1 AND deleted_at IS NULL',
+        [stored.user_id],
+      );
+      if (!user) throw new UnauthorizedError();
+      checkUserStatus(user.status);
+
+      const roles = await getUserRoles(user.id);
+      const accessToken = generateAccessToken({ userId: user.id, email: user.email, roles });
+
+      // Generate a new valid refresh token so cookie remains fresh
+      const newRefreshToken = generateRefreshToken({ userId: user.id });
+      const newTokenHash = hashToken(newRefreshToken);
+      await query(
+        `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+         VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
+        [user.id, newTokenHash],
+      );
+
+      return { accessToken, refreshToken: newRefreshToken };
+    }
+
     throw new UnauthorizedError('Invalid or revoked refresh token');
   }
 
@@ -399,7 +435,7 @@ export async function refreshAccessToken(refreshToken: string) {
   });
 
   const user = await queryOne<{ id: string; email: string; status: string }>(
-    'SELECT id, email, status FROM users WHERE id = $1',
+    'SELECT id, email, status FROM users WHERE id = $1 AND deleted_at IS NULL',
     [stored.user_id],
   );
   if (!user) throw new UnauthorizedError();

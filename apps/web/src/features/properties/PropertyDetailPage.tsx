@@ -174,6 +174,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
   const [isFavorited, setIsFavorited] = useState(property?.is_favorited || false);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
@@ -269,6 +270,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
   const mediaList: MediaItem[] = [];
 
+  // Video is featured first on the property page with lightweight facade
   if (property.video_url && property.video_url.trim() !== '') {
     mediaList.push({
       type: 'video',
@@ -292,6 +294,24 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
       id: 'placeholder'
     });
   }
+
+  const getVideoPoster = (url: string) => {
+    try {
+      if (url.includes('youtu.be/')) {
+        const id = url.split('youtu.be/')[1].split('?')[0];
+        return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      }
+      if (url.includes('youtube.com')) {
+        let id = '';
+        if (url.includes('v=')) id = url.split('v=')[1].split('&')[0];
+        else if (url.includes('/shorts/')) id = url.split('/shorts/')[1].split('?')[0];
+        if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      }
+    } catch {
+      // fallback
+    }
+    return validImages[0]?.url || fallbackPlaceholder;
+  };
 
   const activeMedia = mediaList[activeImgIdx] || { type: 'image', url: fallbackPlaceholder, id: 'placeholder' };
 
@@ -487,10 +507,96 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
       ? { xs: '180px', sm: '236px', md: '270px' }
       : '100%';
 
+    // Performance Optimization: Facade pattern prevents loading 3+ MB YouTube scripts on initial page load
+    if (!isVideoPlaying) {
+      const posterUrl = getVideoPoster(url);
+      return (
+        <Box
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsVideoPlaying(true);
+          }}
+          sx={{
+            position: 'relative',
+            width: playerWidth,
+            height: '100%',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: '#000',
+            mx: 'auto',
+            overflow: 'hidden',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={posterUrl}
+            alt={`${property.title} Video Preview`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              opacity: 0.85,
+            }}
+          />
+          {/* Center Play Button Badge */}
+          <Box
+            sx={{
+              position: 'absolute',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1,
+              zIndex: 2,
+            }}
+          >
+            <Box
+              component="button"
+              type="button"
+              aria-label="Play video preview"
+              sx={{
+                width: { xs: 54, sm: 68 },
+                height: { xs: 54, sm: 68 },
+                borderRadius: '50%',
+                bgcolor: 'rgba(239, 68, 68, 0.95)',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                transition: 'transform 0.2s ease',
+                '&:hover': { transform: 'scale(1.1)', bgcolor: '#DC2626' },
+              }}
+            >
+              <PlayArrowIcon sx={{ fontSize: { xs: 34, sm: 44 }, ml: 0.4 }} />
+            </Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#FFFFFF',
+                fontWeight: 700,
+                bgcolor: 'rgba(15, 23, 42, 0.8)',
+                px: 1.2,
+                py: 0.4,
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+              }}
+            >
+              Watch Video Preview
+            </Typography>
+          </Box>
+        </Box>
+      );
+    }
+
     return (
       <Box sx={{ width: playerWidth, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#000', mx: 'auto' }}>
         <iframe
           src={embedUrl}
+          title="Property video preview"
           style={{ width: '100%', height: '100%', border: 0 }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -548,11 +654,13 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
   const handlePrevImg = () => {
     if (mediaList.length <= 1) return;
+    setIsVideoPlaying(false);
     setActiveImgIdx((prev) => (prev - 1 + mediaList.length) % mediaList.length);
   };
 
   const handleNextImg = () => {
     if (mediaList.length <= 1) return;
+    setIsVideoPlaying(false);
     setActiveImgIdx((prev) => (prev + 1) % mediaList.length);
   };
 
@@ -641,7 +749,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.8 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.2 }, flexWrap: 'wrap' }}>
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
+          <Typography variant="h4" component="div" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
             {priceFormatted}
           </Typography>
           {property.is_price_negotiable && (
@@ -661,22 +769,23 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
         </Box>
 
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton onClick={handleShare} size="small" sx={{ color: '#475569', '&:hover': { color: '#0F172A' } }}>
+          <IconButton onClick={handleShare} aria-label="Share property" size="small" sx={{ color: '#475569', '&:hover': { color: '#0F172A' } }}>
             <ShareIcon fontSize="small" />
           </IconButton>
-          <IconButton onClick={handleToggleFavorite} size="small" sx={{ color: isFavorited ? '#EF4444' : '#475569', '&:hover': { color: '#EF4444' } }}>
+          <IconButton onClick={handleToggleFavorite} aria-label={isFavorited ? 'Remove from favorites' : 'Save property'} size="small" sx={{ color: isFavorited ? '#EF4444' : '#475569', '&:hover': { color: '#EF4444' } }}>
             {isFavorited ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
           </IconButton>
         </Box>
       </Box>
 
       <Typography
-        variant="body1"
-        fontWeight={600}
+        variant="h1"
+        component="h1"
+        fontWeight={700}
         sx={{
-          color: '#334155',
-          fontSize: { xs: '0.85rem', sm: '1rem' },
-          lineHeight: 1.4,
+          color: '#0F172A',
+          fontSize: { xs: '1rem', sm: '1.25rem' },
+          lineHeight: 1.35,
           mb: 0.5,
         }}
       >
@@ -774,7 +883,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     ];
     return (
       <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#fff', ...displayProps }}>
-        <Typography variant="subtitle2" fontWeight={750} color="#0F172A" sx={{ fontSize: '0.88rem', mb: 0.3 }}>
+        <Typography variant="subtitle2" component="h2" fontWeight={750} color="#0F172A" sx={{ fontSize: '0.88rem', mb: 0.3 }}>
           भविष्य में प्रॉपर्टी की कीमत
         </Typography>
         <Typography variant="caption" color="#64748B" sx={{ fontSize: '0.7rem', display: 'block', mb: 1.2 }}>
@@ -790,7 +899,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   <Typography variant="caption" sx={{ fontSize: '0.74rem', color: '#1B4FD8', fontWeight: 700, display: 'block', mb: 0.3 }}>
                     {p.label}
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 850, color: '#16A34A', fontSize: '0.92rem', letterSpacing: '-0.01em' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 850, color: '#15803D', fontSize: '0.92rem', letterSpacing: '-0.01em' }}>
                     ₹{fmt(projVal)}
                   </Typography>
                 </Box>
@@ -799,7 +908,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
           })}
         </Grid>
 
-        <Typography variant="caption" color="#94A3B8" sx={{ display: 'block', mt: 1, fontSize: '0.65rem' }}>
+        <Typography variant="caption" color="#64748B" sx={{ display: 'block', mt: 1, fontSize: '0.65rem' }}>
           *ये सिर्फ एक अनुमान है। असली कीमत मार्केट डिमांड पर निर्भर करती है।
         </Typography>
       </Paper>
@@ -1020,6 +1129,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               {/* Navigation Left Arrow */}
               {mediaList.length > 1 && (
                 <IconButton
+                  aria-label="Previous image"
                   onClick={(e) => {
                     e.stopPropagation();
                     handlePrevImg();
@@ -1042,6 +1152,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               {/* Navigation Right Arrow */}
               {mediaList.length > 1 && (
                 <IconButton
+                  aria-label="Next image"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleNextImg();
@@ -1087,7 +1198,10 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 {mediaList.map((item, idx) => (
                   <Box
                     key={item.id || idx}
-                    onClick={() => setActiveImgIdx(idx)}
+                    onClick={() => {
+                      setIsVideoPlaying(false);
+                      setActiveImgIdx(idx);
+                    }}
                     sx={{
                       width: { xs: 75, sm: 90 },
                       height: { xs: 50, sm: 60 },
@@ -1103,12 +1217,16 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                     }}
                   >
                     {item.type === 'video' ? (
-                      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#475569' }}>
-                        <PlayArrowIcon sx={{ fontSize: 22, color: '#fff' }} />
+                      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0F172A', position: 'relative' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={getVideoPoster(item.url)} alt={`${property.title} video thumbnail`} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} />
+                        <Box sx={{ position: 'absolute', width: 24, height: 24, borderRadius: '50%', bgcolor: 'rgba(239, 68, 68, 0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <PlayArrowIcon sx={{ fontSize: 16, color: '#fff', ml: 0.2 }} />
+                        </Box>
                       </Box>
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.url} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={item.url} alt={`${property.title} thumbnail ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}
                   </Box>
                 ))}
@@ -1117,7 +1235,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
             {/* 2. Overview & Details Box */}
             <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 1.5, sm: 2 }, bgcolor: '#FFFFFF' }}>
-              <Typography variant="subtitle1" fontWeight={750} mb={1.2} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
+              <Typography variant="subtitle1" component="h2" fontWeight={750} mb={1.2} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
                 Overview & Details
               </Typography>
 
@@ -1364,7 +1482,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             {/* 3. Amenities & Features Box */}
             {((property.amenities && property.amenities.length > 0) || (property.custom_amenities && property.custom_amenities.length > 0)) && (
               <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2 }, borderRadius: '8px', border: '1px solid #E2E8F0', mb: { xs: 1.5, sm: 2 }, bgcolor: '#FFFFFF' }}>
-                <Typography variant="subtitle1" fontWeight={750} mb={1.2} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
+                <Typography variant="subtitle1" component="h2" fontWeight={750} mb={1.2} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
                   Amenities & Features (सुख सुविधाएं)
                 </Typography>
                 <Grid container spacing={{ xs: 1, sm: 1.5 }}>
@@ -1390,7 +1508,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
             {/* 4. Description Box */}
             <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#FFFFFF' }}>
-              <Typography variant="subtitle1" fontWeight={750} mb={1} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
+              <Typography variant="subtitle1" component="h2" fontWeight={750} mb={1} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
                 Description
               </Typography>
               <Typography color="#475569" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: '0.86rem' }}>
@@ -1441,13 +1559,14 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                       >
                         <Avatar
                           src={property.owner_avatar || undefined}
+                          alt={property.owner_name || 'Property Owner'}
                           sx={{ width: 56, height: 56, bgcolor: '#1B4FD8', fontWeight: 700, fontSize: '1.2rem' }}
                         >
                           {(property.owner_name || 'Owner').charAt(0).toUpperCase()}
                         </Avatar>
 
                         <Box sx={{ flex: 1 }}>
-                          <Typography variant="body1" fontWeight={700} sx={{ color: '#0F172A', fontSize: '0.98rem' }}>
+                          <Typography variant="body1" component="h3" fontWeight={700} sx={{ color: '#0F172A', fontSize: '0.98rem' }}>
                             Posted By {property.owner_name || 'Satish Pandey'}
                           </Typography>
                           <Typography variant="caption" sx={{ color: '#1B4FD8', display: 'flex', alignItems: 'center', gap: 0.4, fontWeight: 600 }}>
@@ -1523,13 +1642,14 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                     overflow: 'hidden'
                   }}
                 >
-                  <Typography variant="body1" fontWeight={700} sx={{ mb: 2, color: '#0F172A', fontSize: '1.05rem' }}>
+                  <Typography variant="body1" component="h2" fontWeight={700} sx={{ mb: 2, color: '#0F172A', fontSize: '1.05rem' }}>
                     Map Location
                   </Typography>
                   <Box sx={{ width: '100%', height: 280, borderRadius: '6px', overflow: 'hidden' }}>
                     <iframe 
                       width="100%" 
                       height="100%" 
+                      title="Property location on Google Maps"
                       style={{ border: 0 }} 
                       loading="lazy" 
                       allowFullScreen 
@@ -1616,6 +1736,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.4, sm: 1 }, flexShrink: 0 }}>
               <IconButton
+                aria-label="Zoom out"
                 onClick={handleZoomOut}
                 disabled={zoomScale <= 1}
                 size="small"
@@ -1644,6 +1765,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               </Typography>
 
               <IconButton
+                aria-label="Zoom in"
                 onClick={handleZoomIn}
                 disabled={zoomScale >= 4}
                 size="small"
@@ -1659,6 +1781,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               </IconButton>
 
               <IconButton
+                aria-label="Reset zoom"
                 onClick={handleResetZoom}
                 size="small"
                 title="Reset Zoom"
@@ -1673,6 +1796,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               </IconButton>
 
               <IconButton
+                aria-label="Close image viewer"
                 onClick={handleCloseModal}
                 size="small"
                 title="Close"
@@ -1740,6 +1864,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             {/* Left Nav Arrow */}
             {mediaList.length > 1 && zoomScale <= 1.05 && (
               <IconButton
+                aria-label="Previous image"
                 onClick={(e) => {
                   e.stopPropagation();
                   handlePrevImg();
@@ -1763,6 +1888,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             {/* Right Nav Arrow */}
             {mediaList.length > 1 && zoomScale <= 1.05 && (
               <IconButton
+                aria-label="Next image"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNextImg();

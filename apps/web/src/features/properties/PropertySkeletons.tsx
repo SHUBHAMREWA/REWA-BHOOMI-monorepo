@@ -185,7 +185,7 @@ export function PropertyDetailPageSkeleton() {
                 animation="wave"
                 sx={{
                   width: '100%',
-                  height: { xs: 240, sm: 360, md: 420 },
+                  height: { xs: 320, sm: 420, md: 480 },
                   bgcolor: '#0F172A',
                 }}
               />
