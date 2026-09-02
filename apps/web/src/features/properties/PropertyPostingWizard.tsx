@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Box, Container, Paper, Typography, Button, Grid, TextField, MenuItem, Select, FormControl,
   InputLabel, Chip, CircularProgress, Stepper, Step, StepLabel, Checkbox, FormControlLabel,
-  Switch, Divider, Alert, Card, CardMedia, CardContent, IconButton, Autocomplete
+  Switch, Divider, Alert, Card, CardMedia, CardContent, IconButton, Autocomplete, InputAdornment
 } from '@mui/material';
 import SellIcon from '@mui/icons-material/Sell';
 import KeyIcon from '@mui/icons-material/Key';
@@ -25,6 +25,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '@/features/auth/AuthContext';
 
 import { ListingPurpose, PropertyCategoryType, PropertyTypeEnum, AreaUnit } from '@rewa-bhoomi/types';
@@ -557,7 +558,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         },
         amenityIds: validAmenityIds,
         customAmenities: customAmenities,
-        videoUrl: videoUrl.trim() || undefined,
+        videoUrl: videoUrl.trim() ? videoUrl.trim() : null,
         imageUrls: imageUrls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0),
         imageStorageKeys: imageStorageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0),
         residentialDetails: category === 'RESIDENTIAL' ? cleanDetailObj(resDetails) : undefined,
@@ -1424,8 +1425,39 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 variant="outlined"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="Paste video link here"
+                placeholder="Paste video link here (or leave blank to remove)"
+                InputProps={{
+                  endAdornment: videoUrl ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setVideoUrl('')}
+                        edge="end"
+                        title="Clear video link"
+                        sx={{ color: '#94A3B8', '&:hover': { color: '#EF4444' } }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
               />
+              {videoUrl.trim() && (
+                <Box sx={{ mt: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="caption" sx={{ color: '#16A34A', fontWeight: 600, fontSize: '0.72rem' }}>
+                    ✓ Video attached
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="error"
+                    onClick={() => setVideoUrl('')}
+                    sx={{ textTransform: 'none', py: 0, px: 0.8, minHeight: 'auto', fontSize: '0.72rem', fontWeight: 600 }}
+                  >
+                    Remove Video (वीडियो लिंक हटाएं)
+                  </Button>
+                </Box>
+              )}
             </Box>
 
           </Paper>

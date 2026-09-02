@@ -340,7 +340,7 @@ export async function createProperty(
         ownerId, ownerId, createdByRole,
         input.location.city, input.location.state, input.location.country ?? 'India', input.location.address ?? null,
         input.location.pincode ?? null, input.location.latitude ?? null, input.location.longitude ?? null,
-        status, input.videos ?? [], input.videoUrl ?? null, categoryId, input.customAmenities ?? [],
+        status, input.videos ?? [], (input.videoUrl && input.videoUrl.trim() !== '') ? input.videoUrl.trim() : null, categoryId, input.customAmenities ?? [],
         area, areaUnit, bedrooms, bathrooms
       ],
     );
@@ -549,7 +549,8 @@ export async function updateProperty(
     fields.push(['custom_amenities', input.customAmenities]);
   }
   if (input.videoUrl !== undefined) {
-    fields.push(['video_url', input.videoUrl]);
+    const cleanVideoUrl = input.videoUrl && input.videoUrl.trim() !== '' ? input.videoUrl.trim() : null;
+    fields.push(['video_url', cleanVideoUrl]);
   }
 
   if (input.location) {
