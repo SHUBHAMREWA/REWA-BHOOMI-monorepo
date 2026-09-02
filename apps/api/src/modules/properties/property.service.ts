@@ -231,7 +231,7 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
     FROM properties p
     LEFT JOIN property_categories pc ON pc.id = p.category_id
     JOIN users u ON u.id = p.owner_id
-    WHERE p.slug = $1 AND p.deleted_at IS NULL`,
+    WHERE (p.slug = $1 OR p.id::text = $1) AND p.deleted_at IS NULL`,
     [slug],
   );
 
