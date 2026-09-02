@@ -107,7 +107,7 @@ export const CreatePropertySchema = z.object({
   imageUrls: z.array(z.string()).optional(),
   imageStorageKeys: z.array(z.string().nullable()).optional(),
   videos: z.array(z.string()).optional(),
-  videoUrl: z.string().optional(),
+  videoUrl: z.string().nullable().optional(),
 
   // Dynamic Extension Payloads
   residentialDetails: z.record(z.unknown()).optional(),
