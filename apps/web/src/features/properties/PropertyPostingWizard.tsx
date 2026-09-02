@@ -236,6 +236,17 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
       apiClient.get(`/properties/${propertyId}`)
         .then(res => {
           const prop = res.data.data;
+
+          // Authorization check: Admin can edit any property, but regular user can ONLY edit their own property
+          const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN');
+          const isOwner = user?.id && (prop.owner_id === user.id || prop.ownerId === user.id);
+
+          if (!isAdmin && !isOwner) {
+            toast.error('Aap sirf apni hi property edit kar sakte hain (You can only edit your own properties)');
+            router.replace('/profile?tab=properties');
+            return;
+          }
+
           setEditingPropertyId(prop.id);
           setPurpose(prop.listing_purpose);
           setCategory(prop.category_type);

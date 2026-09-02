@@ -38,6 +38,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import GrassIcon from '@mui/icons-material/Grass';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import GetAppIcon from '@mui/icons-material/GetApp';
+import EditIcon from '@mui/icons-material/Edit';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePwaInstall } from '@/features/pwa/usePwaInstall';
@@ -150,6 +151,10 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const [property, setProperty] = useState<PropertyData | null>(initialProperty);
   const [loading, setLoading] = useState(!initialProperty);
   const [error, setError] = useState(false);
+
+  const isAdmin = Boolean(user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPER_ADMIN'));
+  const isOwner = Boolean(user?.id && (property?.owner_id === user.id || (property as any)?.ownerId === user.id));
+  const canEdit = Boolean(isAdmin || isOwner);
 
   useEffect(() => {
     if (!initialProperty && !isAuthLoading) {
@@ -986,33 +991,63 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             </Box>
           </Box>
 
-          {/* Right side: Get App Button (Shown only if NOT running standalone PWA and NOT installed) */}
-          {canInstall && (
-            <Button
-              startIcon={<GetAppIcon sx={{ fontSize: '1rem !important' }} />}
-              onClick={promptInstall}
-              size="small"
-              sx={{
-                color: '#FFFFFF',
-                bgcolor: '#1B4FD8',
-                borderRadius: '20px',
-                px: { xs: 1.6, sm: 2.2 },
-                py: 0.35,
-                fontSize: '0.78rem',
-                fontWeight: 750,
-                textTransform: 'none',
-                boxShadow: '0 2px 8px rgba(27, 79, 216, 0.35)',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                '&:hover': {
-                  bgcolor: '#1D4ED8',
-                  boxShadow: '0 4px 12px rgba(27, 79, 216, 0.45)',
-                },
-              }}
-            >
-              Get App
-            </Button>
-          )}
+          {/* Right side: Edit Button (if Admin or Owner) & Get App Button */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+            {canEdit && property && (
+              <Button
+                startIcon={<EditIcon sx={{ fontSize: '0.95rem !important' }} />}
+                onClick={() => router.push(`/properties/edit/${property.slug}`)}
+                size="small"
+                variant="outlined"
+                sx={{
+                  color: '#1B4FD8',
+                  borderColor: '#CBD5E1',
+                  bgcolor: '#FFFFFF',
+                  borderRadius: '20px',
+                  px: { xs: 1.2, sm: 2 },
+                  py: 0.35,
+                  fontSize: '0.76rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  '&:hover': {
+                    bgcolor: '#EFF6FF',
+                    borderColor: '#1B4FD8',
+                  },
+                }}
+              >
+                {isAdmin ? 'Admin Edit' : 'Edit Property'}
+              </Button>
+            )}
+
+            {canInstall && (
+              <Button
+                startIcon={<GetAppIcon sx={{ fontSize: '1rem !important' }} />}
+                onClick={promptInstall}
+                size="small"
+                sx={{
+                  color: '#FFFFFF',
+                  bgcolor: '#1B4FD8',
+                  borderRadius: '20px',
+                  px: { xs: 1.6, sm: 2.2 },
+                  py: 0.35,
+                  fontSize: '0.78rem',
+                  fontWeight: 750,
+                  textTransform: 'none',
+                  boxShadow: '0 2px 8px rgba(27, 79, 216, 0.35)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  '&:hover': {
+                    bgcolor: '#1D4ED8',
+                    boxShadow: '0 4px 12px rgba(27, 79, 216, 0.45)',
+                  },
+                }}
+              >
+                Get App
+              </Button>
+            )}
+          </Box>
         </Box>
 
         {/* ─── STATUS BANNER for Owner Preview (Non-Published) ─── */}
