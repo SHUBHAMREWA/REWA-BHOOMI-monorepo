@@ -48,15 +48,17 @@ export default function PwaInstallPrompt() {
       return;
     }
 
+    let promptTimer: NodeJS.Timeout | null = null;
+    let iosTimer: NodeJS.Timeout | null = null;
+
     // 3. Listen for standard PWA beforeinstallprompt (Chrome / Android / Edge / Desktop)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
       // Wait 2.5 seconds after page load before showing popup
-      const timer = setTimeout(() => {
+      promptTimer = setTimeout(() => {
         setShowPrompt(true);
       }, 2500);
-      return () => clearTimeout(timer);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -66,11 +68,10 @@ export default function PwaInstallPrompt() {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     if (isIos && isSafari && !isStandalone) {
-      const timer = setTimeout(() => {
+      iosTimer = setTimeout(() => {
         setIsIosPrompt(true);
         setShowPrompt(true);
       }, 3500);
-      return () => clearTimeout(timer);
     }
 
     // 5. Listen for successful app installation
@@ -84,6 +85,8 @@ export default function PwaInstallPrompt() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      if (promptTimer) clearTimeout(promptTimer);
+      if (iosTimer) clearTimeout(iosTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
