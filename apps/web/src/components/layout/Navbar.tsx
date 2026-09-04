@@ -23,8 +23,12 @@ import ChatIcon from '@mui/icons-material/Chat';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+import ShareIcon from '@mui/icons-material/Share';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import DownloadIcon from '@mui/icons-material/Download';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 import { usePwaInstall } from '@/features/pwa/usePwaInstall';
+import ShareAppModal from '@/components/common/ShareAppModal';
 
 const navLinks = [
   { name: 'Properties', href: '/properties', icon: HomeWorkIcon },
@@ -40,6 +44,8 @@ export default function Navbar() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [searchError, setSearchError] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareModalInitialTab, setShareModalInitialTab] = useState<'share' | 'qr'>('share');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [wordIndex, setWordIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -180,7 +186,60 @@ export default function Navbar() {
           </ListItemButton>
         </ListItem>
 
-        {/* Get App / Install PWA Option (shown if user has not downloaded/installed PWA) */}
+        {/* Share, QR Code & Download App Options */}
+        <ListItem disablePadding sx={{ mb: 1 }}>
+          <ListItemButton
+            onClick={() => {
+              handleDrawerToggle();
+              setShareModalInitialTab('share');
+              setShareModalOpen(true);
+            }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'rgba(27, 79, 216, 0.06)',
+              color: '#1B4FD8',
+              '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.12)' },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32, color: '#1B4FD8' }}>
+              <ShareIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Share Rewa Bhoomi"
+              secondary="WhatsApp, X, Telegram & more"
+              primaryTypographyProps={{ fontWeight: 700, fontSize: '0.88rem', color: '#1B4FD8' }}
+              secondaryTypographyProps={{ fontSize: '0.72rem', color: '#64748B' }}
+            />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding sx={{ mb: 1 }}>
+          <ListItemButton
+            onClick={() => {
+              handleDrawerToggle();
+              setShareModalInitialTab('qr');
+              setShareModalOpen(true);
+            }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'rgba(27, 79, 216, 0.06)',
+              color: '#1B4FD8',
+              '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.12)' },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32, color: '#1B4FD8' }}>
+              <QrCode2Icon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Scan QR Code"
+              secondary="Scan & open on any device"
+              primaryTypographyProps={{ fontWeight: 700, fontSize: '0.88rem', color: '#1B4FD8' }}
+              secondaryTypographyProps={{ fontSize: '0.72rem', color: '#64748B' }}
+            />
+          </ListItemButton>
+        </ListItem>
+
+        {/* Download App / Install PWA Option */}
         {canInstall && (
           <ListItem disablePadding sx={{ mb: 1 }}>
             <ListItemButton
@@ -191,16 +250,16 @@ export default function Navbar() {
               sx={{
                 borderRadius: 2,
                 bgcolor: 'rgba(27, 79, 216, 0.08)',
-                border: '1px solid rgba(27, 79, 216, 0.22)',
+                border: '1px solid rgba(27, 79, 216, 0.25)',
                 color: '#1B4FD8',
-                '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.15)' },
+                '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.16)' },
               }}
             >
               <ListItemIcon sx={{ minWidth: 32, color: '#1B4FD8' }}>
-                <GetAppIcon fontSize="small" />
+                <DownloadIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText
-                primary="Get App"
+                primary="Download App"
                 secondary="Install on your phone"
                 primaryTypographyProps={{ fontWeight: 750, fontSize: '0.9rem', color: '#1B4FD8' }}
                 secondaryTypographyProps={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 500 }}
@@ -581,7 +640,7 @@ export default function Navbar() {
             </Box>
 
             {/* Auth Controls & Saved Properties Quick Icon */}
-            <Box sx={{ flex: { md: 1 }, display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ flex: { md: 1 }, display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-end', alignItems: 'center', gap: 1.5 }}>
               <Button
                 variant="outlined"
                 component={Link}
@@ -718,14 +777,14 @@ export default function Navbar() {
                   aria-label="Search properties"
                   sx={{
                     color: '#1B4FD8',
-                    width: 44,
-                    height: 44,
+                    width: 40,
+                    height: 40,
                     bgcolor: 'rgba(27, 79, 216, 0.08)',
                     borderRadius: '10px',
                     '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.16)' },
                   }}
                 >
-                  <SearchIcon sx={{ fontSize: 21 }} />
+                  <SearchIcon sx={{ fontSize: 20 }} />
                 </IconButton>
               )}
               <IconButton
@@ -758,6 +817,14 @@ export default function Navbar() {
           {drawer}
         </Drawer>
       </Box>
+
+      {/* Share & QR Code App Modal */}
+      <ShareAppModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        initialTab={shareModalInitialTab}
+      />
+
       <Box sx={{ height: { xs: 60, sm: 70, md: 80 } }} /> {/* Spacer for fixed navbar */}
     </>
   );
