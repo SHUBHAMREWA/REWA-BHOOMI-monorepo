@@ -53,6 +53,62 @@ function getFromAddress() {
 }
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
+  // 1. Resend HTTPS API (Recommended on Render Free tier - uses port 443 HTTPS)
+  if (env.RESEND_API_KEY) {
+    try {
+      const from = env.SMTP_FROM && !env.SMTP_FROM.includes('noreply@rewabhoomi.com') 
+        ? env.SMTP_FROM 
+        : 'Rewa Bhoomi <onboarding@resend.dev>';
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from, to, subject, html }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok) {
+        throw new Error(data.message || data.error?.message || 'Resend API failed to send email');
+      }
+      logger.info(`📧 Email sent via Resend API: ${data.id}`);
+      return data;
+    } catch (error: any) {
+      logger.error({ error: error.message }, 'Failed to send email via Resend API');
+      throw error;
+    }
+  }
+
+  // 2. Brevo HTTPS API (uses port 443 HTTPS)
+  if (env.BREVO_API_KEY) {
+    try {
+      const senderEmail = env.SMTP_USER || 'rewabhoomiofficial@gmail.com';
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': env.BREVO_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'Rewa Bhoomi', email: senderEmail },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok) {
+        throw new Error(data.message || 'Brevo API failed to send email');
+      }
+      logger.info(`📧 Email sent via Brevo API: ${data.messageId}`);
+      return data;
+    } catch (error: any) {
+      logger.error({ error: error.message }, 'Failed to send email via Brevo API');
+      throw error;
+    }
+  }
+
+  // 3. SMTP Transport
   const from = getFromAddress();
   try {
     const info = await transporter.sendMail({
