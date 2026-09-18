@@ -295,7 +295,8 @@ export async function sendLoginOtp(email: string) {
     logger.info({ userId: user.id }, 'Login OTP sent');
   } catch (err: any) {
     logger.error({ err, email: cleanEmail }, 'Failed to deliver login OTP email');
-    throw new AppError('Unable to send verification code email right now. Please check your SMTP settings or try Google/Password login.', 500, 'EMAIL_DELIVERY_FAILED');
+    const reason = err?.message || 'Unable to send verification code email right now.';
+    throw new AppError(reason, 500, 'EMAIL_DELIVERY_FAILED');
   }
 }
 

@@ -56,9 +56,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
   // 1. Resend HTTPS API (Recommended on Render Free tier - uses port 443 HTTPS)
   if (env.RESEND_API_KEY) {
     try {
-      const from = env.SMTP_FROM && !env.SMTP_FROM.includes('noreply@rewabhoomi.com') 
-        ? env.SMTP_FROM 
-        : 'Rewa Bhoomi <onboarding@resend.dev>';
+      const from = env.SMTP_FROM || 'Rewa Bhoomi <noreply@rewabhoomi.com>';
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -69,7 +67,8 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
       });
       const data = await res.json() as any;
       if (!res.ok) {
-        throw new Error(data.message || data.error?.message || 'Resend API failed to send email');
+        const errorMsg = data.message || data.error?.message || 'Resend API rejected the email';
+        throw new Error(errorMsg);
       }
       logger.info(`📧 Email sent via Resend API: ${data.id}`);
       return data;
