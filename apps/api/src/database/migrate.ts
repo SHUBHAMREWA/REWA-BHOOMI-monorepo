@@ -1232,6 +1232,20 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       ALTER TABLE posters ALTER COLUMN image_url DROP NOT NULL;
       ALTER TABLE posters ALTER COLUMN storage_key DROP NOT NULL;
     `
+  },
+  {
+    name: '033_performance_indexes',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_properties_listing_purpose ON properties(listing_purpose);
+      CREATE INDEX IF NOT EXISTS idx_properties_property_type ON properties(property_type);
+      CREATE INDEX IF NOT EXISTS idx_properties_category_type ON properties(category_type);
+      CREATE INDEX IF NOT EXISTS idx_properties_price_amount ON properties(price_amount);
+      CREATE INDEX IF NOT EXISTS idx_properties_published_feed ON properties(is_popular DESC, popular_rank ASC NULLS LAST, created_at DESC) WHERE status = 'PUBLISHED' AND deleted_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_property_locations_city ON property_locations(city);
+      CREATE INDEX IF NOT EXISTS idx_property_locations_locality ON property_locations(locality);
+      CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON messages(conversation_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(conversation_id, sender_id) WHERE is_read = false;
+    `
   }
 ];
 

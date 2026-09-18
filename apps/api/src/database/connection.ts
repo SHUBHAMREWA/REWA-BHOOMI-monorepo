@@ -2,12 +2,15 @@ import { Pool, PoolClient } from 'pg';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
+const isNeon = env.DATABASE_URL.includes('neon.tech');
+
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  min: env.DB_POOL_MIN,
+  min: isNeon ? 0 : env.DB_POOL_MIN,
   max: env.DB_POOL_MAX,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
+  idleTimeoutMillis: isNeon ? 20_000 : 30_000,
+  connectionTimeoutMillis: 10_000,
+  ssl: isNeon || env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
 });
 
 pool.on('error', (err) => {

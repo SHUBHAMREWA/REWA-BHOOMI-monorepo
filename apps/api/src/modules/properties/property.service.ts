@@ -171,6 +171,13 @@ export async function listProperties(filters: PropertyFiltersInput, requestingUs
   const orderBy = sortMap[filters.sortBy ?? 'newest'] ?? sortMap.newest;
   const limit = Math.min(filters.limit ?? 20, 100);
 
+  let favoriteSelect = '';
+  if (requestingUserId) {
+    favoriteSelect = `, EXISTS(SELECT 1 FROM favorites WHERE user_id = $${paramIdx} AND property_id = p.id) AS is_favorited`;
+    params.push(requestingUserId);
+    paramIdx++;
+  }
+
   params.push(limit + 1); // fetch one extra to determine hasMore
   const limitParam = paramIdx;
 
@@ -194,7 +201,7 @@ export async function listProperties(filters: PropertyFiltersInput, requestingUs
       (SELECT url FROM property_images WHERE property_id = p.id ORDER BY sort_order ASC LIMIT 1) AS thumbnail,
       (SELECT ARRAY_AGG(url ORDER BY sort_order ASC) FROM property_images WHERE property_id = p.id) AS images,
       (SELECT COUNT(*)::int FROM property_images WHERE property_id = p.id) AS image_count
-      ${requestingUserId ? `, EXISTS(SELECT 1 FROM favorites WHERE user_id = '${requestingUserId}' AND property_id = p.id) AS is_favorited` : ''}
+      ${favoriteSelect}
     FROM properties p
     LEFT JOIN property_locations pl ON pl.property_id = p.id
     LEFT JOIN property_categories pc ON pc.id = p.category_id
@@ -221,18 +228,25 @@ export async function listProperties(filters: PropertyFiltersInput, requestingUs
 // ─── Get Property by Slug ─────────────────────────────────────────────────────
 
 export async function getPropertyBySlug(slug: string, requestingUserId?: string, isAdmin = false) {
+  const queryParams: unknown[] = [slug];
+  let favoriteClause = '';
+  if (requestingUserId) {
+    queryParams.push(requestingUserId);
+    favoriteClause = `, EXISTS(SELECT 1 FROM favorites WHERE user_id = $2 AND property_id = p.id) AS is_favorited`;
+  }
+
   const property = await queryOne<Record<string, unknown>>(
     `SELECT
       p.*,
       pc.id AS category_id, pc.name AS category_name, pc.slug AS category_slug,
       u.id AS owner_id, u.name AS owner_name, u.avatar_url AS owner_avatar,
       u.phone AS owner_phone, u.username AS owner_username
-      ${requestingUserId ? `, EXISTS(SELECT 1 FROM favorites WHERE user_id = '${requestingUserId}' AND property_id = p.id) AS is_favorited` : ''}
+      ${favoriteClause}
     FROM properties p
     LEFT JOIN property_categories pc ON pc.id = p.category_id
     JOIN users u ON u.id = p.owner_id
     WHERE (p.slug = $1 OR p.id::text = $1) AND p.deleted_at IS NULL`,
-    [slug],
+    queryParams,
   );
 
   if (!property) throw new NotFoundError('Property not found');
@@ -950,18 +964,33 @@ export async function getUserProperties(userId: string, page = 1, limit = 20) {
   };
 }
 
-// ─── Get Categories ───────────────────────────────────────────────────────────
+// ─── Get Categories & Amenities (Cached) ──────────────────────────────────────
+
+let cachedCategories: { data: any[]; expiry: number } | null = null;
+let cachedAmenities: { data: any[]; expiry: number } | null = null;
 
 export async function getCategories() {
-  return query<{ id: string; name: string; slug: string; icon: string }>(
+  const now = Date.now();
+  if (cachedCategories && cachedCategories.expiry > now) {
+    return cachedCategories.data;
+  }
+  const data = await query<{ id: string; name: string; slug: string; icon: string }>(
     'SELECT id, name, slug, icon FROM property_categories ORDER BY sort_order',
   );
+  cachedCategories = { data, expiry: now + 5 * 60 * 1000 };
+  return data;
 }
 
 export async function getAmenities() {
-  return query<{ id: string; name: string; icon: string }>(
+  const now = Date.now();
+  if (cachedAmenities && cachedAmenities.expiry > now) {
+    return cachedAmenities.data;
+  }
+  const data = await query<{ id: string; name: string; icon: string }>(
     'SELECT DISTINCT ON (name) id, name, icon FROM property_amenities ORDER BY name, created_at ASC',
   );
+  cachedAmenities = { data, expiry: now + 5 * 60 * 1000 };
+  return data;
 }
 
 

@@ -49,6 +49,7 @@ export default function robots(): MetadataRoute.Robots {
           '/profile/',
           '/favorites/',
           '/api/',
+          '/*?*',        // block query-string variants (duplicate content)
         ],
       },
     ],
