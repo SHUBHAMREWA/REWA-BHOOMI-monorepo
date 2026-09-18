@@ -140,7 +140,7 @@ export default function PosterBannerSection() {
           sx={{
             position: 'relative',
             width: '100%',
-            aspectRatio: { xs: '2/1', sm: '21/9', md: '24/7' },
+            aspectRatio: { xs: '2/1', sm: '2.4/1', md: '3/1' },
             overflow: 'hidden',
             borderRadius: { xs: 2.5, md: 3.5 },
             boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
