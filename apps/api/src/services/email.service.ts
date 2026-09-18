@@ -2,15 +2,33 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE, // true for 465, false for other ports
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+function createTransporter(port = env.SMTP_PORT, secure = env.SMTP_SECURE) {
+  const isPort465 = port === 465;
+  const isSecure = secure || isPort465;
+
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port,
+    secure: isSecure,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 12000,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+}
+
+let transporter = createTransporter();
+
+// Fallback transporter (port 465 SSL) if primary is on port 587
+const fallbackTransporter = env.SMTP_PORT !== 465
+  ? createTransporter(465, true)
+  : null;
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
@@ -22,7 +40,26 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
     });
     logger.info(`📧 Email sent: ${info.messageId}`);
     return info;
-  } catch (error) {
+  } catch (error: any) {
+    // If primary failed with connection timeout or refused (common on Render with port 587), try port 465 SSL fallback
+    if (fallbackTransporter && (error?.code === 'ETIMEDOUT' || error?.code === 'ECONNREFUSED' || error?.command === 'CONN')) {
+      logger.warn({ error: error.message }, 'Primary SMTP connection failed, attempting fallback on port 465 SSL...');
+      try {
+        const fallbackInfo = await fallbackTransporter.sendMail({
+          from: env.SMTP_FROM,
+          to,
+          subject,
+          html,
+        });
+        logger.info(`📧 Email sent via fallback: ${fallbackInfo.messageId}`);
+        transporter = fallbackTransporter;
+        return fallbackInfo;
+      } catch (fallbackError) {
+        logger.error({ fallbackError }, 'Fallback SMTP also failed to send email');
+        throw fallbackError;
+      }
+    }
+
     logger.error({ error }, 'Failed to send email');
     throw error;
   }

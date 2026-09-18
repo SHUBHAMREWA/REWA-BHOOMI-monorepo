@@ -6,12 +6,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { query, queryOne, withTransaction } from '../../database/connection';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
-import { sendWelcomeEmail, sendLoginAlertEmail } from '../../services/email.service';
+import { sendWelcomeEmail, sendLoginAlertEmail, sendPasswordReset } from '../../services/email.service';
 import {
   ConflictError,
   UnauthorizedError,
   NotFoundError,
   BadRequestError,
+  AppError,
 } from '../../errors/AppError';
 import {
   generateAccessToken,
@@ -50,13 +51,6 @@ export function checkUserStatus(status: string) {
   }
   throw new UnauthorizedError('Account access restricted.');
 }
-
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE,
-  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-});
 
 // ─── Register ─────────────────────────────────────────────────────────────────
 
@@ -268,15 +262,14 @@ export async function loginUser(input: LoginInput, ip?: string) {
 // ─── OTP Login ────────────────────────────────────────────────────────────────
 
 export async function sendLoginOtp(email: string) {
+  const cleanEmail = email.trim().toLowerCase();
   const user = await queryOne<{ id: string; name: string; status: string }>(
     'SELECT id, name, status FROM users WHERE email = $1 AND deleted_at IS NULL',
-    [email.toLowerCase()]
+    [cleanEmail]
   );
 
   if (!user) {
-    // Return silently to prevent email enumeration
-    logger.info({ email }, 'OTP login attempt for non-existent user');
-    return;
+    throw new NotFoundError('No account found with this email. Please sign up first.');
   }
 
   checkUserStatus(user.status);
@@ -288,26 +281,32 @@ export async function sendLoginOtp(email: string) {
   // Invalidate previous OTPs for this email
   await query(
     'UPDATE user_otps SET used_at = NOW() WHERE email = $1 AND used_at IS NULL',
-    [email.toLowerCase()]
+    [cleanEmail]
   );
 
   await query(
     'INSERT INTO user_otps (email, otp, expires_at) VALUES ($1, $2, $3)',
-    [email.toLowerCase(), otp, expiresAt]
+    [cleanEmail, otp, expiresAt]
   );
 
-  const { sendOTP } = await import('../../services/email.service');
-  await sendOTP(email.toLowerCase(), otp);
-  logger.info({ userId: user.id }, 'Login OTP sent');
+  try {
+    const { sendOTP } = await import('../../services/email.service');
+    await sendOTP(cleanEmail, otp);
+    logger.info({ userId: user.id }, 'Login OTP sent');
+  } catch (err: any) {
+    logger.error({ err, email: cleanEmail }, 'Failed to deliver login OTP email');
+    throw new AppError('Unable to send verification code email right now. Please check your SMTP settings or try Google/Password login.', 500, 'EMAIL_DELIVERY_FAILED');
+  }
 }
 
 export async function verifyLoginOtp(input: { email: string; otp: string }, ip?: string) {
-  const { email, otp } = input;
+  const email = input.email.trim().toLowerCase();
+  const otp = input.otp.trim();
 
   const record = await queryOne<{ id: string; email: string; used_at: string | null }>(
     `SELECT id, email, used_at FROM user_otps
      WHERE email = $1 AND otp = $2 AND expires_at > NOW()`,
-    [email.toLowerCase(), otp]
+    [email, otp]
   );
 
   if (!record || record.used_at) {
@@ -322,7 +321,7 @@ export async function verifyLoginOtp(input: { email: string; otp: string }, ip?:
   }>(
     `SELECT id, email, status, name
      FROM users WHERE email = $1 AND deleted_at IS NULL`,
-    [email.toLowerCase()]
+    [email]
   );
 
   if (!user) {
@@ -500,30 +499,7 @@ export async function forgotPassword(input: ForgotPasswordInput) {
   const resetLink = `${env.APP_URL}/auth/reset-password?token=${rawToken}`;
 
   try {
-    await transporter.sendMail({
-      from: env.SMTP_FROM,
-      to: user.email,
-      subject: 'Reset your Rewa Bhoomi password',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1a56db;">Reset Your Password</h2>
-          <p>Hi ${user.name},</p>
-          <p>You requested to reset your password. Click the button below to create a new password.</p>
-          <p style="margin: 24px 0;">
-            <a href="${resetLink}"
-               style="background: #1a56db; color: white; padding: 12px 24px;
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
-              Reset Password
-            </a>
-          </p>
-          <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-          <p style="color: #6b7280; font-size: 12px;">
-            Rewa Bhoomi · Rewa, Madhya Pradesh
-          </p>
-        </div>
-      `,
-    });
+    await sendPasswordReset(user.email, resetLink);
     logger.info({ userId: user.id }, 'Password reset email sent');
   } catch (err) {
     logger.error({ err, userId: user.id }, 'Failed to send password reset email');
