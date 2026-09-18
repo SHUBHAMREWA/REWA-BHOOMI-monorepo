@@ -482,9 +482,9 @@ export default function AdminPostersAndCommunication() {
                   📐 Exact Aspect Ratios & Resolutions Needed:
                 </Typography>
                 <Typography variant="body2" color="#1E3A8A">
-                  • 💻 <strong>Desktop Poster:</strong> <code>1600 × 400 px</code> to <code>1600 × 500 px</code> (Aspect Ratio: <strong>3:1 to 4:1</strong>)<br />
-                  • 📱 <strong>Mobile Poster:</strong> <code>800 × 400 px</code> to <code>800 × 500 px</code> (Aspect Ratio: <strong>16:9 to 2:1</strong>)<br />
-                  • <em>All banners now scale naturally to 100% full view without cropping any text, logos, or buttons.</em>
+                  • 💻 <strong>Desktop Poster:</strong> <code>1200 × 400 px</code> or <code>1600 × 533 px</code> (Aspect Ratio: <strong>3:1</strong>)<br />
+                  • 📱 <strong>Mobile Poster:</strong> <code>800 × 400 px</code> (Aspect Ratio: <strong>2:1</strong>)<br />
+                  • <em>Desktop view displays 3:1 landscape banners cleanly, and mobile displays 2:1 banners without cutting off headers or footers.</em>
                 </Typography>
               </Box>
 
@@ -506,7 +506,7 @@ export default function AdminPostersAndCommunication() {
                       tabIndex={0}
                       sx={{
                         width: '100%',
-                        aspectRatio: '24/7',
+                        aspectRatio: '3/1',
                         bgcolor: isDesktopDragging ? '#EFF6FF' : '#F8FAFC',
                         border: isDesktopDragging ? '2px dashed #1E40AF' : '2px dashed #94A3B8',
                         borderRadius: 2,
@@ -530,7 +530,7 @@ export default function AdminPostersAndCommunication() {
                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                           />
                           <Box sx={{ position: 'absolute', bottom: 6, right: 6, bgcolor: 'rgba(0,0,0,0.7)', color: 'white', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.7rem', fontWeight: 600 }}>
-                            Desktop Preview
+                            Desktop Preview (3:1)
                           </Box>
                         </Box>
                       ) : getYouTubeVideoId(posterVideoUrl) ? (
@@ -551,7 +551,7 @@ export default function AdminPostersAndCommunication() {
                             {isDesktopDragging ? 'Drop Desktop Image!' : 'Select or Drag Desktop Banner'}
                           </Typography>
                           <Typography variant="caption" color="#64748B">
-                            1600 × 400 px (4:1 ratio) • Or enter YouTube link below
+                            1200 × 400 px or 1600 × 533 px (3:1 ratio) • Or YouTube link
                           </Typography>
                         </>
                       )}
@@ -580,7 +580,7 @@ export default function AdminPostersAndCommunication() {
                       tabIndex={0}
                       sx={{
                         width: '100%',
-                        aspectRatio: '24/7',
+                        aspectRatio: '2/1',
                         bgcolor: isMobileDragging ? '#ECFDF5' : '#F8FAFC',
                         border: isMobileDragging ? '2px dashed #10B981' : '2px dashed #94A3B8',
                         borderRadius: 2,
@@ -604,7 +604,7 @@ export default function AdminPostersAndCommunication() {
                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                           />
                           <Box sx={{ position: 'absolute', bottom: 6, right: 6, bgcolor: 'rgba(0,0,0,0.7)', color: 'white', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.7rem', fontWeight: 600 }}>
-                            Mobile Preview
+                            Mobile Preview (2:1)
                           </Box>
                         </Box>
                       ) : getYouTubeVideoId(posterVideoUrl) ? (

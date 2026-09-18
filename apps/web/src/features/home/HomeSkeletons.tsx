@@ -12,7 +12,7 @@ export function PosterBannerSkeleton() {
           animation="wave"
           sx={{
             width: '100%',
-            aspectRatio: { xs: '2/1', sm: '21/9', md: '24/7' },
+            aspectRatio: { xs: '2/1', sm: '2.4/1', md: '3/1' },
             height: 'auto',
             borderRadius: { xs: 2.5, md: 3.5 },
             bgcolor: '#E2E8F0',
