@@ -11,6 +11,10 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
+  if (err.message?.includes('Connection terminated unexpectedly')) {
+    logger.debug('Neon DB idle connection closed by serverless pooler');
+    return;
+  }
   logger.error({ err }, 'Unexpected error on idle DB client');
 });
 
