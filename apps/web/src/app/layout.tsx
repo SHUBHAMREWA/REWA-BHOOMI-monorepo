@@ -100,12 +100,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               '@type': 'Organization',
               name: APP_NAME,
               url: APP_URL,
+              logo: `${APP_URL}/brand-logo.png`,
               description: APP_DESCRIPTION,
               address: {
                 '@type': 'PostalAddress',
                 addressLocality: 'Rewa',
                 addressRegion: 'Madhya Pradesh',
                 addressCountry: 'IN',
+              },
+              contactPoint: {
+                '@type': 'ContactPoint',
+                contactType: 'customer support',
+                telephone: '+919999999999',
+                areaServed: 'IN',
+                availableLanguage: ['Hindi', 'English'],
               },
             }),
           }}

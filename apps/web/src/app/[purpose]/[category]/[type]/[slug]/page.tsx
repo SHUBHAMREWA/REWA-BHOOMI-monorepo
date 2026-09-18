@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PropertyDetailPage from '@/features/properties/PropertyDetailPage';
-import { APP_NAME } from '@rewa-bhoomi/config';
+import { APP_NAME, APP_URL } from '@rewa-bhoomi/config';
 
 interface Props {
   params: {
@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `${property.title} | ${params.purpose.toUpperCase()} in ${property.city} | ${APP_NAME}`;
   const description = property.description?.slice(0, 160) || `View details for ${property.title} in ${property.city}, Madhya Pradesh.`;
-  const canonicalUrl = `https://rewabhoomi.com/${params.purpose}/${params.category}/${params.type}/${params.slug}`;
-  const imageUrl = property.images?.[0]?.url || '/og-image.jpg';
+  const canonicalUrl = `${APP_URL}/${params.purpose}/${params.category}/${params.type}/${params.slug}`;
+  const imageUrl = property.images?.[0]?.url || `${APP_URL}/og-image.jpg`;
 
   return {
     title,

@@ -10,10 +10,22 @@ const staticRoutes: MetadataRoute.Sitemap = [
     priority: 1.0,
   },
   {
+    url: `${APP_URL}/properties`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.95,
+  },
+  {
+    url: `${APP_URL}/projects`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.9,
+  },
+  {
     url: `${APP_URL}/blog`,
     lastModified: new Date(),
     changeFrequency: 'daily',
-    priority: 0.9,
+    priority: 0.85,
   },
   {
     url: `${APP_URL}/about`,
@@ -48,6 +60,7 @@ async function getBlogRoutes(): Promise<MetadataRoute.Sitemap> {
       `${API_URL}/api/v1/blogs?status=PUBLISHED&limit=500&page=1`,
       {
         next: { revalidate: 3600 }, // re-fetch every hour
+        signal: AbortSignal.timeout(8000),
       }
     );
 
@@ -55,7 +68,11 @@ async function getBlogRoutes(): Promise<MetadataRoute.Sitemap> {
 
     const json = await res.json();
     const blogs: { slug: string; updatedAt?: string; createdAt?: string }[] =
-      json?.data ?? [];
+      Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json?.data?.data)
+        ? json.data.data
+        : [];
 
     return blogs.map((blog) => ({
       url: `${APP_URL}/blog/${blog.slug}`,
@@ -68,7 +85,7 @@ async function getBlogRoutes(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
   } catch {
-    // If API is down during build, return empty — static routes still work
+    // If API is down or waking up during build, return empty — static routes still work
     return [];
   }
 }
@@ -80,6 +97,7 @@ async function getPropertyRoutes(): Promise<MetadataRoute.Sitemap> {
       `${API_URL}/api/v1/properties?status=PUBLISHED&limit=500&page=1`,
       {
         next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(8000),
       }
     );
 
@@ -87,7 +105,11 @@ async function getPropertyRoutes(): Promise<MetadataRoute.Sitemap> {
 
     const json = await res.json();
     const properties: { slug: string; updatedAt?: string; createdAt?: string }[] =
-      json?.data ?? [];
+      Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json?.data?.data)
+        ? json.data.data
+        : [];
 
     return properties.map((prop) => ({
       url: `${APP_URL}/property/${prop.slug}`,
@@ -104,9 +126,48 @@ async function getPropertyRoutes(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
+// ─── Dynamic project routes fetched from API ────────────────────────────────
+async function getProjectRoutes(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/v1/projects?limit=100`,
+      {
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+
+    if (!res.ok) return [];
+
+    const json = await res.json();
+    const projects: { slug: string; updatedAt?: string; createdAt?: string }[] =
+      Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json?.data?.data)
+        ? json.data.data
+        : [];
+
+    return projects.map((proj) => ({
+      url: `${APP_URL}/projects/${proj.slug}`,
+      lastModified: proj.updatedAt
+        ? new Date(proj.updatedAt)
+        : proj.createdAt
+        ? new Date(proj.createdAt)
+        : new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.85,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // ─── Sitemap export ───────────────────────────────────────────────────────────
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const blogRoutes = await getBlogRoutes();
-  const propertyRoutes = await getPropertyRoutes();
-  return [...staticRoutes, ...blogRoutes, ...propertyRoutes];
+  const [blogRoutes, propertyRoutes, projectRoutes] = await Promise.all([
+    getBlogRoutes(),
+    getPropertyRoutes(),
+    getProjectRoutes(),
+  ]);
+  return [...staticRoutes, ...propertyRoutes, ...projectRoutes, ...blogRoutes];
 }

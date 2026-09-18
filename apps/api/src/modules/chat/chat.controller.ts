@@ -300,23 +300,19 @@ export const sendMessage = async (req: Request, res: Response) => {
   const { content, reply_to_message_id, impersonate_as } = req.body;
 
   const conv = await queryOne<any>(
-    `SELECT id, type, initiator_id, recipient_id, is_approved_for_recipient FROM conversations WHERE id = $1`,
-    [conversationId]
+    `SELECT c.id, c.type, c.initiator_id, c.recipient_id, c.is_approved_for_recipient,
+            EXISTS(SELECT 1 FROM conversation_members cm WHERE cm.conversation_id = c.id AND cm.user_id = $2) AS is_member
+     FROM conversations c
+     WHERE c.id = $1`,
+    [conversationId, userId]
   );
   if (!conv) {
     throw new NotFoundError('Conversation not found');
   }
 
   // Verify membership
-  if (!isAdmin) {
-    const member = await queryOne(
-      'SELECT 1 FROM conversation_members WHERE conversation_id = $1 AND user_id = $2',
-      [conversationId, userId]
-    );
-
-    if (!member) {
-      throw new ForbiddenError('You are not a member of this conversation');
-    }
+  if (!isAdmin && !conv.is_member) {
+    throw new ForbiddenError('You are not a member of this conversation');
   }
 
   let senderId = userId;
@@ -329,27 +325,24 @@ export const sendMessage = async (req: Request, res: Response) => {
     isAdminOverride = true;
   }
 
-  const [message] = await query(
-    `INSERT INTO messages (id, conversation_id, sender_id, actual_sender_id, is_admin_override, content, reply_to_message_id) 
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6) 
-     RETURNING *`,
-    [conversationId, senderId, actualSenderId, isAdminOverride, content, reply_to_message_id || null]
-  );
-  
-  // Fetch populated message
+  // Insert and populate message in a single database roundtrip using CTE
   const [populatedMessage] = await query(
-    `SELECT 
-      m.*,
-      u.name as sender_name,
-      u.avatar_url as sender_avatar,
-      rm.content as replied_message_content,
-      rm.sender_id as replied_message_sender_id,
-      '[]'::json as reactions
-     FROM messages m
-     LEFT JOIN users u ON u.id = m.sender_id
-     LEFT JOIN messages rm ON m.reply_to_message_id = rm.id
-     WHERE m.id = $1`,
-    [message.id]
+    `WITH inserted AS (
+       INSERT INTO messages (id, conversation_id, sender_id, actual_sender_id, is_admin_override, content, reply_to_message_id) 
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6) 
+       RETURNING *
+     )
+     SELECT 
+       m.*,
+       u.name as sender_name,
+       u.avatar_url as sender_avatar,
+       rm.content as replied_message_content,
+       rm.sender_id as replied_message_sender_id,
+       '[]'::json as reactions
+      FROM inserted m
+      LEFT JOIN users u ON u.id = m.sender_id
+      LEFT JOIN messages rm ON m.reply_to_message_id = rm.id`,
+    [conversationId, senderId, actualSenderId, isAdminOverride, content, reply_to_message_id || null]
   );
 
   // Emit Socket.IO events
