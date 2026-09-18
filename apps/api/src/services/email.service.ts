@@ -3,6 +3,21 @@ import { env } from '../config/env';
 import { logger } from '../config/logger';
 
 function createTransporter(port = env.SMTP_PORT, secure = env.SMTP_SECURE) {
+  const isGmail = env.SMTP_HOST.includes('gmail') || env.SMTP_USER?.includes('@gmail.com');
+
+  if (isGmail) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
+  }
+
   const isPort465 = port === 465;
   const isSecure = secure || isPort465;
 
@@ -14,9 +29,9 @@ function createTransporter(port = env.SMTP_PORT, secure = env.SMTP_SECURE) {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS,
     },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 12000,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
     tls: {
       rejectUnauthorized: false,
     },
@@ -25,15 +40,23 @@ function createTransporter(port = env.SMTP_PORT, secure = env.SMTP_SECURE) {
 
 let transporter = createTransporter();
 
-// Fallback transporter (port 465 SSL) if primary is on port 587
-const fallbackTransporter = env.SMTP_PORT !== 465
+// Fallback transporter (port 465 SSL) if primary is on custom host
+const fallbackTransporter = !env.SMTP_HOST.includes('gmail') && !env.SMTP_USER?.includes('@gmail.com') && env.SMTP_PORT !== 465
   ? createTransporter(465, true)
   : null;
 
+function getFromAddress() {
+  if (env.SMTP_FROM && !env.SMTP_FROM.includes('noreply@rewabhoomi.com')) {
+    return env.SMTP_FROM;
+  }
+  return `"Rewa Bhoomi" <${env.SMTP_USER}>`;
+}
+
 export const sendEmail = async (to: string, subject: string, html: string) => {
+  const from = getFromAddress();
   try {
     const info = await transporter.sendMail({
-      from: env.SMTP_FROM,
+      from,
       to,
       subject,
       html,
@@ -41,12 +64,12 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
     logger.info(`📧 Email sent: ${info.messageId}`);
     return info;
   } catch (error: any) {
-    // If primary failed with connection timeout or refused (common on Render with port 587), try port 465 SSL fallback
+    // If primary failed with connection timeout or refused, try fallback
     if (fallbackTransporter && (error?.code === 'ETIMEDOUT' || error?.code === 'ECONNREFUSED' || error?.command === 'CONN')) {
       logger.warn({ error: error.message }, 'Primary SMTP connection failed, attempting fallback on port 465 SSL...');
       try {
         const fallbackInfo = await fallbackTransporter.sendMail({
-          from: env.SMTP_FROM,
+          from,
           to,
           subject,
           html,
