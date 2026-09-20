@@ -27,6 +27,7 @@ export interface PushPayload {
   body: string;
   icon?: string;
   badge?: string;
+  image?: string;
   data?: any;
 }
 
@@ -109,6 +110,53 @@ export const sendPushToAdmins = async (payload: PushPayload) => {
   for (const admin of admins) {
     await sendPushToUser(admin.user_id, payload);
   }
+};
+
+// ─── Send Push to All Users (Broadcast) ──────────────────────────────────────
+export const sendPushToAllUsers = async (payload: PushPayload, excludeUserId?: string) => {
+  const queryText = excludeUserId
+    ? `SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id != $1`
+    : `SELECT endpoint, p256dh, auth FROM push_subscriptions`;
+  const params = excludeUserId ? [excludeUserId] : [];
+  const subscriptions = await query(queryText, params);
+
+  if (subscriptions.length === 0) return;
+
+  const notificationPayload = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    icon: payload.icon || '/icons/icon-192x192.png',
+    badge: payload.badge || '/icons/badge-72x72.png',
+    image: payload.image,
+    data: {
+      ...(payload.data || {}),
+      timestamp: Date.now()
+    }
+  });
+
+  const sendPromises = subscriptions.map(async (sub: any) => {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth
+          }
+        },
+        notificationPayload
+      );
+    } catch (err: any) {
+      if (err.statusCode === 404 || err.statusCode === 410) {
+        // Subscription is expired or unregistered
+        await removePushSubscription(sub.endpoint);
+      } else {
+        logger.warn({ err, endpoint: sub.endpoint }, 'Push notification broadcast delivery failed');
+      }
+    }
+  });
+
+  await Promise.allSettled(sendPromises);
 };
 
 // ─── Dispatch Chat Message Push Notifications ────────────────────────────────
@@ -335,5 +383,78 @@ export const notifyUserPropertyModeration = async (params: {
     } catch (e) {}
   } catch (error) {
     logger.error({ error, propertyId }, 'Error dispatching user property moderation notification');
+  }
+};
+
+// ─── Broadcast New Property Approval to All Users ────────────────────────────
+export const broadcastNewPropertyPublished = async (params: {
+  propertyId: string;
+  slug: string;
+  title: string;
+  city?: string | null;
+  price?: number | null;
+  thumbnail?: string | null;
+  ownerId: string;
+}) => {
+  const { propertyId, slug, title, city, price, thumbnail, ownerId } = params;
+
+  try {
+    const locationName = city ? city : 'Rewa';
+    const formattedPrice = price ? `₹${Number(price).toLocaleString('en-IN')}` : '';
+    const notifTitle = `🏡 New Property in ${locationName}!`;
+    const notifMessage = formattedPrice
+      ? `"${title}" has just been listed in ${locationName} for ${formattedPrice}. Tap to view details!`
+      : `"${title}" has just been listed in ${locationName}. Tap to view details!`;
+
+    // 1. Insert In-App Notifications for all other active users (excluding owner)
+    await query(
+      `INSERT INTO notifications (user_id, type, title, message, data)
+       SELECT id, 'PROPERTY_PUBLISHED', $1, $2, $3::jsonb
+       FROM users
+       WHERE id != $4 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+      [
+        notifTitle,
+        notifMessage,
+        JSON.stringify({ propertyId, slug, title, city: locationName, price, url: `/property/${slug}` }),
+        ownerId,
+      ]
+    );
+
+    // 2. Broadcast Web Push Notification to all subscribed users (excluding owner)
+    await sendPushToAllUsers(
+      {
+        title: notifTitle,
+        body: notifMessage,
+        icon: thumbnail || '/icons/icon-192x192.png',
+        badge: '/icons/badge-72x72.png',
+        image: thumbnail || undefined,
+        data: {
+          url: `/property/${slug}`,
+          propertyId,
+          type: 'PROPERTY',
+          timestamp: Date.now(),
+        },
+      },
+      ownerId
+    );
+
+    // 3. Emit real-time Socket.IO event to all connected clients
+    try {
+      const { getIO } = await import('../../socket');
+      const io = getIO();
+      if (io) {
+        io.emit('new_property_published', {
+          propertyId,
+          slug,
+          title,
+          city: locationName,
+          price,
+          thumbnail,
+          url: `/property/${slug}`,
+        });
+      }
+    } catch (e) {}
+  } catch (error) {
+    logger.error({ error, propertyId }, 'Error broadcasting new property notification');
   }
 };
