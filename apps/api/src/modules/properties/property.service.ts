@@ -299,8 +299,26 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
 // ─── Get Property by ID (for edit/ownership check) ──────────────────────────
 
 export async function getPropertyById(id: string) {
-  return queryOne<{ id: string; owner_id: string; status: string; title: string; slug: string; city: string }>(
-    'SELECT id, owner_id, status, title, slug, city FROM properties WHERE id = $1 AND deleted_at IS NULL',
+  return queryOne<{
+    id: string;
+    owner_id: string;
+    status: string;
+    title: string;
+    slug: string;
+    city: string;
+    price?: number | null;
+    listing_type?: string | null;
+    thumbnail?: string | null;
+  }>(
+    `SELECT 
+       p.id, p.owner_id, p.status, p.title, p.slug, 
+       COALESCE(pl.city, p.city) AS city,
+       COALESCE(p.price_amount, p.price) AS price,
+       p.listing_type,
+       (SELECT url FROM property_images WHERE property_id = p.id ORDER BY sort_order ASC LIMIT 1) AS thumbnail
+     FROM properties p
+     LEFT JOIN property_locations pl ON pl.property_id = p.id
+     WHERE p.id = $1 AND p.deleted_at IS NULL`,
     [id],
   );
 }
@@ -895,9 +913,11 @@ export async function moderateProperty(
     [status, rejectionReason ?? null, id],
   );
 
-  // Notify Owner in background
+  // Notify Owner & Broadcast to All Users in background
   try {
-    const { notifyUserPropertyModeration } = await import('../notifications/push.service');
+    const { notifyUserPropertyModeration, broadcastNewPropertyPublished } = await import('../notifications/push.service');
+    
+    // 1. Notify Owner of approval/rejection
     notifyUserPropertyModeration({
       ownerId: property.owner_id,
       propertyId: id,
@@ -906,6 +926,19 @@ export async function moderateProperty(
       status,
       rejectionReason: rejectionReason ?? undefined,
     }).catch((err) => console.warn('Failed to notify user of property moderation:', err));
+
+    // 2. If approved & published, broadcast to all other users
+    if (status === 'PUBLISHED') {
+      broadcastNewPropertyPublished({
+        propertyId: id,
+        slug: property.slug || '',
+        title: property.title || 'Property',
+        city: property.city,
+        price: property.price ? Number(property.price) : null,
+        thumbnail: property.thumbnail,
+        ownerId: property.owner_id,
+      }).catch((err) => console.warn('Failed to broadcast new property notification:', err));
+    }
   } catch (e) {}
 }
 

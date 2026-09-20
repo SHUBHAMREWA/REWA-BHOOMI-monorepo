@@ -24,22 +24,24 @@ self.addEventListener('push', (event: PushEvent) => {
 
   try {
     const payload = event.data.json();
-    const title = payload.title || 'Rewa Bhoomi';
-    const conversationId = payload.data?.conversationId || 'chat-notification';
+    const isProperty = payload.data?.type === 'PROPERTY';
+    const tag = payload.data?.propertyId ? `property-${payload.data.propertyId}` : (payload.data?.conversationId || 'notification');
 
+    const title = payload.title || (isProperty ? 'New Property in Rewa' : 'Rewa Bhoomi');
     const options: any = {
-      body: payload.body || 'You received a new message.',
+      body: payload.body || (isProperty ? 'A new property has been listed!' : 'You received a new message.'),
       icon: payload.icon || '/icons/icon-192x192.png',
       badge: payload.badge || '/icons/badge-72x72.png',
+      image: payload.image || undefined,
       data: payload.data || {},
-      tag: conversationId,
+      tag,
       renotify: true,
       timestamp: payload.data?.timestamp || Date.now(),
       vibrate: [200, 100, 200],
       actions: [
         {
           action: 'open',
-          title: '💬 Open Chat',
+          title: isProperty ? '🏡 View Property' : '💬 Open Chat',
         },
         {
           action: 'dismiss',
