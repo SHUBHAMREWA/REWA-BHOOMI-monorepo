@@ -45,6 +45,11 @@ import PropertyCard, { PropertyCardData } from './PropertyCard';
 import { PropertyListCardSkeleton, PropertyGridCardSkeleton } from './PropertySkeletons';
 import { apiGet } from '@/lib/api';
 import {
+  getCachedQuery,
+  setCachedQuery,
+  isHardRefreshOrReload,
+} from '@/lib/propertyIndexedDb';
+import {
   PROPERTY_CATEGORIES,
   PROPERTY_TYPES,
   getPropertyTypesByCategory,
@@ -98,11 +103,13 @@ export default function PropertiesSearchPage() {
 
   const [properties, setProperties] = useState<PropertyCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isSearchSticky, setIsSearchSticky] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -193,12 +200,30 @@ export default function PropertiesSearchPage() {
     }
   }, [searchParams]);
 
+  const getSearchCacheKey = (params: URLSearchParams) => {
+    const copy = new URLSearchParams(params.toString());
+    copy.delete('cursor');
+    copy.delete('limit');
+    const sortedKeys = Array.from(copy.keys()).sort();
+    const sortedParams = new URLSearchParams();
+    for (const k of sortedKeys) {
+      sortedParams.set(k, copy.get(k)!);
+    }
+    return `search:${sortedParams.toString()}`;
+  };
+
   const fetchProperties = async (reset = false, customParams?: URLSearchParams) => {
     try {
-      if (reset) setLoading(true);
+      if (reset) {
+        setLoading(true);
+      } else {
+        if (isLoadingMore || !hasMore || loading) return;
+        setIsLoadingMore(true);
+      }
+
       const params = customParams ? new URLSearchParams(customParams.toString()) : new URLSearchParams(searchParams.toString());
       if (!reset && cursor) params.append('cursor', cursor);
-      params.set('limit', '12');
+      params.set('limit', '8');
 
       // Normalize keyword from search or q params
       if (params.has('search') && !params.has('keyword')) {
@@ -232,17 +257,52 @@ export default function PropertiesSearchPage() {
         if (lt) params.set('listingPurpose', lt);
       }
 
+      const cacheKey = getSearchCacheKey(params);
+
+      // On initial load or filter reset, check IndexedDB first unless hard refresh / reload
+      if (reset && !isHardRefreshOrReload()) {
+        const cached = await getCachedQuery(cacheKey);
+        if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
+          setProperties(cached.data);
+          setHasMore(cached.hasMore);
+          setCursor(cached.cursor);
+          setLoading(false);
+          return;
+        }
+      }
+
       const data = await apiGet<{ data: PropertyCardData[]; meta: { hasMore: boolean; cursor: string | null } }>(
         `/properties?${params.toString()}`
       );
 
-      setProperties(prev => (reset ? data.data : [...prev, ...data.data]));
-      setHasMore(data.meta.hasMore);
-      setCursor(data.meta.cursor);
+      if (reset) {
+        setProperties(data.data);
+        setHasMore(data.meta.hasMore);
+        setCursor(data.meta.cursor);
+        await setCachedQuery(cacheKey, data.data, data.meta.hasMore, data.meta.cursor);
+      } else {
+        if (!data.data || data.data.length === 0) {
+          setHasMore(false);
+        } else {
+          setProperties(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newItems = data.data.filter(p => !existingIds.has(p.id));
+            const combined = [...prev, ...newItems];
+            setCachedQuery(cacheKey, combined, data.meta.hasMore, data.meta.cursor);
+            return combined;
+          });
+          setHasMore(data.meta.hasMore);
+          setCursor(data.meta.cursor);
+        }
+      }
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -250,6 +310,30 @@ export default function PropertiesSearchPage() {
     fetchProperties(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Infinite scroll near-bottom trigger
+  useEffect(() => {
+    if (!hasMore || loading || isLoadingMore) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first && first.isIntersecting && hasMore && !loading && !isLoadingMore) {
+          fetchProperties(false);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '350px',
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, isLoadingMore, cursor]);
 
   const handleApplyFilters = (customOverrides?: Partial<{
     keyword: string;
@@ -898,13 +982,13 @@ export default function PropertiesSearchPage() {
         {loading ? (
           viewMode === 'list' ? (
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                 <PropertyListCardSkeleton key={i} />
               ))}
             </Box>
           ) : (
             <Grid container spacing={{ xs: 1.2, sm: 2, md: 3 }}>
-              {[1, 2, 3, 4, 5, 6].map(i => (
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                 <Grid item xs={6} sm={6} md={4} key={i}>
                   <PropertyGridCardSkeleton />
                 </Grid>
@@ -938,11 +1022,37 @@ export default function PropertiesSearchPage() {
               </Grid>
             )}
 
+            {/* Infinite Scroll Sentinel (triggers 350px before end) */}
             {hasMore && (
-              <Box sx={{ textAlign: 'center', mt: 6 }}>
-                <Button variant="outlined" size="large" onClick={() => fetchProperties()} sx={{ borderRadius: 3, px: 4, fontWeight: 700 }}>
-                  Load More Properties
-                </Button>
+              <Box
+                ref={sentinelRef}
+                sx={{
+                  height: 20,
+                  my: 1,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+
+            {/* Next Batch Loading Skeletons */}
+            {isLoadingMore && (
+              <Box sx={{ mt: 2 }}>
+                {viewMode === 'list' ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                      <PropertyListCardSkeleton key={`skeleton-more-${i}`} />
+                    ))}
+                  </Box>
+                ) : (
+                  <Grid container spacing={{ xs: 1.2, sm: 2, md: 3 }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                      <Grid item xs={6} sm={6} md={4} key={`skeleton-more-${i}`}>
+                        <PropertyGridCardSkeleton />
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
               </Box>
             )}
           </>
