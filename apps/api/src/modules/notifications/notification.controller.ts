@@ -52,10 +52,7 @@ export const getVapidPublicKey = async (_req: Request, res: Response) => {
 };
 
 export const subscribePush = async (req: Request, res: Response) => {
-  const userId = req.user?.userId;
-  if (!userId) {
-    return res.status(401).json({ success: false, message: 'Unauthorized' });
-  }
+  const userId = req.user?.userId || null;
 
   const { savePushSubscription } = await import('./push.service');
   await savePushSubscription(userId, req.body);
