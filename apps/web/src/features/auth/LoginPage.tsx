@@ -30,9 +30,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.replace('/profile');
+      const redirect = searchParams.get('redirect') ?? '/properties';
+      router.replace(redirect);
     }
-  }, [user, router]);
+  }, [user, router, searchParams]);
 
   const {
     register,
@@ -45,7 +46,7 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       toast.success('Welcome back!');
-      const redirect = searchParams.get('redirect') ?? '/dashboard';
+      const redirect = searchParams.get('redirect') ?? '/properties';
       router.push(redirect);
     } catch (err: unknown) {
       const message =
@@ -80,7 +81,7 @@ export default function LoginPage() {
     try {
       await loginWithOtp(otpEmail, otpCode);
       toast.success('Welcome back!');
-      const redirect = searchParams.get('redirect') ?? '/dashboard';
+      const redirect = searchParams.get('redirect') ?? '/properties';
       router.push(redirect);
     } catch (err: any) {
       const message = err?.response?.data?.error?.message ?? 'Invalid OTP';
@@ -151,7 +152,7 @@ export default function LoginPage() {
                   try {
                     await loginWithGoogle(credentialResponse.credential);
                     toast.success('Welcome back!');
-                    const redirect = searchParams.get('redirect') ?? '/dashboard';
+                    const redirect = searchParams.get('redirect') ?? '/properties';
                     router.push(redirect);
                   } catch (err: any) {
                     const message = err?.response?.data?.error?.message ?? 'Google login failed';

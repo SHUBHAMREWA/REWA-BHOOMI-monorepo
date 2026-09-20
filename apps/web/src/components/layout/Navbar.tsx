@@ -297,49 +297,49 @@ export default function Navbar() {
               <ListItemText primary="My Listings" primaryTypographyProps={{ fontWeight: 600 }} />
             </ListItemButton>
           </ListItem>
-
-          {isSupported && (
-            <ListItem disablePadding sx={{ mb: 1 }}>
-              <Box
-                sx={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justify: 'space-between',
-                  px: 2,
-                  py: 1,
-                  borderRadius: 2,
-                  bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.05)' : '#FEF3C7',
-                  border: isSubscribed ? '1px solid #E2E8F0' : '1px solid #FCD34D'
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <ListItemIcon sx={{ minWidth: 36, color: isSubscribed ? '#1B4FD8' : '#92400E' }}>
-                    {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Notifications"
-                    secondary={isSubscribed ? "Enabled" : "Disabled"}
-                    primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem', color: '#0F172A' }}
-                    secondaryTypographyProps={{ fontSize: '0.72rem', color: isSubscribed ? '#16A34A' : '#92400E', fontWeight: 600 }}
-                  />
-                </Box>
-                <Switch
-                  size="small"
-                  checked={isSubscribed}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      enableNotifications();
-                    } else {
-                      disableNotifications();
-                    }
-                  }}
-                  color="primary"
-                />
-              </Box>
-            </ListItem>
-          )}
         </List>
+      )}
+
+      {isSupported && (
+        <Box sx={{ px: 2, mt: 1, mb: 1 }}>
+          <Box
+            sx={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.05)' : '#FEF3C7',
+              border: isSubscribed ? '1px solid #E2E8F0' : '1px solid #FCD34D'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <ListItemIcon sx={{ minWidth: 36, color: isSubscribed ? '#1B4FD8' : '#92400E' }}>
+                {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
+              </ListItemIcon>
+              <ListItemText
+                primary="Notifications"
+                secondary={isSubscribed ? "Enabled" : "Disabled"}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem', color: '#0F172A' }}
+                secondaryTypographyProps={{ fontSize: '0.72rem', color: isSubscribed ? '#16A34A' : '#92400E', fontWeight: 600 }}
+              />
+            </Box>
+            <Switch
+              size="small"
+              checked={isSubscribed}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  enableNotifications();
+                } else {
+                  disableNotifications();
+                }
+              }}
+              color="primary"
+            />
+          </Box>
+        </Box>
       )}
       
       <Box sx={{ mt: 3, px: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -665,6 +665,26 @@ export default function Navbar() {
               </Button>
               {!user ? (
                 <>
+                  {isSupported && (
+                    <Tooltip title={isSubscribed ? "Notifications Enabled" : "Enable Property Alerts"}>
+                      <IconButton
+                        onClick={isSubscribed ? disableNotifications : enableNotifications}
+                        size="small"
+                        aria-label="Toggle notifications"
+                        sx={{
+                          color: isSubscribed ? '#1B4FD8' : '#64748B',
+                          bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.08)' : '#F1F5F9',
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          mr: 0.5,
+                          '&:hover': { bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.16)' : '#E2E8F0' },
+                        }}
+                      >
+                        {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   <Link href="/auth/login" style={{ textDecoration: 'none', color: '#475569', fontWeight: 600, fontSize: '15px' }}>
                     Log In
                   </Link>
@@ -688,6 +708,26 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
+                  {isSupported && (
+                    <Tooltip title={isSubscribed ? "Notifications Enabled" : "Enable Property Alerts"}>
+                      <IconButton
+                        onClick={isSubscribed ? disableNotifications : enableNotifications}
+                        size="small"
+                        aria-label="Toggle notifications"
+                        sx={{
+                          color: isSubscribed ? '#1B4FD8' : '#64748B',
+                          bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.08)' : '#F1F5F9',
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          mr: 0.5,
+                          '&:hover': { bgcolor: isSubscribed ? 'rgba(27, 79, 216, 0.16)' : '#E2E8F0' },
+                        }}
+                      >
+                        {isSubscribed ? <NotificationsActiveIcon fontSize="small" /> : <NotificationsOffIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {/* Quick Heart Saved Properties Button */}
                   <Tooltip title="Saved Properties">
                     <IconButton

@@ -39,9 +39,12 @@ import GrassIcon from '@mui/icons-material/Grass';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import EditIcon from '@mui/icons-material/Edit';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePwaInstall } from '@/features/pwa/usePwaInstall';
+import { useCompanyCommunication } from '@/features/home/api/useHomeData';
 import { apiPost, apiDelete } from '@/lib/api';
 import { PROPERTY_CATEGORIES, PROPERTY_TYPES } from '@/config/propertyFormConfig';
 import { PropertyCategoryType } from '@rewa-bhoomi/types';
@@ -147,6 +150,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const router = useRouter();
   const { isAuthenticated, user, isLoading: isAuthLoading, accessToken } = useAuth();
   const { canInstall, promptInstall } = usePwaInstall();
+  const { data: companyComm } = useCompanyCommunication();
   
   const [property, setProperty] = useState<PropertyData | null>(initialProperty);
   const [loading, setLoading] = useState(!initialProperty);
@@ -196,6 +200,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
     if (property) {
@@ -741,150 +746,255 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const lease = property.leaseDetails || property.commercialLeaseDetails;
   const hall = property.hallDetails;
 
-  const renderPriceAndTitleCard = (displayProps: any) => (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 1.5, sm: 3 },
-        borderRadius: '8px',
-        border: '1px solid #E2E8F0',
-        bgcolor: '#FFFFFF',
-        ...displayProps,
-      }}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.8 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.2 }, flexWrap: 'wrap' }}>
-          <Typography variant="h4" component="div" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-            {priceFormatted}
-          </Typography>
-          {property.is_price_negotiable && (
-            <Chip
-              label="Negotiable (मोलभाव संभव)"
-              size="small"
-              sx={{
-                bgcolor: '#DCFCE7',
-                color: '#15803D',
-                fontWeight: 700,
-                fontSize: { xs: '0.68rem', sm: '0.75rem' },
-                height: { xs: 22, sm: 26 },
-                border: '1px solid #86EFAC',
-              }}
-            />
-          )}
-        </Box>
+  const renderPriceAndTitleCard = (displayProps: any) => {
+    const adminPhone = companyComm?.whatsapp_number || companyComm?.contact_phone || '919691316499';
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://rewabhoomi.com/property/${property.slug}`;
+    const locationText = [addressLabel, cityLabel, property.state].filter(Boolean).join(', ');
+    const whatsappMsg = `नमस्ते Rewa Bhoomi, मुझे इस प्रॉपर्टी के बारे में जानकारी चाहिए:\n\n🏡 *${property.title}*\n💰 *कीमत:* ${priceFormatted}\n📍 *लोकेशन:* ${locationText}\n🔗 *लिंक:* ${currentUrl}`;
+    const whatsappUrl = `https://wa.me/${adminPhone.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}`;
 
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton onClick={handleShare} aria-label="Share property" size="small" sx={{ color: '#475569', '&:hover': { color: '#0F172A' } }}>
-            <ShareIcon fontSize="small" />
-          </IconButton>
-          <IconButton onClick={handleToggleFavorite} aria-label={isFavorited ? 'Remove from favorites' : 'Save property'} size="small" sx={{ color: isFavorited ? '#EF4444' : '#475569', '&:hover': { color: '#EF4444' } }}>
-            {isFavorited ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
-          </IconButton>
-        </Box>
-      </Box>
-
-      <Typography
-        variant="h1"
-        component="h1"
-        fontWeight={700}
+    return (
+      <Paper
+        elevation={0}
         sx={{
-          color: '#0F172A',
-          fontSize: { xs: '1rem', sm: '1.25rem' },
-          lineHeight: 1.35,
-          mb: 0.5,
+          p: { xs: 1.2, sm: 2.2 },
+          borderRadius: '8px',
+          border: '1px solid #E2E8F0',
+          bgcolor: '#FFFFFF',
+          ...displayProps,
         }}
       >
-        {property.title}
-      </Typography>
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8, pt: 0.8, borderTop: '1px solid #F1F5F9' }}>
-        {(() => {
-          const mapLink = property.location?.googleMapsLink ||
-            property.location?.google_maps_link ||
-            (property.location?.latitude && property.location?.longitude
-              ? `https://maps.google.com/?q=${property.location.latitude},${property.location.longitude}`
-              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([addressLabel, cityLabel, property.state, 'India'].filter(Boolean).join(', '))}`);
-
-          return (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-              <Box
-                component="a"
-                href={mapLink}
-                target="_blank"
-                rel="noopener noreferrer"
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: { xs: 0.4, sm: 0.8 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.6, sm: 1.2 }, flexWrap: 'wrap' }}>
+            <Typography variant="h4" component="div" fontWeight={800} sx={{ color: '#0F172A', fontSize: { xs: '1.2rem', sm: '1.85rem' } }}>
+              {priceFormatted}
+            </Typography>
+            {property.is_price_negotiable && (
+              <Chip
+                label="Negotiable (मोलभाव संभव)"
+                size="small"
                 sx={{
-                  display: 'inline-flex',
-                  alignItems: 'flex-start',
-                  gap: 0.7,
-                  textDecoration: 'none',
-                  color: '#334155',
-                  borderRadius: '6px',
-                  py: 0.3,
-                  px: 0.4,
-                  ml: -0.4,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: 'rgba(66, 133, 244, 0.08)',
-                    color: '#1B4FD8',
-                  },
+                  bgcolor: '#DCFCE7',
+                  color: '#15803D',
+                  fontWeight: 700,
+                  fontSize: { xs: '0.64rem', sm: '0.74rem' },
+                  height: { xs: 20, sm: 24 },
+                  border: '1px solid #86EFAC',
                 }}
-              >
-                <GoogleMapsColorfulPin size={20} />
-                <Box>
-                  <Typography
-                    variant="caption"
+              />
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 0.4 }}>
+            <IconButton onClick={handleShare} aria-label="Share property" size="small" sx={{ color: '#475569', p: { xs: 0.4, sm: 0.6 }, '&:hover': { color: '#0F172A' } }}>
+              <ShareIcon fontSize="small" />
+            </IconButton>
+            <IconButton onClick={handleToggleFavorite} aria-label={isFavorited ? 'Remove from favorites' : 'Save property'} size="small" sx={{ color: isFavorited ? '#EF4444' : '#475569', p: { xs: 0.4, sm: 0.6 }, '&:hover': { color: '#EF4444' } }}>
+              {isFavorited ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+        </Box>
+
+        <Typography
+          variant="h1"
+          component="h1"
+          fontWeight={700}
+          sx={{
+            color: '#0F172A',
+            fontSize: { xs: '0.95rem', sm: '1.2rem' },
+            lineHeight: 1.3,
+            mb: { xs: 0.4, sm: 0.6 },
+          }}
+        >
+          {property.title}
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 0.6, sm: 0.8 }, pt: 0.6, borderTop: '1px solid #F1F5F9' }}>
+          {(() => {
+            const mapLink = property.location?.googleMapsLink ||
+              property.location?.google_maps_link ||
+              (property.location?.latitude && property.location?.longitude
+                ? `https://maps.google.com/?q=${property.location.latitude},${property.location.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([addressLabel, cityLabel, property.state, 'India'].filter(Boolean).join(', '))}`);
+
+            return (
+              <>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 0.8 }}>
+                  <Box
+                    component="a"
+                    href={mapLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     sx={{
-                      color: 'inherit',
-                      fontWeight: 650,
-                      fontSize: '0.78rem',
-                      lineHeight: 1.35,
-                      display: 'inline',
+                      display: 'inline-flex',
+                      alignItems: 'flex-start',
+                      gap: 0.5,
+                      textDecoration: 'none',
+                      color: '#334155',
+                      borderRadius: '4px',
+                      py: 0.1,
+                      px: 0.2,
+                      ml: -0.2,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: 'rgba(66, 133, 244, 0.08)',
+                        color: '#1B4FD8',
+                      },
                     }}
                   >
-                    {addressLabel ? `${addressLabel}, ` : ''}{cityLabel}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      ml: 0.6,
-                      color: '#2563EB',
-                      fontWeight: 700,
-                      fontSize: '0.72rem',
-                      textDecoration: 'underline',
-                      display: 'inline-block',
-                    }}
-                  >
-                    (Google Map ↗)
+                    <GoogleMapsColorfulPin size={15} />
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'inherit',
+                          fontWeight: 650,
+                          fontSize: { xs: '0.68rem', sm: '0.74rem' },
+                          lineHeight: 1.25,
+                          display: 'inline',
+                        }}
+                      >
+                        {addressLabel ? `${addressLabel}, ` : ''}{cityLabel}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          ml: 0.4,
+                          color: '#2563EB',
+                          fontWeight: 700,
+                          fontSize: { xs: '0.64rem', sm: '0.7rem' },
+                          textDecoration: 'underline',
+                          display: 'inline-block',
+                        }}
+                      >
+                        (Google Map ↗)
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, flexShrink: 0, pt: 0.1, fontSize: { xs: '0.64rem', sm: '0.7rem' } }}>
+                    {dateFormatted}
                   </Typography>
                 </Box>
-              </Box>
 
-              <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, flexShrink: 0, pt: 0.3, fontSize: '0.72rem' }}>
-                {dateFormatted}
-              </Typography>
-            </Box>
-          );
-        })()}
-      </Box>
-    </Paper>
-  );
+                {/* Contact for this property: Text first, then WhatsApp green circular logo */}
+                <Box
+                  component="a"
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.8,
+                    textDecoration: 'none',
+                    mt: 0.2,
+                    py: 0.3,
+                    px: 0.9,
+                    borderRadius: '20px',
+                    bgcolor: '#F0FDF4',
+                    border: '1px solid #BBF7D0',
+                    alignSelf: 'flex-start',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 1px 4px rgba(37, 211, 102, 0.12)',
+                    '&:hover': {
+                      bgcolor: '#DCFCE7',
+                      borderColor: '#86EFAC',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 2px 8px rgba(37, 211, 102, 0.25)',
+                    },
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      color: '#15803D',
+                      fontWeight: 750,
+                      fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                      lineHeight: 1,
+                    }}
+                  >
+                    Contact for this property
+                  </Typography>
+
+                  {/* Circular Green WhatsApp Logo with White Phone Icon */}
+                  <Box
+                    sx={{
+                      width: { xs: 22, sm: 24 },
+                      height: { xs: 22, sm: 24 },
+                      borderRadius: '50%',
+                      bgcolor: '#25D366',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 1px 4px rgba(37, 211, 102, 0.4)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <WhatsAppIcon sx={{ color: '#FFFFFF !important', fontSize: { xs: 14, sm: 15 } }} />
+                  </Box>
+                </Box>
+              </>
+            );
+          })()}
+        </Box>
+      </Paper>
+    );
+  };
 
   const renderFutureValueProjection = (displayProps: any) => {
     if (!(property.price && Number(property.price) > 0 && (property.listing_type?.toUpperCase() === 'SELL' || property.listing_type?.toUpperCase() === 'SALE' || property.listing_purpose?.toUpperCase() === 'SELL' || property.listing_purpose?.toUpperCase() === 'SALE'))) {
       return null;
     }
     const base = Number(property.price);
+    const priceLakh = base / 100000;
+
+    // Piecewise linear interpolation for 10-year target multiplier based on price tier
+    const get10YearTargetMultiplier = (pl: number): number => {
+      const points: [number, number][] = [
+        [1, 3.2],       // 1 Lakh -> ~3.2 Lakh (3.2x)
+        [5, 3.1],       // 5 Lakh -> ~15.5 Lakh (3.1x)
+        [10, 30 / 10],  // 10 Lakh -> 30 Lakh (3.00x)
+        [20, 45 / 20],  // 20 Lakh -> 45 Lakh (2.25x)
+        [30, 56 / 30],  // 30 Lakh -> 56 Lakh (1.867x)
+        [40, 65 / 40],  // 40 Lakh -> 65 Lakh (1.625x)
+        [50, 70 / 50],  // 50 Lakh -> 70 Lakh (1.40x)
+        [60, 85 / 60],  // 60 Lakh -> 85 Lakh (1.417x)
+        [70, 95 / 70],  // 70 Lakh -> 95 Lakh (1.357x)
+        [80, 105 / 80], // 80 Lakh -> 105 Lakh (1.3125x)
+        [100, 1.28],    // 100 Lakh (1 Cr) -> 1.28 Cr
+        [200, 1.25],    // 2 Cr -> 2.50 Cr
+        [500, 1.20],    // 5 Cr -> 6.00 Cr
+      ];
+
+      if (pl <= points[0][0]) return points[0][1];
+      if (pl >= points[points.length - 1][0]) return points[points.length - 1][1];
+
+      for (let i = 0; i < points.length - 1; i++) {
+        const [p1, m1] = points[i];
+        const [p2, m2] = points[i + 1];
+        if (pl >= p1 && pl <= p2) {
+          const t = (pl - p1) / (p2 - p1);
+          return m1 + t * (m2 - m1);
+        }
+      }
+      return 2.0;
+    };
+
+    const target10Multiplier = get10YearTargetMultiplier(priceLakh);
+    const growth10 = target10Multiplier - 1;
+
     const fmt = (v: number) => {
       if (v >= 10000000) return (v / 10000000).toFixed(2).replace(/\.?0+$/, '') + ' Cr';
       if (v >= 100000) return (v / 100000).toFixed(2).replace(/\.?0+$/, '') + ' Lakh';
       if (v >= 1000) return (v / 1000).toFixed(1).replace(/\.?0+$/, '') + 'K';
       return '₹' + v.toLocaleString('en-IN');
     };
+
     const projections = [
-      { label: '2 Saal Mein (2 Years)', multiplier: 1.25 },
-      { label: '3 Saal Mein (3 Years)', multiplier: 1.50 },
-      { label: '5 Saal Mein (5 Years)', multiplier: 2.375 },
-      { label: '10 Saal Mein (10 Years)', multiplier: 3.75 },
+      { label: '2 Saal Mein (2 Years)', multiplier: 1 + growth10 * 0.20 },
+      { label: '3 Saal Mein (3 Years)', multiplier: 1 + growth10 * 0.35 },
+      { label: '5 Saal Mein (5 Years)', multiplier: 1 + growth10 * 0.60 },
+      { label: '10 Saal Mein (10 Years)', multiplier: target10Multiplier },
     ];
     return (
       <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: '8px', border: '1px solid #E2E8F0', bgcolor: '#fff', ...displayProps }}>
@@ -921,11 +1031,11 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', pt: { xs: 1, sm: 2 }, pb: { xs: 4, sm: 6 }, bgcolor: '#F2F4F7' }}>
-      <Container maxWidth="lg" sx={{ px: { xs: 1.25, sm: 2.5 } }}>
+    <Box sx={{ minHeight: '100vh', pt: { xs: 0.5, sm: 2 }, pb: { xs: 4, sm: 6 }, bgcolor: '#F2F4F7' }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2.5 } }}>
         
         {/* ─── BREADCRUMBS, BACK BUTTON & GET APP BAR ─── */}
-        <Box sx={{ py: 0.4, mb: { xs: 0.6, sm: 1.2 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+        <Box sx={{ py: 0.2, mb: { xs: 0.5, sm: 1.2 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
           {/* Left side: Back Button & Breadcrumbs */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
             {/* Back Button */}
@@ -1052,11 +1162,11 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
 
         {/* ─── STATUS BANNER for Owner Preview (Non-Published) ─── */}
         {property.status && property.status !== 'PUBLISHED' && (
-          <Box mb={2}>
+          <Box mb={1.5}>
             {property.status === 'PENDING_REVIEW' && (
               <Alert
                 severity="warning"
-                sx={{ borderRadius: 2, fontWeight: 500 }}
+                sx={{ borderRadius: 2, fontWeight: 500, py: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
               >
                 <strong>⏳ Yeh Aapka Listing Preview Hai</strong> — Aapki property abhi Admin Review Queue mein hai. Approve hone ke baad hi yeh public hogi. Baaki users abhi nahi dekh sakte.
               </Alert>
@@ -1064,7 +1174,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             {property.status === 'REJECTED' && (
               <Alert
                 severity="error"
-                sx={{ borderRadius: 2, fontWeight: 500 }}
+                sx={{ borderRadius: 2, fontWeight: 500, py: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
               >
                 <strong>❌ Property Reject Hui</strong> — Aapki property admin ne reject kar di hai. Kripya edit karke dobara submit karein.
               </Alert>
@@ -1072,7 +1182,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             {property.status === 'DRAFT' && (
               <Alert
                 severity="info"
-                sx={{ borderRadius: 2, fontWeight: 500 }}
+                sx={{ borderRadius: 2, fontWeight: 500, py: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
               >
                 <strong>📝 Draft Mode</strong> — Yeh property abhi draft mein hai, public nahi hai.
               </Alert>
@@ -1081,12 +1191,12 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
         )}
 
         {/* ─── MAIN 2-COLUMN GRID (Left: Image + Details, Right: Price + Seller) ─── */}
-        <Grid container spacing={2.5}>
+        <Grid container spacing={{ xs: 1.2, sm: 2, md: 2.5 }}>
           
           {/* ─── LEFT COLUMN (~68% width) ─── */}
           <Grid item xs={12} md={8}>
             {/* Mobile-only Price & Title Card (Top) */}
-            {renderPriceAndTitleCard({ display: { xs: 'block', md: 'none' }, mb: 2.5 })}
+            {renderPriceAndTitleCard({ display: { xs: 'block', md: 'none' }, mb: { xs: 1, sm: 1.5 } })}
             
             {/* 1. Large Image Viewer Box (Click opens Zoom Modal) */}
             <Paper
@@ -1104,11 +1214,11 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 overflow: 'hidden',
                 bgcolor: '#000000',
                 position: 'relative',
-                height: { xs: 320, sm: 420, md: 480 },
+                height: { xs: 260, sm: 380, md: 460 },
                 display: 'flex',
                 alignItems: 'center',
-                justify: 'center',
-                mb: 1.5,
+                justifyContent: 'center',
+                mb: { xs: 0.8, sm: 1.2 },
                 cursor: activeMedia.type === 'video' ? 'default' : 'pointer',
                 '&:hover .zoom-badge': { opacity: 1, transform: 'scale(1.05)' },
               }}
@@ -1546,9 +1656,46 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
               <Typography variant="subtitle1" component="h2" fontWeight={750} mb={1} color="#0F172A" sx={{ fontSize: '0.95rem' }}>
                 Description
               </Typography>
-              <Typography color="#475569" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: '0.86rem' }}>
+              <Typography
+                color="#475569"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.55,
+                  fontSize: '0.86rem',
+                  ...(!isDescriptionExpanded && {
+                    display: { xs: '-webkit-box', md: 'block' },
+                    WebkitLineClamp: { xs: 4, md: 'unset' },
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }),
+                }}
+              >
                 {property.description}
               </Typography>
+              {Boolean(property.description && (property.description.length > 120 || property.description.split('\n').length > 4)) && (
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, mt: 0.8 }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    endIcon={isDescriptionExpanded ? <KeyboardArrowUpIcon sx={{ fontSize: 18 }} /> : <KeyboardArrowDownIcon sx={{ fontSize: 18 }} />}
+                    sx={{
+                      p: 0,
+                      minWidth: 'auto',
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      color: '#1B4FD8',
+                      '&:hover': {
+                        bgcolor: 'transparent',
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    {isDescriptionExpanded ? 'Read Less' : 'Read More'}
+                  </Button>
+                </Box>
+              )}
             </Paper>
           </Grid>
 

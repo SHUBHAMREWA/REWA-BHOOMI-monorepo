@@ -24,7 +24,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (user) {
-      router.replace('/profile');
+      router.replace('/properties');
     }
   }, [user, router]);
 
@@ -40,7 +40,7 @@ export default function RegisterPage() {
       await apiPost('/auth/register', data);
       await refreshAuth();
       toast.success('Account created successfully!');
-      router.push('/dashboard');
+      router.push('/properties');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -109,7 +109,7 @@ export default function RegisterPage() {
                   try {
                     await loginWithGoogle(credentialResponse.credential);
                     toast.success('Account linked & logged in successfully!');
-                    router.push('/dashboard');
+                    router.push('/properties');
                   } catch (err: any) {
                     const message = err?.response?.data?.error?.message ?? 'Google signup failed';
                     toast.error(message);
