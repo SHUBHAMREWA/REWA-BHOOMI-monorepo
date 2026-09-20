@@ -896,7 +896,7 @@ export async function getUserFavorites(userId: string, cursor?: string, limit = 
 
 export async function moderateProperty(
   id: string,
-  status: 'PUBLISHED' | 'REJECTED',
+  status: 'PUBLISHED' | 'REJECTED' | 'SOLD',
   rejectionReason?: string,
 ) {
   const property = await getPropertyById(id);
@@ -905,7 +905,7 @@ export async function moderateProperty(
   await query(
     `UPDATE properties SET
       status = $1,
-      rejection_reason = $2,
+      rejection_reason = CASE WHEN $1 = 'PUBLISHED' THEN NULL ELSE $2 END,
       published_at = CASE WHEN $1 = 'PUBLISHED' THEN NOW() ELSE published_at END,
       is_popular = CASE WHEN $1 != 'PUBLISHED' THEN FALSE ELSE is_popular END,
       updated_at = NOW()
@@ -918,14 +918,16 @@ export async function moderateProperty(
     const { notifyUserPropertyModeration, broadcastNewPropertyPublished } = await import('../notifications/push.service');
     
     // 1. Notify Owner of approval/rejection
-    notifyUserPropertyModeration({
-      ownerId: property.owner_id,
-      propertyId: id,
-      slug: property.slug || '',
-      title: property.title || 'Property',
-      status,
-      rejectionReason: rejectionReason ?? undefined,
-    }).catch((err) => console.warn('Failed to notify user of property moderation:', err));
+    if (status === 'PUBLISHED' || status === 'REJECTED') {
+      notifyUserPropertyModeration({
+        ownerId: property.owner_id,
+        propertyId: id,
+        slug: property.slug || '',
+        title: property.title || 'Property',
+        status,
+        rejectionReason: rejectionReason ?? undefined,
+      }).catch((err) => console.warn('Failed to notify user of property moderation:', err));
+    }
 
     // 2. If approved & published, broadcast to all other users
     if (status === 'PUBLISHED') {
