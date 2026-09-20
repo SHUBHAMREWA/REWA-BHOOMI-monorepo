@@ -3,37 +3,35 @@
 import React, { useEffect, useState } from 'react';
 import { Snackbar, Alert, Button, Box, Typography } from '@mui/material';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import { useAuth } from '@/features/auth/AuthContext';
 import { usePushNotifications } from './usePushNotifications';
 
 export default function NotificationPrompt() {
-  const { isAuthenticated } = useAuth();
   const { isSupported, isSubscribed, enableNotifications } = usePushNotifications();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || !isSupported) return;
+    if (!isSupported) return;
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
     // Show prompt if notifications permission is default/not granted and user hasn't dismissed it this session
-    const dismissed = sessionStorage.getItem('notif_login_prompt_dismissed');
+    const dismissed = sessionStorage.getItem('notif_prompt_dismissed');
     if (Notification.permission !== 'granted' && !dismissed && !isSubscribed) {
       const timer = setTimeout(() => {
         setOpen(true);
-      }, 2000);
+      }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, isSupported, isSubscribed]);
+  }, [isSupported, isSubscribed]);
 
   const handleEnable = async () => {
     setOpen(false);
-    sessionStorage.setItem('notif_login_prompt_dismissed', 'true');
+    sessionStorage.setItem('notif_prompt_dismissed', 'true');
     await enableNotifications();
   };
 
   const handleClose = () => {
     setOpen(false);
-    sessionStorage.setItem('notif_login_prompt_dismissed', 'true');
+    sessionStorage.setItem('notif_prompt_dismissed', 'true');
   };
 
   if (!open) return null;
@@ -64,7 +62,7 @@ export default function NotificationPrompt() {
               '&:hover': { bgcolor: '#1D4ED8' }
             }}
           >
-            Enable Notifications
+            Enable Alerts
           </Button>
         }
         sx={{
@@ -80,10 +78,10 @@ export default function NotificationPrompt() {
       >
         <Box>
           <Typography variant="subtitle2" fontWeight={700} color="#0F172A">
-            Turn on chat notifications
+            Turn on property alerts
           </Typography>
           <Typography variant="caption" color="#64748B" display="block">
-            Get instant alerts when admin or buyers reply — even when the app is closed.
+            Get instant alerts when new properties are listed in Rewa — even when the app is closed.
           </Typography>
         </Box>
       </Alert>

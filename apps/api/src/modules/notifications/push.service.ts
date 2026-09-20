@@ -32,7 +32,7 @@ export interface PushPayload {
 }
 
 // ─── Save Push Subscription ──────────────────────────────────────────────────
-export const savePushSubscription = async (userId: string, input: SaveSubscriptionInput) => {
+export const savePushSubscription = async (userId: string | null | undefined, input: SaveSubscriptionInput) => {
   if (!input.endpoint || !input.keys?.p256dh || !input.keys?.auth) {
     throw new Error('Invalid subscription keys');
   }
@@ -41,8 +41,12 @@ export const savePushSubscription = async (userId: string, input: SaveSubscripti
     `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
      VALUES ($1, $2, $3, $4, NOW())
      ON CONFLICT (endpoint) 
-     DO UPDATE SET user_id = $1, p256dh = $3, auth = $4, created_at = NOW()`,
-    [userId, input.endpoint, input.keys.p256dh, input.keys.auth]
+     DO UPDATE SET 
+       user_id = COALESCE(EXCLUDED.user_id, push_subscriptions.user_id), 
+       p256dh = EXCLUDED.p256dh, 
+       auth = EXCLUDED.auth, 
+       created_at = NOW()`,
+    [userId || null, input.endpoint, input.keys.p256dh, input.keys.auth]
   );
 
   return { success: true };
@@ -115,7 +119,7 @@ export const sendPushToAdmins = async (payload: PushPayload) => {
 // ─── Send Push to All Users (Broadcast) ──────────────────────────────────────
 export const sendPushToAllUsers = async (payload: PushPayload, excludeUserId?: string) => {
   const queryText = excludeUserId
-    ? `SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id != $1`
+    ? `SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id IS NULL OR user_id != $1`
     : `SELECT endpoint, p256dh, auth FROM push_subscriptions`;
   const params = excludeUserId ? [excludeUserId] : [];
   const subscriptions = await query(queryText, params);

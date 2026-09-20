@@ -1246,6 +1246,12 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON messages(conversation_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(conversation_id, sender_id) WHERE is_read = false;
     `
+  },
+  {
+    name: '034_anonymous_push_subscriptions',
+    sql: `
+      ALTER TABLE push_subscriptions ALTER COLUMN user_id DROP NOT NULL;
+    `
   }
 ];
 

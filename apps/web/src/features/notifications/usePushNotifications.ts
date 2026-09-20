@@ -152,9 +152,9 @@ export function PushNotificationProvider({ children }: { children: ReactNode }) 
     return null;
   }, []);
 
-  // Auto-subscribe if user is logged in and browser permission is ALREADY granted
+  // Auto-subscribe/sync if browser permission is ALREADY granted (for both guests/PWA and logged-in users)
   useEffect(() => {
-    if (!isAuthenticated || !user || !isSupported || isSyncingRef.current) return;
+    if (!isSupported || isSyncingRef.current) return;
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
     if (Notification.permission === 'granted') {

@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import HeroSection from '@/features/home/HeroSection';
-import PosterBannerSection from '@/features/home/PosterBannerSection';
 import FeaturedProperties from '@/features/home/FeaturedProperties';
+import PopularProperties from '@/features/home/PopularProperties';
+import PosterBannerSection from '@/features/home/PosterBannerSection';
 import PopularProjects from '@/features/home/PopularProjects';
+import ExploreLocations from '@/features/home/ExploreLocations';
 import WhyChooseUs from '@/features/home/WhyChooseUs';
+import PwaInstallSection from '@/features/home/PwaInstallSection';
 import {
   FeaturedPropertiesSkeleton,
   PopularProjectsSkeleton,
@@ -45,16 +48,34 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <main>
+      {/* 2. HERO + PROPERTY SEARCH + QUICK CATEGORIES */}
       <HeroSection />
-      <PosterBannerSection />
+
+      {/* 4. FEATURED PROPERTIES (Positioned ABOVE project banners for instant property discovery) */}
       <Suspense fallback={<FeaturedPropertiesSkeleton />}>
         <FeaturedProperties />
       </Suspense>
-      <WhyChooseUs />
+
+      {/* 5. POPULAR PROPERTIES / COLLECTIONS */}
+      <Suspense fallback={<FeaturedPropertiesSkeleton />}>
+        <PopularProperties />
+      </Suspense>
+
+      {/* 6. FEATURED PROJECTS & MARKETING BANNERS (Positioned BELOW property discovery) */}
+      <PosterBannerSection />
+      
       <Suspense fallback={<PopularProjectsSkeleton />}>
         <PopularProjects />
       </Suspense>
+
+      {/* 7. EXPLORE PROPERTIES BY LOCATION */}
+      <ExploreLocations />
+
+      {/* 8. WHY REWA BHOOMI */}
+      <WhyChooseUs />
+
+      {/* 9. APP / PWA INSTALL SECTION */}
+      <PwaInstallSection />
     </main>
   );
 }
-
