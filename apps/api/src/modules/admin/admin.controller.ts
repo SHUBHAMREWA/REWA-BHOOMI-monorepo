@@ -168,15 +168,8 @@ export const moderateProperty = async (req: Request, res: Response) => {
     throw new BadRequestError('Invalid status. Must be PUBLISHED, REJECTED, or SOLD');
   }
 
-  const property = await queryOne('SELECT id FROM properties WHERE id = $1', [id]);
-  if (!property) {
-    throw new NotFoundError('Property not found');
-  }
-
-  await query(
-    'UPDATE properties SET status = $1, updated_at = NOW() WHERE id = $2',
-    [status, id]
-  );
+  const { moderateProperty: moderatePropService } = await import('../properties/property.service');
+  await moderatePropService(id, status, remarks);
 
   // Log audit
   await query(
