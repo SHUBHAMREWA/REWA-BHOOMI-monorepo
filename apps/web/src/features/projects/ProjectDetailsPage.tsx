@@ -11,6 +11,8 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import HomeIcon from '@mui/icons-material/Home';
 import ShareIcon from '@mui/icons-material/Share';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import { useCompanyCommunication } from '@/features/home/api/useHomeData';
 
 const PublicMapViewer = dynamic(() => import('./PublicMapViewer'), {
   ssr: false,
@@ -24,6 +26,31 @@ export default function ProjectDetailsPage() {
   const [project, setProject] = useState<any>(null);
   const [mapData, setMapData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const { data: companyComm } = useCompanyCommunication();
+
+  const getGeneralWhatsAppUrl = () => {
+    const adminPhone = companyComm?.whatsapp_number || companyComm?.contact_phone || '919691316499';
+    const cleanPhone = adminPhone.replace(/\D/g, '');
+    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const locationText = project?.address || `${project?.city || 'Rewa'}, ${project?.state || 'Madhya Pradesh'}`;
+
+    const lines = [
+      `नमस्ते Rewa Bhoomi, मुझे इस प्रोजेक्ट के बारे में बुकिंग और विस्तृत जानकारी चाहिए:`,
+      ``,
+      `🏡 *Project:* ${project?.name || 'Project Layout'}`,
+      `📍 *Location:* ${locationText}`,
+      project?.developer ? `🏢 *Developer:* ${project.developer}` : null,
+      project?.total_plots ? `🔢 *Total Plots:* ${project.total_plots}` : null,
+      project?.total_area ? `📐 *Total Area:* ${project.total_area} Sq Ft` : null,
+      currentUrl ? `🔗 *Link:* ${currentUrl}` : null,
+      ``,
+      `कृपया मुझे इस प्रोजेक्ट के उपलब्ध प्लॉट्स (Available Plots) की लिस्ट और रेट डिटेल्स साझा करें।`
+    ].filter(Boolean);
+
+    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+  };
 
   useEffect(() => {
     if (slug) {
@@ -184,15 +211,40 @@ export default function ProjectDetailsPage() {
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
               <Button 
                 size="small"
                 startIcon={<ShareIcon sx={{ fontSize: 15 }} />} 
                 onClick={handleShare}
                 sx={{ color: '#94A3B8', '&:hover': { color: '#38BDF8', bgcolor: 'rgba(56,189,248,0.1)' }, textTransform: 'none', fontWeight: 600, fontSize: '0.78rem', py: 0.3 }}
               >
-                Share Project
+                Share
               </Button>
+
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                href={getGeneralWhatsAppUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<WhatsAppIcon sx={{ color: '#25D366', fontSize: 16 }} />}
+                sx={{
+                  display: { xs: 'none', sm: 'inline-flex' },
+                  color: '#FFFFFF',
+                  borderColor: 'rgba(56,189,248,0.3)',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  py: 0.3,
+                  px: 1.2,
+                  borderRadius: 1.5,
+                  '&:hover': { borderColor: '#38BDF8', bgcolor: 'rgba(56,189,248,0.1)' }
+                }}
+              >
+                Inquire on WhatsApp
+              </Button>
+
               {project.developer && (
                 <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, fontSize: '0.72rem' }}>
                   Developer: <Typography component="span" variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, fontSize: '0.72rem' }}>{project.developer}</Typography>
@@ -215,7 +267,11 @@ export default function ProjectDetailsPage() {
             fullWidth 
             variant="contained" 
             size="medium"
-            href="tel:+918889999120"
+            component="a"
+            href={getGeneralWhatsAppUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={<WhatsAppIcon sx={{ color: '#25D366', fontSize: 21 }} />}
             sx={{ 
               bgcolor: '#1B4FD8', 
               color: 'white', 
@@ -224,7 +280,8 @@ export default function ProjectDetailsPage() {
               fontWeight: 800,
               fontSize: '0.86rem',
               boxShadow: '0 4px 14px rgba(27,79,216,0.2)',
-              textTransform: 'none'
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#1541B5' }
             }}
           >
             Contact for Booking & Info
