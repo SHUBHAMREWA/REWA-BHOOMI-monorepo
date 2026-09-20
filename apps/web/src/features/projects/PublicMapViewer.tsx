@@ -901,82 +901,191 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               </Stage>
             )}
 
-            {/* Bottom-Left Controls: Fullscreen & PDF Download */}
-            <Box sx={{
-              position: 'absolute',
-              bottom: { xs: 8, sm: 10 },
-              left: { xs: 8, sm: 10 },
-              display: 'flex',
-              gap: 0.8,
-              alignItems: 'center',
-              zIndex: 15,
-            }}>
-              {/* Fullscreen Toggle Button */}
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={isFullscreen ? <FullscreenExitIcon sx={{ fontSize: 16 }} /> : <FullscreenIcon sx={{ fontSize: 16 }} />}
-                onClick={toggleFullscreen}
-                sx={{
-                  bgcolor: isFullscreen ? '#EF4444' : '#0F172A',
-                  color: '#FFFFFF',
-                  height: { xs: 28, sm: 32 },
-                  fontSize: { xs: '0.7rem', sm: '0.78rem' },
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  px: { xs: 1, sm: 1.5 },
-                  boxShadow: '0 3px 10px rgba(0,0,0,0.25)',
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: isFullscreen ? '#DC2626' : '#1E293B' },
-                }}
-              >
-                {isFullscreen ? 'Exit' : 'Full Screen'}
-              </Button>
+            {/* ─── UNIFIED BOTTOM CONTROLS BAR (Zero-overlap on all screen sizes) ─── */}
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: { xs: 8, sm: 10 },
+                left: { xs: 8, sm: 12 },
+                right: { xs: 8, sm: 12 },
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                zIndex: 15,
+                pointerEvents: 'none',
+              }}
+            >
+              {/* Left Actions: Fullscreen & PDF */}
+              <Box sx={{ display: 'flex', gap: 0.6, alignItems: 'center', pointerEvents: 'auto' }}>
+                {/* Fullscreen Toggle */}
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={isFullscreen ? <FullscreenExitIcon sx={{ fontSize: { xs: 15, sm: 16 } }} /> : <FullscreenIcon sx={{ fontSize: { xs: 15, sm: 16 } }} />}
+                  onClick={toggleFullscreen}
+                  sx={{
+                    bgcolor: isFullscreen ? '#EF4444' : '#0F172A',
+                    color: '#FFFFFF',
+                    height: { xs: 26, sm: 30 },
+                    minWidth: { xs: 'auto', sm: 80 },
+                    fontSize: { xs: '0.68rem', sm: '0.78rem' },
+                    fontWeight: 700,
+                    borderRadius: 2,
+                    px: { xs: 0.8, sm: 1.4 },
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: isFullscreen ? '#DC2626' : '#1E293B' },
+                  }}
+                >
+                  <Box component="span" sx={{ display: { xs: isFullscreen ? 'inline' : 'none', sm: 'inline' } }}>
+                    {isFullscreen ? 'Exit' : 'Full Screen'}
+                  </Box>
+                </Button>
 
-              {/* Download PDF Button */}
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={<PictureAsPdfIcon sx={{ fontSize: 15 }} />}
-                onClick={handleDownloadPdf}
-                disabled={isExportingPdf}
-                sx={{
-                  bgcolor: '#1B4FD8',
-                  color: '#FFFFFF',
-                  height: { xs: 28, sm: 32 },
-                  fontSize: { xs: '0.7rem', sm: '0.78rem' },
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  px: { xs: 1, sm: 1.5 },
-                  boxShadow: '0 3px 10px rgba(27,79,216,0.3)',
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: '#1541B5' },
-                }}
-              >
-                {isExportingPdf ? 'Exporting...' : 'PDF Map'}
-              </Button>
+                {/* Download PDF */}
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<PictureAsPdfIcon sx={{ fontSize: { xs: 14, sm: 15 } }} />}
+                  onClick={handleDownloadPdf}
+                  disabled={isExportingPdf}
+                  sx={{
+                    bgcolor: '#1B4FD8',
+                    color: '#FFFFFF',
+                    height: { xs: 26, sm: 30 },
+                    minWidth: { xs: 'auto', sm: 70 },
+                    fontSize: { xs: '0.68rem', sm: '0.78rem' },
+                    fontWeight: 700,
+                    borderRadius: 2,
+                    px: { xs: 0.8, sm: 1.4 },
+                    boxShadow: '0 2px 8px rgba(27,79,216,0.3)',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: '#1541B5' },
+                  }}
+                >
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                    {isExportingPdf ? 'Exporting...' : 'PDF'}
+                  </Box>
+                </Button>
+              </Box>
+
+              {/* Right Zoom Controls */}
+              <Box sx={{ display: 'flex', gap: 0.4, alignItems: 'center', pointerEvents: 'auto' }}>
+                <Chip
+                  label={<span ref={zoomTextRef}>{Math.round(stageScale * 100)}%</span>}
+                  size="small"
+                  onClick={centerMap}
+                  sx={{ cursor: 'pointer', fontWeight: 700, bgcolor: '#0F172A', color: '#38BDF8', height: { xs: 24, sm: 28 }, fontSize: { xs: '0.68rem', sm: '0.76rem' }, px: 0.3 }}
+                />
+                <Chip label="+" size="small" onClick={() => zoomAtCenter(1.25)} sx={{ cursor: 'pointer', fontWeight: 700, height: { xs: 24, sm: 28 }, minWidth: { xs: 22, sm: 28 }, px: 0.3 }} />
+                <Chip label="-" size="small" onClick={() => zoomAtCenter(1 / 1.25)} sx={{ cursor: 'pointer', fontWeight: 700, height: { xs: 24, sm: 28 }, minWidth: { xs: 22, sm: 28 }, px: 0.3 }} />
+                <Chip label="Reset" size="small" onClick={centerMap} sx={{ cursor: 'pointer', height: { xs: 24, sm: 28 }, fontSize: { xs: '0.68rem', sm: '0.76rem' }, px: 0.4 }} />
+              </Box>
             </Box>
 
-            {/* Bottom-Right Controls: Zoom & Reset */}
-            <Box sx={{
-              position: 'absolute',
-              bottom: { xs: 8, sm: 10 },
-              right: { xs: 8, sm: 10 },
-              display: 'flex',
-              gap: 0.5,
-              alignItems: 'center',
-              zIndex: 15,
-            }}>
-              <Chip
-                label={<span ref={zoomTextRef}>{Math.round(stageScale * 100)}%</span>}
-                size="small"
-                onClick={centerMap}
-                sx={{ cursor: 'pointer', fontWeight: 700, bgcolor: '#0F172A', color: '#38BDF8', height: { xs: 26, sm: 30 }, fontSize: { xs: '0.7rem', sm: '0.78rem' } }}
-              />
-              <Chip label="+" size="small" onClick={() => zoomAtCenter(1.25)} sx={{ cursor: 'pointer', fontWeight: 700, height: { xs: 26, sm: 30 }, minWidth: { xs: 24, sm: 30 } }} />
-              <Chip label="-" size="small" onClick={() => zoomAtCenter(1 / 1.25)} sx={{ cursor: 'pointer', fontWeight: 700, height: { xs: 26, sm: 30 }, minWidth: { xs: 24, sm: 30 } }} />
-              <Chip label="Reset" size="small" onClick={centerMap} sx={{ cursor: 'pointer', height: { xs: 26, sm: 30 }, fontSize: { xs: '0.7rem', sm: '0.78rem' } }} />
-            </Box>
+            {/* ─── FLOATING PLOT DETAILS MODAL DIRECTLY OVER MAP ─── */}
+            {selectedPlot && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: { xs: 8, sm: 12 },
+                  left: { xs: 8, sm: 12 },
+                  right: { xs: 8, sm: 'auto' },
+                  width: { xs: 'calc(100% - 16px)', sm: 300, md: 320 },
+                  bgcolor: 'rgba(255, 255, 255, 0.98)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: 2.5,
+                  border: '1.5px solid #38BDF8',
+                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.28)',
+                  p: { xs: 1.2, sm: 1.8 },
+                  zIndex: 30,
+                  animation: 'slideUpModal 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '@keyframes slideUpModal': {
+                    from: { opacity: 0, transform: 'translateY(10px)' },
+                    to: { opacity: 1, transform: 'translateY(0)' },
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                    <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.92rem', sm: '1.05rem' } }}>
+                      Plot #{selectedPlot.plot.plot_number}
+                    </Typography>
+                    <Chip
+                      label={selectedPlot.plot.status}
+                      size="small"
+                      sx={{
+                        bgcolor: PLOT_COLORS[selectedPlot.plot.status as keyof typeof PLOT_COLORS] + '22',
+                        color: PLOT_COLORS[selectedPlot.plot.status as keyof typeof PLOT_COLORS],
+                        fontWeight: 800,
+                        fontSize: '0.62rem',
+                        height: 20,
+                        px: 0.2,
+                      }}
+                    />
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => setSelectedPlot(null)}
+                    sx={{
+                      p: 0.3,
+                      bgcolor: 'rgba(15, 23, 42, 0.06)',
+                      '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#EF4444' }
+                    }}
+                  >
+                    <CloseIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4, my: 0.6 }}>
+                  {selectedPlot.plot.area && (
+                    <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.74rem', sm: '0.82rem' } }}>
+                      Area: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.area} {selectedPlot.plot.area_unit || 'SQ_FT'}</Typography>
+                    </Typography>
+                  )}
+                  {selectedPlot.plot.width && selectedPlot.plot.length && (
+                    <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.74rem', sm: '0.82rem' } }}>
+                      Size: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.width} ft × {selectedPlot.plot.length} ft</Typography>
+                    </Typography>
+                  )}
+                  {selectedPlot.plot.facing && (
+                    <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.74rem', sm: '0.82rem' } }}>
+                      Facing: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.facing.replace('_', ' ')}</Typography>
+                    </Typography>
+                  )}
+                  {selectedPlot.plot.price && (
+                    <Box sx={{ mt: 0.2, p: 0.6, bgcolor: '#F0FDF4', borderRadius: 1.5, border: '1px solid #BBF7D0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="#166534" sx={{ fontSize: '0.68rem', fontWeight: 700 }}>Price</Typography>
+                      <Typography variant="subtitle2" sx={{ color: '#15803D', fontWeight: 800, fontSize: { xs: '0.88rem', sm: '1.02rem' } }}>
+                        ₹{Number(selectedPlot.plot.price).toLocaleString('en-IN')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                {selectedPlot.plot.status === 'AVAILABLE' && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    fullWidth
+                    href="tel:+918889999120"
+                    sx={{
+                      mt: 0.6,
+                      py: 0.6,
+                      borderRadius: 2,
+                      fontWeight: 800,
+                      fontSize: '0.78rem',
+                      textTransform: 'none',
+                      bgcolor: '#1B4FD8',
+                      boxShadow: '0 3px 10px rgba(27,79,216,0.22)',
+                      '&:hover': { bgcolor: '#1541B5' }
+                    }}
+                  >
+                    Contact for Booking
+                  </Button>
+                )}
+              </Box>
+            )}
 
             {/* No plots hint */}
             {plots.filter(p => p.polygon_geometry?.coordinates?.[0]).length === 0 && (
@@ -989,7 +1098,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
           </Box>
         </Box>
 
-        {/* ─── RIGHT SIDEBAR PANEL (Plot Details on Desktop & Mobile | Overview on Desktop Only) ─── */}
+        {/* ─── RIGHT SIDEBAR PANEL (Desktop Only - Mobile uses floating modal over map) ─── */}
         <Paper
           elevation={0}
           sx={{
@@ -997,21 +1106,20 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
             flexShrink: 0,
             bgcolor: '#FFFFFF',
             borderLeft: { md: '1px solid #E2E8F0' },
-            borderTop: { xs: '2px solid #38BDF8', md: 'none' },
-            p: { xs: 1.2, md: 2.5 },
-            display: { xs: selectedPlot ? 'flex' : 'none', md: 'flex' },
+            p: 2.5,
+            display: { xs: 'none', md: 'flex' },
             flexDirection: 'column',
-            gap: { xs: 1.2, md: 2.5 },
+            gap: 2.5,
             overflowY: 'auto',
-            maxHeight: { md: 580 },
+            maxHeight: 580,
             zIndex: 10,
           }}
         >
-          {/* 1. SELECTED PLOT DETAILS (If clicked - Compact on mobile) */}
+          {/* 1. SELECTED PLOT DETAILS (Desktop Sidebar) */}
           {selectedPlot ? (
-            <Box sx={{ p: { xs: 1.2, md: 2 }, bgcolor: '#F8FAFC', borderRadius: 2, border: '1.5px solid #38BDF8' }}>
+            <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderRadius: 2, border: '1.5px solid #38BDF8' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
-                <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', md: '1.05rem' } }}>
+                <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: '1.05rem' }}>
                   Plot #{selectedPlot.plot.plot_number}
                 </Typography>
                 <IconButton size="small" onClick={() => setSelectedPlot(null)} sx={{ p: 0.4 }}>
@@ -1035,24 +1143,24 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
                 {selectedPlot.plot.area && (
-                  <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.78rem', md: '0.85rem' } }}>
+                  <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>
                     Area: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.area} {selectedPlot.plot.area_unit || 'SQ_FT'}</Typography>
                   </Typography>
                 )}
                 {selectedPlot.plot.width && selectedPlot.plot.length && (
-                  <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.78rem', md: '0.85rem' } }}>
+                  <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>
                     Size: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.width} ft × {selectedPlot.plot.length} ft</Typography>
                   </Typography>
                 )}
                 {selectedPlot.plot.facing && (
-                  <Typography variant="body2" sx={{ color: '#475569', fontSize: { xs: '0.78rem', md: '0.85rem' } }}>
+                  <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>
                     Facing: <Typography component="span" fontWeight={700} color="text.primary" sx={{ fontSize: 'inherit' }}>{selectedPlot.plot.facing.replace('_', ' ')}</Typography>
                   </Typography>
                 )}
                 {selectedPlot.plot.price && (
                   <Box sx={{ mt: 0.5, p: 1, bgcolor: '#FFFFFF', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', display: 'block' }}>Price</Typography>
-                    <Typography variant="subtitle1" sx={{ color: '#1B4FD8', fontWeight: 800, fontSize: { xs: '0.92rem', md: '1.15rem' }, lineHeight: 1.2 }}>
+                    <Typography variant="subtitle1" sx={{ color: '#1B4FD8', fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2 }}>
                       ₹{Number(selectedPlot.plot.price).toLocaleString('en-IN')}
                     </Typography>
                   </Box>
@@ -1065,8 +1173,8 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               </Box>
             </Box>
           ) : (
-            <Box sx={{ p: 1, bgcolor: '#F8FAFC', borderRadius: 1.5, border: '1px solid #E2E8F0', textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.72rem' }}>
+            <Box sx={{ p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0', textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.78rem' }}>
                 👉 Click any plot on the map to view specs
               </Typography>
             </Box>

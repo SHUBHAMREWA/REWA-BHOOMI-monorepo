@@ -10,6 +10,8 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ShareIcon from '@mui/icons-material/Share';
 import toast from 'react-hot-toast';
 
+import ProjectCard from './ProjectCard';
+
 export default function ProjectsListPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,99 +34,82 @@ export default function ProjectsListPage() {
     );
   });
 
-  const handleShare = (e: React.MouseEvent, project: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const url = `${window.location.origin}/projects/${project.slug}`;
-    const title = project.name;
-    const text = project.description || `Check out ${project.name}`;
-
-    if (navigator.share) {
-      navigator.share({ title, text, url }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard!');
-    }
-  };
-
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F8FAFC', pb: 10 }}>
-      {/* Hero Section */}
-      <Box sx={{ bgcolor: '#0F172A', color: 'white', pt: { xs: 12, md: 14 }, pb: 5, px: { xs: 2, md: 5 } }}>
+      {/* Compact Hero Section (20% height) */}
+      <Box sx={{ bgcolor: '#0F172A', color: 'white', pt: { xs: 7.2, md: 8.5 }, pb: { xs: 1.5, md: 2 }, px: { xs: 2, md: 4 } }}>
         <Container maxWidth="xl">
-          <Grid container spacing={3} alignItems="center" justifyContent="space-between">
-            <Grid item xs={12} md={7}>
-              <Typography variant="h3" fontWeight={800} mb={1} sx={{ fontSize: { xs: '1.75rem', md: '2.5rem' } }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: { xs: 1.2, sm: 2 } }}>
+            <Box>
+              <Typography variant="h5" fontWeight={800} sx={{ fontSize: { xs: '1.15rem', md: '1.5rem' }, color: '#FFFFFF', lineHeight: 1.2 }}>
                 Explore Mega Projects
               </Typography>
-              <Typography variant="body1" sx={{ color: '#94A3B8', fontSize: '0.92rem' }}>
-                Discover our premium plotted developments, townships, and commercial projects in and around Rewa.
+              <Typography variant="body2" sx={{ color: '#94A3B8', fontSize: { xs: '0.75rem', md: '0.82rem' }, mt: 0.2 }}>
+                Discover premium plotted developments & townships in Rewa.
               </Typography>
-            </Grid>
-            <Grid item xs={12} md={4.5}>
-              {/* Project Search Box */}
-              <Box 
+            </Box>
+
+            {/* Compact Project Search Box */}
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                bgcolor: 'rgba(255,255,255,0.08)', 
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: '24px', 
+                px: 1.8, 
+                py: 0.3,
+                height: { xs: 34, sm: 36 },
+                width: { xs: '100%', sm: 260, md: 320 },
+                backdropFilter: 'blur(5px)',
+                transition: 'all 0.25s ease',
+                '&:focus-within': {
+                  bgcolor: 'rgba(255,255,255,0.14)',
+                  borderColor: '#38BDF8',
+                  boxShadow: '0 0 10px rgba(56,189,248,0.25)'
+                }
+              }}
+            >
+              <SearchIcon sx={{ color: 'rgba(255,255,255,0.6)', mr: 0.8, fontSize: 17 }} />
+              <InputBase
+                placeholder="Search project, builder ya location..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  bgcolor: 'rgba(255,255,255,0.06)', 
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  borderRadius: '30px', 
-                  px: 2.5, 
-                  py: 0.8,
-                  backdropFilter: 'blur(5px)',
-                  transition: 'all 0.3s ease',
-                  '&:focus-within': {
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    borderColor: '#1B4FD8',
-                    boxShadow: '0 0 10px rgba(27,79,216,0.25)'
-                  }
+                  color: 'white', 
+                  flex: 1, 
+                  fontSize: '0.78rem',
+                  '&::placeholder': { color: 'rgba(255,255,255,0.5)' }
                 }}
-              >
-                <SearchIcon sx={{ color: 'rgba(255,255,255,0.5)', mr: 1.2, fontSize: 20 }} />
-                <InputBase
-                  placeholder="Project name, builder ya location search karein..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  sx={{ 
-                    color: 'white', 
-                    flex: 1, 
-                    fontSize: '0.85rem',
-                    '&::placeholder': { color: 'rgba(255,255,255,0.45)' }
-                  }}
-                />
-                {search && (
-                  <IconButton size="small" onClick={() => setSearch('')} sx={{ color: 'rgba(255,255,255,0.5)', p: 0.5 }}>
-                    <ClearIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </Box>
-            </Grid>
-          </Grid>
+              />
+              {search && (
+                <IconButton size="small" onClick={() => setSearch('')} sx={{ color: 'rgba(255,255,255,0.6)', p: 0.2 }}>
+                  <ClearIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              )}
+            </Box>
+          </Box>
         </Container>
       </Box>
 
-      <Container maxWidth="xl" sx={{ mt: 4 }}>
+      {/* Projects Grid Container (2 cards per row on mobile) */}
+      <Container maxWidth="xl" sx={{ mt: { xs: 2.5, md: 4 }, px: { xs: 1.5, sm: 3, md: 4 } }}>
         {loading ? (
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 1.5, sm: 2.5, md: 3, lg: 4 }}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)' }}>
-                  <Skeleton variant="rectangular" height={200} animation="wave" />
-                  <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-                    <Skeleton variant="text" height={32} width="80%" sx={{ mb: 1 }} animation="wave" />
-                    <Skeleton variant="text" height={20} width="60%" sx={{ mb: 2 }} animation="wave" />
-                    <Skeleton variant="text" height={20} width="100%" animation="wave" />
-                    <Skeleton variant="text" height={20} width="90%" sx={{ mb: 3 }} animation="wave" />
-                    <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid #F1F5F9' }}>
-                      <Box sx={{ width: '40%' }}>
-                        <Skeleton variant="text" height={16} width="60%" animation="wave" />
-                        <Skeleton variant="text" height={24} width="100%" animation="wave" />
-                      </Box>
-                      <Skeleton variant="rounded" width={100} height={32} sx={{ borderRadius: '20px' }} animation="wave" />
+              <Grid item xs={6} sm={6} md={4} lg={3} key={i}>
+                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: { xs: '12px', sm: '16px' }, border: '1.5px solid #80DEEA', bgcolor: '#FFFFFF', overflow: 'hidden' }}>
+                  <Skeleton variant="rectangular" height={130} animation="wave" />
+                  <Box sx={{ p: { xs: 1, sm: 1.5, md: 2 } }}>
+                    <Skeleton variant="text" height={22} width="85%" sx={{ mb: 0.5 }} animation="wave" />
+                    <Skeleton variant="text" height={16} width="60%" sx={{ mb: 1 }} animation="wave" />
+                    <Skeleton variant="rounded" height={24} width="100%" sx={{ mb: 1.5, borderRadius: '6px' }} animation="wave" />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 0.5, borderTop: '1px solid #F1F5F9' }}>
+                      <Skeleton variant="text" height={18} width="40%" animation="wave" />
+                      <Skeleton variant="text" height={18} width="30%" animation="wave" />
                     </Box>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
             ))}
           </Grid>
@@ -135,182 +120,10 @@ export default function ProjectsListPage() {
             </Typography>
           </Box>
         ) : (
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 1.5, sm: 2.5, md: 3, lg: 4 }}>
             {filteredProjects.map((project) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={project.id}>
-                <Card 
-                  component={Link} 
-                  href={`/projects/${project.slug}`}
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    textDecoration: 'none',
-                    borderRadius: '16px',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    border: '1px solid #E2E8F0',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    '&:hover': {
-                      transform: 'translateY(-6px)',
-                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                      borderColor: '#1B4FD8',
-                      '& .MuiCardMedia-root': {
-                        transform: 'scale(1.03)',
-                      },
-                      '& .project-logo-emblem': {
-                        transform: 'scale(1.1) translateY(-2px)',
-                        boxShadow: '0 12px 20px rgba(0,0,0,0.4)',
-                      }
-                    }
-                  }}
-                >
-                  <IconButton 
-                    onClick={(e) => handleShare(e, project)}
-                    sx={{
-                      position: 'absolute',
-                      top: 12,
-                      right: 12,
-                      zIndex: 4,
-                      bgcolor: 'rgba(255,255,255,0.85)',
-                      backdropFilter: 'blur(4px)',
-                      color: '#0F172A',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                      '&:hover': { bgcolor: '#1B4FD8', color: 'white' }
-                    }}
-                    size="small"
-                  >
-                    <ShareIcon fontSize="small" />
-                  </IconButton>
-                  <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-                    <CardMedia
-                      component="div"
-                      sx={{ 
-                        height: 200,
-                        background: project.featured_image_url
-                          ? `url(${project.featured_image_url}) center/cover no-repeat`
-                          : 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        position: 'relative',
-                        transition: 'transform 0.5s ease',
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: 0, left: 0, right: 0, height: '40%',
-                          background: 'linear-gradient(to top, rgba(15,23,42,0.8), transparent)'
-                        }
-                      }}
-                    >
-                      {!project.featured_image_url && (
-                        <>
-                          {/* Logo Emblem */}
-                          <Box 
-                            className="project-logo-emblem"
-                            sx={{
-                              width: 60, height: 60,
-                              borderRadius: '50%',
-                              bgcolor: 'white',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                              mb: 1,
-                              border: '2px solid rgba(255,255,255,0.8)',
-                              zIndex: 2,
-                              transition: 'all 0.3s ease'
-                            }}
-                          >
-                            <Typography variant="h5" fontWeight={900} sx={{ color: '#1B4FD8', letterSpacing: '-0.5px' }}>
-                              {project.name.substring(0,2).toUpperCase()}
-                            </Typography>
-                          </Box>
-                          <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6, fontSize: '0.68rem', fontWeight: 700, zIndex: 2 }}>
-                            Mega Development
-                          </Typography>
-                        </>
-                      )}
-                    </CardMedia>
-                    <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 3 }}>
-                      <Chip
-                        label={
-                          project.status === 'ONGOING'
-                            ? 'ONGOING - Plot Available Hai'
-                            : project.status === 'UPCOMING'
-                            ? 'UPCOMING - Project Start Hone Wala Hai'
-                            : project.status === 'COMPLETED'
-                            ? 'COMPLETED - Fully Developed'
-                            : project.status
-                        }
-                        size="small"
-                        sx={{ 
-                          fontWeight: 800, 
-                          fontSize: '0.7rem', 
-                          boxShadow: '0 4px 6px rgba(0,0,0,0.15)',
-                          bgcolor: project.status === 'ONGOING' 
-                            ? '#D1FAE5' 
-                            : project.status === 'UPCOMING' 
-                            ? '#FEF3C7' 
-                            : '#DBEAFE',
-                          color: project.status === 'ONGOING' 
-                            ? '#065F46' 
-                            : project.status === 'UPCOMING' 
-                            ? '#92400E' 
-                            : '#1E40AF',
-                          border: '1px solid rgba(255,255,255,0.4)',
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                  <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="h6" fontWeight={700} mb={1} color="text.primary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {project.name}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, color: 'text.secondary' }}>
-                      <LocationOnIcon fontSize="small" color="action" />
-                      <Typography variant="body2" fontWeight={500}>
-                        {project.city}, {project.state}
-                      </Typography>
-                    </Box>
-
-                    <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', mb: 3 }}>
-                      {project.description}
-                    </Typography>
-
-                    <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid #F1F5F9' }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">Developer</Typography>
-                        <Typography variant="body2" fontWeight={600} color="text.primary">{project.developer || 'N/A'}</Typography>
-                      </Box>
-                      <Button 
-                        variant="outlined" 
-                        size="small" 
-                        sx={{ 
-                          borderRadius: '20px',
-                          textTransform: 'none',
-                          fontWeight: 700,
-                          borderColor: '#1B4FD8',
-                          color: '#1B4FD8',
-                          px: 2,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            bgcolor: '#1B4FD8',
-                            color: 'white',
-                            borderColor: '#1B4FD8',
-                            transform: 'scale(1.05)',
-                          }
-                        }}
-                      >
-                        View Details
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
+              <Grid item xs={6} sm={6} md={4} lg={3} key={project.id}>
+                <ProjectCard project={project} />
               </Grid>
             ))}
           </Grid>
