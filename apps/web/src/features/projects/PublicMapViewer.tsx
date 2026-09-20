@@ -9,8 +9,10 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
+import { useCompanyCommunication } from '@/features/home/api/useHomeData';
 import { PLOT_COLORS, MAP_OBJECT_COLORS } from '../admin/ProjectMapEditor/types';
 import { polygonToKonvaPoints, polygonCenter, normalizeGeometry } from '../admin/ProjectMapEditor/geometry';
 
@@ -87,6 +89,57 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
+
+  const { data: companyComm } = useCompanyCommunication();
+
+  const getPlotWhatsAppUrl = useCallback((plot: any) => {
+    const adminPhone = companyComm?.whatsapp_number || companyComm?.contact_phone || '919691316499';
+    const cleanPhone = adminPhone.replace(/\D/g, '');
+    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const locationText = project?.address || `${project?.city || 'Rewa'}, ${project?.state || 'Madhya Pradesh'}`;
+
+    const lines = [
+      `नमस्ते Rewa Bhoomi, मुझे इस प्लॉट की बुकिंग और जानकारी चाहिए:`,
+      ``,
+      `🏡 *Project:* ${project?.name || 'Project Layout'}`,
+      `📍 *Location:* ${locationText}`,
+      `🔢 *Plot No:* #${plot?.plot_number || ''}`,
+      `🏷️ *Status:* ${plot?.status || 'AVAILABLE'}`,
+      plot?.area ? `📐 *Area:* ${plot.area} ${plot.area_unit || 'SQ_FT'}` : null,
+      plot?.width && plot?.length ? `📏 *Dimensions:* ${plot.width} ft × ${plot.length} ft` : null,
+      plot?.facing ? `🧭 *Facing:* ${String(plot.facing).replace(/_/g, ' ')}` : null,
+      plot?.price ? `💰 *Price:* ₹${Number(plot.price).toLocaleString('en-IN')}` : null,
+      currentUrl ? `🔗 *Link:* ${currentUrl}` : null,
+      ``,
+      `कृपया मुझे इस प्लॉट की बुकिंग प्रक्रिया और अन्य जानकारी साझा करें।`
+    ].filter(Boolean);
+
+    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+  }, [companyComm, project]);
+
+  const getGeneralWhatsAppUrl = useCallback(() => {
+    const adminPhone = companyComm?.whatsapp_number || companyComm?.contact_phone || '919691316499';
+    const cleanPhone = adminPhone.replace(/\D/g, '');
+    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const locationText = project?.address || `${project?.city || 'Rewa'}, ${project?.state || 'Madhya Pradesh'}`;
+
+    const lines = [
+      `नमस्ते Rewa Bhoomi, मुझे इस प्रोजेक्ट के बारे में बुकिंग और विस्तृत जानकारी चाहिए:`,
+      ``,
+      `🏡 *Project:* ${project?.name || 'Project Layout'}`,
+      `📍 *Location:* ${locationText}`,
+      project?.developer ? `🏢 *Developer:* ${project.developer}` : null,
+      project?.total_plots ? `🔢 *Total Plots:* ${project.total_plots}` : null,
+      project?.total_area ? `📐 *Total Area:* ${project.total_area} Sq Ft` : null,
+      currentUrl ? `🔗 *Link:* ${currentUrl}` : null,
+      ``,
+      `कृपया मुझे इस प्रोजेक्ट के उपलब्ध प्लॉट्स (Available Plots) की लिस्ट और रेट डिटेल्स साझा करें।`
+    ].filter(Boolean);
+
+    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+  }, [companyComm, project]);
 
   const handleDownloadPdf = async () => {
     const stage = stageRef.current;
@@ -483,133 +536,181 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     stage.batchDraw();
   };
 
-  // Ultra-Smooth Google-Maps Style Multi-Touch Pinch Zoom Handler
+  // Ultra-Smooth Google-Maps Style Multi-Touch Pinch Zoom & Pan Engine
   const zoomTextRef = useRef<HTMLSpanElement>(null);
 
-  const touchState = useRef<{
-    startDist: number;
-    startScale: number;
-    startPointTo: { x: number; y: number };
-    isPinching: boolean;
-  }>({
-    startDist: 0,
-    startScale: 1,
-    startPointTo: { x: 0, y: 0 },
-    isPinching: false,
-  });
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  const handleTouchStart = (e: any) => {
-    const evt = e.evt as TouchEvent;
-    const stage = stageRef.current;
-    if (!stage) return;
+    let activeTouchIds: [number, number] | null = null;
+    let lastDist = 0;
+    let lastCenter = { x: 0, y: 0 };
+    let isMultiTouch = false;
 
-    if (evt.touches.length >= 2) {
-      if (stage.isDragging()) {
-        stage.stopDrag();
+    const getTouchById = (touches: TouchList, id: number) => {
+      for (let i = 0; i < touches.length; i++) {
+        if (touches[i].identifier === id) return touches[i];
       }
-      stage.draggable(false);
+      return null;
+    };
 
-      const container = containerRef.current;
-      const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
-      const touch1 = evt.touches[0];
-      const touch2 = evt.touches[1];
-      const p1 = { x: touch1.clientX - rect.left, y: touch1.clientY - rect.top };
-      const p2 = { x: touch2.clientX - rect.left, y: touch2.clientY - rect.top };
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
+        // Multi-finger gesture started
+        isMultiTouch = true;
+        e.preventDefault();
+        e.stopPropagation();
 
-      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-      const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-      const currentScale = stage.scaleX();
+        const stage = stageRef.current;
+        if (stage) {
+          if (stage.isDragging()) {
+            stage.stopDrag();
+          }
+          stage.draggable(false);
+          stage.listening(false); // Disables hit-test checking for rock-solid 60fps pinch
+        }
 
-      touchState.current = {
-        startDist: Math.max(1, dist),
-        startScale: currentScale,
-        startPointTo: {
-          x: (center.x - stage.x()) / currentScale,
-          y: (center.y - stage.y()) / currentScale,
-        },
-        isPinching: true,
-      };
-    } else {
-      touchState.current.isPinching = false;
-      stage.draggable(true);
-    }
-  };
+        const rect = container.getBoundingClientRect();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        activeTouchIds = [t1.identifier, t2.identifier];
 
-  const handleTouchMove = (e: any) => {
-    const evt = e.evt as TouchEvent;
-    if (evt.touches.length === 2) {
-      evt.preventDefault();
-      const stage = stageRef.current;
-      if (!stage) return;
+        const p1 = { x: t1.clientX - rect.left, y: t1.clientY - rect.top };
+        const p2 = { x: t2.clientX - rect.left, y: t2.clientY - rect.top };
 
-      if (stage.isDragging()) {
-        stage.stopDrag();
+        lastDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        lastCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
       }
-      if (stage.draggable()) {
-        stage.draggable(false);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const stage = stageRef.current;
+        if (!stage) return;
+
+        const rect = container.getBoundingClientRect();
+        let t1 = activeTouchIds ? getTouchById(e.touches, activeTouchIds[0]) : null;
+        let t2 = activeTouchIds ? getTouchById(e.touches, activeTouchIds[1]) : null;
+
+        if (!t1 || !t2) {
+          // If active touches changed, reset anchor without sudden jumps
+          t1 = e.touches[0];
+          t2 = e.touches[1];
+          activeTouchIds = [t1.identifier, t2.identifier];
+          const p1 = { x: t1.clientX - rect.left, y: t1.clientY - rect.top };
+          const p2 = { x: t2.clientX - rect.left, y: t2.clientY - rect.top };
+          lastDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+          lastCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+          isMultiTouch = true;
+          return;
+        }
+
+        const p1 = { x: t1.clientX - rect.left, y: t1.clientY - rect.top };
+        const p2 = { x: t2.clientX - rect.left, y: t2.clientY - rect.top };
+
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+
+        if (lastDist <= 0 || !isMultiTouch) {
+          lastDist = dist;
+          lastCenter = center;
+          isMultiTouch = true;
+          return;
+        }
+
+        // Continuous incremental scale ratio (Google Maps formula)
+        const factor = dist / lastDist;
+        const oldScale = stage.scaleX();
+        const targetScale = oldScale * factor;
+        const clampedScale = Math.max(0.15, Math.min(6.0, targetScale));
+        const effectiveFactor = clampedScale / oldScale;
+
+        // Track simultaneous 2-finger panning delta
+        const dx = center.x - lastCenter.x;
+        const dy = center.y - lastCenter.y;
+
+        // Smoothly scale around touch midpoint and translate with fingers
+        const newStageX = center.x - (center.x - stage.x()) * effectiveFactor + dx;
+        const newStageY = center.y - (center.y - stage.y()) * effectiveFactor + dy;
+
+        stage.scale({ x: clampedScale, y: clampedScale });
+        stage.position({ x: newStageX, y: newStageY });
+        stage.batchDraw();
+
+        lastDist = dist;
+        lastCenter = center;
+
+        // Zero-re-render direct DOM update for zoom indicator badge
+        if (zoomTextRef.current) {
+          zoomTextRef.current.textContent = `${Math.round(clampedScale * 100)}%`;
+        }
+      } else if (e.touches.length === 1) {
+        // Prevent outer browser page scrolling while user is panning inside map
+        const stage = stageRef.current;
+        if (stage && stage.isDragging()) {
+          e.preventDefault();
+        }
       }
+    };
 
-      const container = containerRef.current;
-      const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
-
-      const touch1 = evt.touches[0];
-      const touch2 = evt.touches[1];
-      const p1 = { x: touch1.clientX - rect.left, y: touch1.clientY - rect.top };
-      const p2 = { x: touch2.clientX - rect.left, y: touch2.clientY - rect.top };
-
-      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-      const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-
-      const { startDist, startScale, startPointTo, isPinching } = touchState.current;
-
-      if (!isPinching || startDist <= 0) {
-        const currentScale = stage.scaleX();
-        touchState.current = {
-          startDist: Math.max(1, dist),
-          startScale: currentScale,
-          startPointTo: {
-            x: (center.x - stage.x()) / currentScale,
-            y: (center.y - stage.y()) / currentScale,
-          },
-          isPinching: true,
-        };
-        return;
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        if (isMultiTouch) {
+          isMultiTouch = false;
+          lastDist = 0;
+          activeTouchIds = null;
+          const stage = stageRef.current;
+          if (stage) {
+            stage.draggable(true);
+            stage.listening(true);
+            stage.batchDraw();
+            setStageScale(stage.scaleX());
+          }
+        }
+      } else {
+        // 2 or more touches still remaining, reset tracked touch pair cleanly
+        const rect = container.getBoundingClientRect();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        activeTouchIds = [t1.identifier, t2.identifier];
+        const p1 = { x: t1.clientX - rect.left, y: t1.clientY - rect.top };
+        const p2 = { x: t2.clientX - rect.left, y: t2.clientY - rect.top };
+        lastDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        lastCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
       }
+    };
 
-      // Smooth reference-anchored zoom (tracks fingers 1:1 without compounding drift)
-      const scaleRatio = dist / startDist;
-      const newScale = Math.max(0.15, Math.min(6, startScale * scaleRatio));
-
-      // Anchor midpoint between fingers
-      const newPos = {
-        x: center.x - startPointTo.x * newScale,
-        y: center.y - startPointTo.y * newScale,
-      };
-
-      stage.scale({ x: newScale, y: newScale });
-      stage.position(newPos);
-      stage.batchDraw();
-
-      // Zero-overhead direct DOM update for percentage badge
-      if (zoomTextRef.current) {
-        zoomTextRef.current.textContent = `${Math.round(newScale * 100)}%`;
+    const onTouchCancel = () => {
+      if (isMultiTouch) {
+        isMultiTouch = false;
+        lastDist = 0;
+        activeTouchIds = null;
+        const stage = stageRef.current;
+        if (stage) {
+          stage.draggable(true);
+          stage.listening(true);
+          stage.batchDraw();
+          setStageScale(stage.scaleX());
+        }
       }
-    }
-  };
+    };
 
-  const handleTouchEnd = () => {
-    touchState.current.isPinching = false;
-    touchState.current.startDist = 0;
-    const stage = stageRef.current;
-    if (stage) {
-      stage.draggable(true);
-      const finalScale = stage.scaleX();
-      setStageScale(finalScale);
-      if (zoomTextRef.current) {
-        zoomTextRef.current.textContent = `${Math.round(finalScale * 100)}%`;
-      }
-    }
-  };
+    container.addEventListener('touchstart', onTouchStart, { passive: false });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: false });
+    container.addEventListener('touchcancel', onTouchCancel, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchCancel);
+    };
+  }, []);
 
   const filteredPlots = useMemo(() => {
     return plots.filter(p => filterStatus.includes(p.status));
@@ -777,6 +878,8 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               touchAction: 'none',
               userSelect: 'none',
               WebkitUserSelect: 'none',
+              '& .konvajs-content': { touchAction: 'none' },
+              '& canvas': { touchAction: 'none' },
             }}
             ref={containerRef}
           >
@@ -837,10 +940,8 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                 height={canvasSize.height}
                 draggable
                 onWheel={handleWheel}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
                 onClick={(e) => { if (e.target.name() === 'bg') setSelectedPlot(null); }}
+                onTap={(e) => { if (e.target.name() === 'bg') setSelectedPlot(null); }}
               >
                 <Layer>
                   {/* 📐 Project Map Board (1600x1000) */}
@@ -1068,15 +1169,20 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                     size="small"
                     variant="contained"
                     fullWidth
-                    href="tel:+918889999120"
+                    component="a"
+                    href={getPlotWhatsAppUrl(selectedPlot.plot)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    startIcon={<WhatsAppIcon sx={{ color: '#25D366', fontSize: 19 }} />}
                     sx={{
-                      mt: 0.6,
-                      py: 0.6,
+                      mt: 0.8,
+                      py: 0.7,
                       borderRadius: 2,
                       fontWeight: 800,
-                      fontSize: '0.78rem',
+                      fontSize: '0.8rem',
                       textTransform: 'none',
                       bgcolor: '#1B4FD8',
+                      color: '#FFFFFF',
                       boxShadow: '0 3px 10px rgba(27,79,216,0.22)',
                       '&:hover': { bgcolor: '#1541B5' }
                     }}
@@ -1166,17 +1272,58 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                   </Box>
                 )}
                 {selectedPlot.plot.status === 'AVAILABLE' && (
-                  <Button size="small" variant="contained" fullWidth sx={{ mt: 1, py: 0.8, borderRadius: 2, fontWeight: 700, fontSize: '0.8rem', textTransform: 'none' }}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    fullWidth
+                    component="a"
+                    href={getPlotWhatsAppUrl(selectedPlot.plot)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    startIcon={<WhatsAppIcon sx={{ color: '#25D366', fontSize: 19 }} />}
+                    sx={{
+                      mt: 1,
+                      py: 0.8,
+                      borderRadius: 2,
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      textTransform: 'none',
+                      bgcolor: '#1B4FD8',
+                      color: '#FFFFFF',
+                      boxShadow: '0 3px 10px rgba(27,79,216,0.22)',
+                      '&:hover': { bgcolor: '#1541B5' }
+                    }}
+                  >
                     Contact for Booking
                   </Button>
                 )}
               </Box>
             </Box>
           ) : (
-            <Box sx={{ p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0', textAlign: 'center' }}>
+            <Box sx={{ p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.78rem' }}>
                 👉 Click any plot on the map to view specs
               </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                href={getGeneralWhatsAppUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<WhatsAppIcon sx={{ color: '#25D366', fontSize: 18 }} />}
+                sx={{
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  fontSize: '0.76rem',
+                  textTransform: 'none',
+                  borderColor: '#CBD5E1',
+                  color: '#0F172A',
+                  '&:hover': { borderColor: '#1B4FD8', bgcolor: '#F1F5F9' }
+                }}
+              >
+                Contact for Project Info
+              </Button>
             </Box>
           )}
 
