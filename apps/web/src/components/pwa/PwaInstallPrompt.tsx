@@ -80,6 +80,13 @@ export default function PwaInstallPrompt() {
       setDeferredPrompt(null);
       localStorage.setItem('pwa_installed', 'true');
       toast.success('Rewa Bhoomi App installed successfully! 🎉');
+
+      // Trigger notification prompt right after PWA installation
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted') {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('rewa_trigger_notif_prompt'));
+        }, 1200);
+      }
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);

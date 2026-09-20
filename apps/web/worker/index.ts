@@ -18,6 +18,15 @@ registerRoute(
   'POST'
 );
 
+// ─── Service Worker Lifecycle ────────────────────────────────────────────────
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 // ─── Push Event Listener ─────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;

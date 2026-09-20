@@ -902,15 +902,18 @@ export async function moderateProperty(
   const property = await getPropertyById(id);
   if (!property) throw new NotFoundError('Property not found');
 
+  const isPublished = status === 'PUBLISHED';
+  const cleanRejectionReason = isPublished ? null : (rejectionReason ?? null);
+
   await query(
     `UPDATE properties SET
-      status = $1,
-      rejection_reason = CASE WHEN $1 = 'PUBLISHED' THEN NULL ELSE $2 END,
-      published_at = CASE WHEN $1 = 'PUBLISHED' THEN NOW() ELSE published_at END,
-      is_popular = CASE WHEN $1 != 'PUBLISHED' THEN FALSE ELSE is_popular END,
+      status = $1::property_status,
+      rejection_reason = $2,
+      published_at = CASE WHEN $3::boolean = TRUE THEN NOW() ELSE published_at END,
+      is_popular = CASE WHEN $3::boolean = FALSE THEN FALSE ELSE is_popular END,
       updated_at = NOW()
-     WHERE id = $3`,
-    [status, rejectionReason ?? null, id],
+     WHERE id = $4`,
+    [status, cleanRejectionReason, isPublished, id],
   );
 
   // Notify Owner & Broadcast to All Users in background
@@ -1041,7 +1044,7 @@ export async function togglePropertySoldStatus(id: string, isSold: boolean, requ
   const newStatus = isSold ? 'SOLD' : 'PUBLISHED';
   
   await query(
-    `UPDATE properties SET status = $1, updated_at = NOW() WHERE id = $2`,
+    `UPDATE properties SET status = $1::property_status, updated_at = NOW() WHERE id = $2`,
     [newStatus, id]
   );
 }

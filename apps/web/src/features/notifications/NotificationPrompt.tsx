@@ -13,15 +13,33 @@ export default function NotificationPrompt() {
     if (!isSupported) return;
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
+    // In PWA standalone mode (app installed on home screen), prompt faster
+    const isStandalone = 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+
     // Show prompt if notifications permission is default/not granted and user hasn't dismissed it this session
     const dismissed = sessionStorage.getItem('notif_prompt_dismissed');
     if (Notification.permission !== 'granted' && !dismissed && !isSubscribed) {
       const timer = setTimeout(() => {
         setOpen(true);
-      }, 2500);
+      }, isStandalone ? 1200 : 2500);
       return () => clearTimeout(timer);
     }
   }, [isSupported, isSubscribed]);
+
+  // Listen for custom trigger (e.g. immediately after PWA install)
+  useEffect(() => {
+    const handleTrigger = () => {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted') {
+        sessionStorage.removeItem('notif_prompt_dismissed');
+        setOpen(true);
+      }
+    };
+
+    window.addEventListener('rewa_trigger_notif_prompt', handleTrigger);
+    return () => window.removeEventListener('rewa_trigger_notif_prompt', handleTrigger);
+  }, []);
 
   const handleEnable = async () => {
     setOpen(false);
