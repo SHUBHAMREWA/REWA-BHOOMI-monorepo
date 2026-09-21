@@ -11,6 +11,11 @@ import ShareIcon from '@mui/icons-material/Share';
 import toast from 'react-hot-toast';
 
 import ProjectCard from './ProjectCard';
+import {
+  getCachedProjectsList,
+  setCachedProjectsList,
+  isHardRefreshOrReload,
+} from '@/lib/projectIndexedDb';
 
 export default function ProjectsListPage() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -18,10 +23,43 @@ export default function ProjectsListPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    apiGet<any[]>('/projects')
-      .then((data) => setProjects(data || []))
-      .catch((err) => console.error('Failed to fetch projects:', err))
-      .finally(() => setLoading(false));
+    let isMounted = true;
+
+    const loadProjects = async () => {
+      // 1. Instant Cache-First Load from IndexedDB
+      if (!isHardRefreshOrReload()) {
+        try {
+          const cached = await getCachedProjectsList();
+          if (isMounted && cached && cached.length > 0) {
+            setProjects(cached);
+            setLoading(false);
+          }
+        } catch (err) {
+          console.warn('[ProjectsList] IndexedDB read error:', err);
+        }
+      }
+
+      // 2. Fresh Network Fetch in Background (Stale-While-Revalidate)
+      try {
+        const fresh = await apiGet<any[]>('/projects');
+        if (isMounted && Array.isArray(fresh)) {
+          setProjects(fresh);
+          setCachedProjectsList(fresh);
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProjects();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filteredProjects = projects.filter((project) => {

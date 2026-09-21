@@ -13,6 +13,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { useCompanyCommunication } from '@/features/home/api/useHomeData';
+import { setCachedPlotDetails } from '@/lib/projectIndexedDb';
 import { PLOT_COLORS, MAP_OBJECT_COLORS } from '../admin/ProjectMapEditor/types';
 import { polygonToKonvaPoints, polygonCenter, normalizeGeometry } from '../admin/ProjectMapEditor/geometry';
 
@@ -36,6 +37,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
   const stageRef = useRef<any>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 420 });
   const [selectedPlot, setSelectedPlot] = useState<PlotDetail | null>(null);
+  const [selectedMapObject, setSelectedMapObject] = useState<any | null>(null);
   const [search, setSearch] = useState('');
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string[]>(['AVAILABLE', 'HOLD', 'BOOKED', 'SOLD', 'BLOCKED']);
@@ -110,6 +112,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
       plot?.width && plot?.length ? `📏 *Dimensions:* ${plot.width} ft × ${plot.length} ft` : null,
       plot?.facing ? `🧭 *Facing:* ${String(plot.facing).replace(/_/g, ' ')}` : null,
       plot?.price ? `💰 *Price:* ₹${Number(plot.price).toLocaleString('en-IN')}` : null,
+      plot?.description ? `📝 *Description:* ${plot.description}` : null,
       currentUrl ? `🔗 *Link:* ${currentUrl}` : null,
       ``,
       `कृपया मुझे इस प्लॉट की बुकिंग प्रक्रिया और अन्य जानकारी साझा करें।`
@@ -473,8 +476,18 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
     const stage = stageRef.current;
     if (stage) {
       const pos = stage.getPointerPosition();
+      setSelectedMapObject(null);
       setSelectedPlot({ plot, x: pos?.x ?? (canvasSize.width / 2), y: pos?.y ?? (canvasSize.height / 2) });
+      if (project?.slug && plot?.id) {
+        setCachedPlotDetails(project.slug, plot.id, plot);
+      }
     }
+  };
+
+  const handleMapObjectClick = (e: any, obj: any) => {
+    e.cancelBubble = true;
+    setSelectedPlot(null);
+    setSelectedMapObject(obj);
   };
 
   const handleSearch = (value: string) => {
@@ -940,23 +953,35 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                 height={canvasSize.height}
                 draggable
                 onWheel={handleWheel}
-                onClick={(e) => { if (e.target.name() === 'bg') setSelectedPlot(null); }}
-                onTap={(e) => { if (e.target.name() === 'bg') setSelectedPlot(null); }}
+                onClick={(e) => { if (e.target.name() === 'bg') { setSelectedPlot(null); setSelectedMapObject(null); } }}
+                onTap={(e) => { if (e.target.name() === 'bg') { setSelectedPlot(null); setSelectedMapObject(null); } }}
               >
                 <Layer>
                   {/* 📐 Project Map Board (1600x1000) */}
                   <Rect x={0} y={0} width={1600} height={1000} fill="#EFE8DC" stroke="#CBD5E1" strokeWidth={2} name="bg" />
 
-                  {/* Map Objects / Road / Amenities (Hit detection disabled for 60fps performance) */}
+                  {/* Map Objects / Road / Amenities (Clickable for feature details & description) */}
                   {showLayers.mapObjects && mapObjects.map((obj: any, i: number) => {
                     const geom = obj.geometry;
                     if (!geom?.coordinates?.[0]) return null;
                     const pts = polygonToKonvaPoints(geom.coordinates[0], 1600, 1000);
                     const fillColor = obj.display_style?.fillColor ?? MAP_OBJECT_COLORS[obj.type as keyof typeof MAP_OBJECT_COLORS] ?? '#94a3b8';
                     const center = polygonCenter(geom.coordinates[0]);
+                    const isSelected = selectedMapObject?.id === obj.id;
                     return (
-                      <Group key={obj.id || i} listening={false}>
-                        <Line points={pts} closed fill={fillColor} opacity={0.35} stroke="#fff" strokeWidth={1.5} />
+                      <Group
+                        key={obj.id || i}
+                        onClick={(e) => handleMapObjectClick(e, obj)}
+                        onTap={(e) => handleMapObjectClick(e, obj)}
+                      >
+                        <Line
+                          points={pts}
+                          closed
+                          fill={fillColor}
+                          opacity={isSelected ? 0.65 : 0.35}
+                          stroke={isSelected ? '#0F172A' : '#fff'}
+                          strokeWidth={isSelected ? 2.5 : 1.5}
+                        />
                         {obj.name && (
                           <Text x={center[0] * 1600 - 40} y={center[1] * 1000 - 7} width={80} text={obj.name} fontSize={11} fill="#334155" align="center" listening={false} />
                         )}
@@ -1162,6 +1187,17 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                       </Typography>
                     </Box>
                   )}
+
+                  {selectedPlot.plot.description && (
+                    <Box sx={{ mt: 0.4, p: 0.8, bgcolor: '#F8FAFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+                      <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', fontSize: '0.66rem', mb: 0.2 }}>
+                        Description
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#1E293B', fontSize: '0.74rem', lineHeight: 1.4 }}>
+                        {selectedPlot.plot.description}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
 
                 {selectedPlot.plot.status === 'AVAILABLE' && (
@@ -1189,6 +1225,69 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                   >
                     Contact for Booking
                   </Button>
+                )}
+              </Box>
+            )}
+
+            {/* ─── FLOATING MAP OBJECT DETAILS MODAL ─── */}
+            {selectedMapObject && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: { xs: 8, sm: 12 },
+                  left: { xs: 8, sm: 12 },
+                  right: { xs: 8, sm: 'auto' },
+                  width: { xs: 'calc(100% - 16px)', sm: 300, md: 320 },
+                  bgcolor: 'rgba(255, 255, 255, 0.98)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: 2.5,
+                  border: '1.5px solid #10B981',
+                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.28)',
+                  p: { xs: 1.2, sm: 1.8 },
+                  zIndex: 30,
+                  animation: 'slideUpModal 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.6, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                    <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.92rem', sm: '1.05rem' } }}>
+                      {selectedMapObject.name || selectedMapObject.type}
+                    </Typography>
+                    <Chip
+                      label={selectedMapObject.type}
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(16, 185, 129, 0.12)',
+                        color: '#059669',
+                        fontWeight: 800,
+                        fontSize: '0.62rem',
+                        height: 20,
+                        px: 0.2,
+                      }}
+                    />
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => setSelectedMapObject(null)}
+                    sx={{
+                      p: 0.3,
+                      bgcolor: 'rgba(15, 23, 42, 0.06)',
+                      '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#EF4444' }
+                    }}
+                  >
+                    <CloseIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Box>
+
+                {(selectedMapObject.metadata?.description || selectedMapObject.description) && (
+                  <Box sx={{ mt: 0.6, p: 0.8, bgcolor: '#F8FAFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', fontSize: '0.66rem', mb: 0.2 }}>
+                      Description
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#1E293B', fontSize: '0.76rem', lineHeight: 1.4 }}>
+                      {selectedMapObject.metadata?.description || selectedMapObject.description}
+                    </Typography>
+                  </Box>
                 )}
               </Box>
             )}
@@ -1271,6 +1370,18 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                     </Typography>
                   </Box>
                 )}
+
+                {selectedPlot.plot.description && (
+                  <Box sx={{ mt: 0.6, p: 1.2, bgcolor: '#F8FAFC', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', fontSize: '0.72rem', mb: 0.3 }}>
+                      Description
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#1E293B', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                      {selectedPlot.plot.description}
+                    </Typography>
+                  </Box>
+                )}
+
                 {selectedPlot.plot.status === 'AVAILABLE' && (
                   <Button
                     size="small"
@@ -1298,6 +1409,40 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
                   </Button>
                 )}
               </Box>
+            </Box>
+          ) : selectedMapObject ? (
+            <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderRadius: 2, border: '1.5px solid #10B981' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight={800} color="#0F172A" sx={{ fontSize: '1.05rem' }}>
+                  {selectedMapObject.name || selectedMapObject.type}
+                </Typography>
+                <IconButton size="small" onClick={() => setSelectedMapObject(null)} sx={{ p: 0.4 }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              <Chip
+                label={selectedMapObject.type}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(16, 185, 129, 0.12)',
+                  color: '#059669',
+                  fontWeight: 700,
+                  fontSize: '0.67rem',
+                  height: 22,
+                  mb: 1.2,
+                  width: 'fit-content',
+                }}
+              />
+              {(selectedMapObject.metadata?.description || selectedMapObject.description) && (
+                <Box sx={{ mt: 0.5, p: 1.2, bgcolor: '#FFFFFF', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
+                  <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', fontSize: '0.72rem', mb: 0.3 }}>
+                    Description
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#1E293B', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                    {selectedMapObject.metadata?.description || selectedMapObject.description}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           ) : (
             <Box sx={{ p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1 }}>
