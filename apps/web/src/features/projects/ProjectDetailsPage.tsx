@@ -13,6 +13,13 @@ import HomeIcon from '@mui/icons-material/Home';
 import ShareIcon from '@mui/icons-material/Share';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { useCompanyCommunication } from '@/features/home/api/useHomeData';
+import {
+  getCachedProjectDetails,
+  setCachedProjectDetails,
+  getCachedProjectMap,
+  setCachedProjectMap,
+  isHardRefreshOrReload,
+} from '@/lib/projectIndexedDb';
 
 const PublicMapViewer = dynamic(() => import('./PublicMapViewer'), {
   ssr: false,
@@ -53,16 +60,63 @@ export default function ProjectDetailsPage() {
   };
 
   useEffect(() => {
-    if (slug) {
-      apiGet<any>(`/projects/${slug}`)
-        .then(data => {
-          setProject(data);
-          return apiGet<any>(`/projects/${slug}/map`);
-        })
-        .then(data => setMapData(data))
-        .catch(() => toast.error('Failed to load project details'))
-        .finally(() => setLoading(false));
-    }
+    if (!slug) return;
+
+    let isMounted = true;
+
+    const loadData = async () => {
+      // 1. Instant Cache-First Load from IndexedDB
+      if (!isHardRefreshOrReload()) {
+        try {
+          const [cachedProject, cachedMap] = await Promise.all([
+            getCachedProjectDetails(slug),
+            getCachedProjectMap(slug),
+          ]);
+          if (isMounted && cachedProject) {
+            setProject(cachedProject);
+            if (cachedMap) {
+              setMapData(cachedMap);
+            }
+            setLoading(false);
+          }
+        } catch (err) {
+          console.warn('[ProjectDetails] IndexedDB cache read error:', err);
+        }
+      }
+
+      // 2. Parallel Background / Fresh Network Fetch (Stale-While-Revalidate)
+      try {
+        const [projectRes, mapRes] = await Promise.allSettled([
+          apiGet<any>(`/projects/${slug}`),
+          apiGet<any>(`/projects/${slug}/map`),
+        ]);
+
+        if (isMounted) {
+          if (projectRes.status === 'fulfilled' && projectRes.value) {
+            setProject(projectRes.value);
+            setCachedProjectDetails(slug, projectRes.value);
+          }
+          if (mapRes.status === 'fulfilled' && mapRes.value) {
+            setMapData(mapRes.value);
+            setCachedProjectMap(slug, mapRes.value);
+          }
+        }
+      } catch (err) {
+        if (isMounted && !project) {
+          toast.error('Failed to load project details');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
   if (loading) {
