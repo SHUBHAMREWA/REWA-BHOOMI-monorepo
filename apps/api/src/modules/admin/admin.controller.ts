@@ -4,15 +4,131 @@ import { BadRequestError, NotFoundError } from '../../errors/AppError';
 
 // ─── Dashboard Stats ────────────────────────────────────────────────────────
 export const getDashboardStats = async (req: Request, res: Response) => {
-  const usersCount = await queryOne<{ count: string }>('SELECT COUNT(*) FROM users');
-  const propertiesCount = await queryOne<{ count: string }>('SELECT COUNT(*) FROM properties');
-  const pendingPropertiesCount = await queryOne<{ count: string }>(
-    'SELECT COUNT(*) FROM properties WHERE status = $1',
-    ['PENDING_REVIEW']
-  );
-  
-  // Example revenue/activity stat
-  const activeProjectsCount = await queryOne<{ count: string }>('SELECT COUNT(*) FROM projects WHERE status = $1', ['ONGOING']);
+  const [
+    usersCount,
+    propertiesCount,
+    pendingPropertiesCount,
+    publishedPropertiesCount,
+    rejectedPropertiesCount,
+    soldPropertiesCount,
+    activeProjectsCount,
+    totalBlogsCount,
+    statusDistribution,
+    purposeDistribution,
+    categoryDistribution,
+    growthTrends,
+    topLocalities,
+    recentProperties,
+    recentUsers,
+  ] = await Promise.all([
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM users WHERE deleted_at IS NULL'),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM properties WHERE deleted_at IS NULL'),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM properties WHERE status = $1 AND deleted_at IS NULL', ['PENDING_REVIEW']),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM properties WHERE status = $1 AND deleted_at IS NULL', ['PUBLISHED']),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM properties WHERE status = $1 AND deleted_at IS NULL', ['REJECTED']),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM properties WHERE status = $1 AND deleted_at IS NULL', ['SOLD']),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM projects WHERE status = $1 AND deleted_at IS NULL', ['ONGOING']),
+    queryOne<{ count: string }>('SELECT COUNT(*) FROM blogs WHERE deleted_at IS NULL'),
+
+    // Properties by Status
+    query<{ status: string; count: number }>(`
+      SELECT status::text AS status, COUNT(*)::int AS count
+      FROM properties
+      WHERE deleted_at IS NULL
+      GROUP BY status
+    `),
+
+    // Properties by Purpose (SELL / RENT / LEASE)
+    query<{ purpose: string; count: number }>(`
+      SELECT COALESCE(listing_purpose::text, 'SELL') AS purpose, COUNT(*)::int AS count
+      FROM properties
+      WHERE deleted_at IS NULL
+      GROUP BY listing_purpose
+    `),
+
+    // Properties by Category
+    query<{ category: string; count: number }>(`
+      SELECT COALESCE(category_type::text, 'OTHER') AS category, COUNT(*)::int AS count
+      FROM properties
+      WHERE deleted_at IS NULL
+      GROUP BY category_type
+      ORDER BY count DESC
+      LIMIT 6
+    `),
+
+    // Growth Trends (last 6 months)
+    query<{ label: string; key: string; properties: number; users: number }>(`
+      WITH months AS (
+        SELECT generate_series(
+          date_trunc('month', NOW() - INTERVAL '5 months'),
+          date_trunc('month', NOW()),
+          '1 month'::interval
+        ) AS month
+      ),
+      prop_counts AS (
+        SELECT date_trunc('month', created_at) AS month, COUNT(*)::int AS properties
+        FROM properties
+        WHERE created_at >= NOW() - INTERVAL '6 months' AND deleted_at IS NULL
+        GROUP BY date_trunc('month', created_at)
+      ),
+      user_counts AS (
+        SELECT date_trunc('month', created_at) AS month, COUNT(*)::int AS users
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '6 months' AND deleted_at IS NULL
+        GROUP BY date_trunc('month', created_at)
+      )
+      SELECT 
+        to_char(m.month, 'Mon YYYY') AS label,
+        to_char(m.month, 'YYYY-MM') AS key,
+        COALESCE(p.properties, 0)::int AS properties,
+        COALESCE(u.users, 0)::int AS users
+      FROM months m
+      LEFT JOIN prop_counts p ON p.month = m.month
+      LEFT JOIN user_counts u ON u.month = m.month
+      ORDER BY m.month ASC
+    `),
+
+    // Top Localities
+    query<{ name: string; count: number }>(`
+      SELECT 
+        COALESCE(NULLIF(pl.locality, ''), NULLIF(pl.city, ''), 'Rewa') AS name,
+        COUNT(*)::int AS count
+      FROM properties p
+      LEFT JOIN property_locations pl ON pl.property_id = p.id
+      WHERE p.deleted_at IS NULL
+      GROUP BY COALESCE(NULLIF(pl.locality, ''), NULLIF(pl.city, ''), 'Rewa')
+      ORDER BY count DESC
+      LIMIT 5
+    `),
+
+    // Recent 5 Properties
+    query<any>(`
+      SELECT 
+        p.id, p.title, p.slug, p.status, 
+        COALESCE(p.price_amount, p.price) AS price,
+        COALESCE(pl.city, 'Rewa') AS city,
+        p.created_at,
+        u.name AS owner_name,
+        u.email AS owner_email
+      FROM properties p
+      LEFT JOIN property_locations pl ON pl.property_id = p.id
+      LEFT JOIN users u ON u.id = p.owner_id
+      WHERE p.deleted_at IS NULL
+      ORDER BY p.created_at DESC
+      LIMIT 5
+    `),
+
+    // Recent 5 Users
+    query<any>(`
+      SELECT 
+        id, name, email, avatar_url, status, created_at,
+        (email_verified_at IS NOT NULL) AS is_verified
+      FROM users
+      WHERE deleted_at IS NULL
+      ORDER BY created_at DESC
+      LIMIT 5
+    `),
+  ]);
 
   res.json({
     success: true,
@@ -20,7 +136,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       totalUsers: parseInt(usersCount?.count || '0', 10),
       totalProperties: parseInt(propertiesCount?.count || '0', 10),
       pendingProperties: parseInt(pendingPropertiesCount?.count || '0', 10),
+      publishedProperties: parseInt(publishedPropertiesCount?.count || '0', 10),
+      rejectedProperties: parseInt(rejectedPropertiesCount?.count || '0', 10),
+      soldProperties: parseInt(soldPropertiesCount?.count || '0', 10),
       activeProjects: parseInt(activeProjectsCount?.count || '0', 10),
+      totalBlogs: parseInt(totalBlogsCount?.count || '0', 10),
+      statusDistribution,
+      purposeDistribution,
+      categoryDistribution,
+      growthTrends,
+      topLocalities,
+      recentProperties,
+      recentUsers,
     },
   });
 };

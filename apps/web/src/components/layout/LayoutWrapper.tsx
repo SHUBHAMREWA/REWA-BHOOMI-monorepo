@@ -5,12 +5,14 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import FloatingWhatsAppButton from './FloatingWhatsAppButton';
 import { Paper, BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
-import { Home, HomeWork, Apartment, AddCircle, Person } from '@mui/icons-material';
+import { Home, HomeWork, Apartment, AddCircle, Person, Login } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const isAdmin = pathname?.startsWith('/admin');
   const [value, setValue] = useState(0);
 
@@ -19,7 +21,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     else if (pathname?.startsWith('/properties/create')) setValue(3);
     else if (pathname?.startsWith('/properties') || pathname?.startsWith('/property')) setValue(1);
     else if (pathname?.startsWith('/projects') || pathname?.startsWith('/project')) setValue(2);
-    else if (pathname?.startsWith('/profile')) setValue(4);
+    else if (pathname?.startsWith('/profile') || pathname?.startsWith('/auth/login') || pathname?.startsWith('/auth/register')) setValue(4);
     else setValue(-1);
   }, [pathname]);
 
@@ -58,7 +60,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               if (newValue === 1) router.push('/properties');
               if (newValue === 2) router.push('/projects');
               if (newValue === 3) router.push('/properties/create');
-              if (newValue === 4) router.push('/profile');
+              if (newValue === 4) router.push(isAuthenticated ? '/profile' : '/auth/login');
             }}
             sx={{
               height: 60,
@@ -84,7 +86,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               label="Sell" 
               icon={<AddCircle sx={{ fontSize: 28, color: value === 3 ? '#1B4FD8' : '#3B82F6', mb: 0.2 }} />} 
             />
-            <BottomNavigationAction label="Profile" icon={<Person sx={{ fontSize: 22 }} />} />
+            <BottomNavigationAction 
+              label={isAuthenticated ? "Profile" : "Login"} 
+              icon={isAuthenticated ? <Person sx={{ fontSize: 22 }} /> : <Login sx={{ fontSize: 22 }} />} 
+            />
           </BottomNavigation>
         </Paper>
       )}

@@ -44,8 +44,10 @@ export default function ForgotPasswordPage() {
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         background: 'linear-gradient(135deg, #0F172A 0%, #1B4FD8 50%, #1338A8 100%)',
-        py: 4,
+        py: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 1.5, sm: 2 },
       }}
     >
       <Box sx={{
@@ -54,37 +56,37 @@ export default function ForgotPasswordPage() {
         backgroundSize: '40px 40px',
       }} />
 
-      <Container maxWidth="sm" sx={{ position: 'relative' }}>
+      <Container maxWidth="sm" sx={{ position: 'relative', px: { xs: 1, sm: 2 } }}>
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
-            borderRadius: 4,
+            p: { xs: 2, sm: 3.5, md: 4 },
+            borderRadius: { xs: 3, sm: 4 },
             boxShadow: '0 24px 64px rgba(15,23,42,0.3)',
             border: '1px solid rgba(255,255,255,0.08)',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: { xs: 1.5, sm: 2.5 } }}>
             <Box sx={{
               background: 'linear-gradient(135deg, #1B4FD8, #1338A8)',
-              borderRadius: 2, p: 1, display: 'flex',
+              borderRadius: 1.5, p: 0.75, display: 'flex',
             }}>
-              <HomeWork sx={{ color: 'white', fontSize: 28 }} />
+              <HomeWork sx={{ color: 'white', fontSize: { xs: 22, sm: 26 } }} />
             </Box>
             <Box>
-              <Typography variant="h6" fontWeight={800} color="text.primary" lineHeight={1}>
+              <Typography variant="h6" fontWeight={800} color="text.primary" lineHeight={1} sx={{ fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
                 Rewa Bhoomi
               </Typography>
             </Box>
           </Box>
 
-          <Typography variant="h4" fontWeight={800} gutterBottom>
+          <Typography fontWeight={800} sx={{ fontSize: { xs: '1.35rem', sm: '1.75rem' }, mb: 0.2 }}>
             Reset Password
           </Typography>
 
           {!isSent ? (
             <>
-              <Typography color="text.secondary" sx={{ mb: 4 }}>
+              <Typography color="text.secondary" sx={{ mb: { xs: 1.5, sm: 2.5 }, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                 Enter your email address and we&apos;ll send you a link to reset your password.
               </Typography>
 
@@ -94,12 +96,13 @@ export default function ForgotPasswordPage() {
                   label="Email address"
                   type="email"
                   fullWidth
+                  size="small"
                   autoComplete="email"
                   autoFocus
                   {...register('email')}
                   error={!!errors.email}
                   helperText={errors.email?.message}
-                  sx={{ mb: 3 }}
+                  sx={{ mb: { xs: 1.5, sm: 2.5 } }}
                 />
 
                 <Button
@@ -107,32 +110,33 @@ export default function ForgotPasswordPage() {
                   type="submit"
                   fullWidth
                   variant="contained"
-                  size="large"
+                  size="medium"
                   disabled={isLoading}
-                  sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5 }}
+                  sx={{ py: { xs: 1, sm: 1.25 }, fontSize: { xs: '0.88rem', sm: '0.95rem' }, borderRadius: 2 }}
                 >
-                  {isLoading ? <CircularProgress size={22} color="inherit" /> : 'Send Reset Link'}
+                  {isLoading ? <CircularProgress size={20} color="inherit" /> : 'Send Reset Link'}
                 </Button>
               </form>
             </>
           ) : (
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="h6" color="success.main" gutterBottom>
+            <Box sx={{ textAlign: 'center', py: 1.5 }}>
+              <Typography variant="h6" color="success.main" fontWeight={700} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' }, mb: 1 }}>
                 Check your email
               </Typography>
-              <Typography color="text.secondary" sx={{ mb: 4 }}>
+              <Typography color="text.secondary" sx={{ mb: 2, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                 We have sent a password reset link to your email address.
                 Please check your inbox (and spam folder) and click the link to continue.
               </Typography>
             </Box>
           )}
 
-          <Box sx={{ mt: 4 }}>
+          <Box sx={{ mt: { xs: 1.5, sm: 2.5 } }}>
             <Button
               component={Link}
               href="/auth/login"
-              startIcon={<ArrowBack />}
-              sx={{ fontWeight: 600, color: 'text.secondary' }}
+              startIcon={<ArrowBack fontSize="small" />}
+              size="small"
+              sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.82rem' }}
             >
               Back to sign in
             </Button>
