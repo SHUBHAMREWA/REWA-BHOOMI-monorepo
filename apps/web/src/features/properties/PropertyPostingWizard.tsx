@@ -26,6 +26,28 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import AspectRatioIcon from '@mui/icons-material/AspectRatio';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import BathtubIcon from '@mui/icons-material/Bathtub';
+import LayersIcon from '@mui/icons-material/Layers';
+import ExploreIcon from '@mui/icons-material/Explore';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import GroupIcon from '@mui/icons-material/Group';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import GrassIcon from '@mui/icons-material/Grass';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import AcUnitIcon from '@mui/icons-material/AcUnit';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import DeckIcon from '@mui/icons-material/Deck';
+import PhoneIcon from '@mui/icons-material/Phone';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { useAuth } from '@/features/auth/AuthContext';
 
 import { ListingPurpose, PropertyCategoryType, PropertyTypeEnum, AreaUnit } from '@rewa-bhoomi/types';
@@ -222,14 +244,29 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [previewImageIndex, setPreviewImageIndex] = useState(0);
+  const [isPreviewVideoPlaying, setIsPreviewVideoPlaying] = useState(false);
 
   // Submitting
   const [submitting, setSubmitting] = useState(false);
   const citiesOfState = getCitiesForState(location.state);
 
+  // Contact Info (Phone mandatory, WhatsApp optional)
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactWhatsapp, setContactWhatsapp] = useState('');
+  const [sameAsPhone, setSameAsPhone] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+
   const { user, isLoading: isAuthLoading } = useAuth();
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [isLoadingProperty, setIsLoadingProperty] = useState(!!propertyId);
+
+  // Auto-fill user's phone number if available when creating new listing
+  useEffect(() => {
+    if (!editingPropertyId && !contactPhone && user?.phone) {
+      const clean = user.phone.replace(/\D/g, '').slice(-10);
+      if (clean) setContactPhone(clean);
+    }
+  }, [user, editingPropertyId, contactPhone]);
 
   useEffect(() => {
     if (propertyId && !isAuthLoading) {
@@ -248,7 +285,8 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           }
 
           setEditingPropertyId(prop.id);
-          setPurpose(prop.listing_purpose);
+          const normalizedPurpose = (prop.listing_purpose === 'PG' ? 'RENT' : prop.listing_purpose === 'COMMERCIAL_LEASE' ? 'LEASE' : prop.listing_purpose) as ListingPurpose;
+          setPurpose(normalizedPurpose);
           setCategory(prop.category_type);
           setPropertyType(prop.property_type);
           setProgressLevel(3);
@@ -407,6 +445,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           if (prop.custom_amenities) {
             setCustomAmenities(prop.custom_amenities);
           }
+          const savedPhone = prop.contact_phone || prop.contactPhone || prop.owner_phone || '';
+          const savedWhatsapp = prop.contact_whatsapp || prop.contactWhatsapp || '';
+          if (savedPhone) setContactPhone(savedPhone.replace(/\D/g, '').slice(-10));
+          if (savedWhatsapp) setContactWhatsapp(savedWhatsapp.replace(/\D/g, '').slice(-10));
+          if (savedPhone && savedWhatsapp && savedPhone === savedWhatsapp) {
+            setSameAsPhone(true);
+          }
         })
         .catch(() => toast.error('Failed to load property for editing'))
         .finally(() => setIsLoadingProperty(false));
@@ -447,8 +492,6 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     if (purpose === 'SALE') setPriceType('TOTAL_PRICE');
     else if (purpose === 'RENT') setPriceType('RENT');
     else if (purpose === 'LEASE') setPriceType('LEASE_RENT');
-    else if (purpose === 'PG') setPriceType('PG_RENT');
-    else if (purpose === 'COMMERCIAL_LEASE') setPriceType('COMMERCIAL_LEASE_RENT');
   }, [purpose]);
 
   const handlePurposeSelect = (pKey: ListingPurpose) => {
@@ -525,6 +568,47 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
     return Object.keys(cleaned).length > 0 ? cleaned : undefined;
   };
 
+  // Video helpers for preview facade & embed player
+  const getVideoPoster = (url: string) => {
+    try {
+      if (url.includes('youtu.be/')) {
+        const id = url.split('youtu.be/')[1].split('?')[0];
+        return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      }
+      if (url.includes('youtube.com')) {
+        let id = '';
+        if (url.includes('v=')) id = url.split('v=')[1].split('&')[0];
+        else if (url.includes('/shorts/')) id = url.split('/shorts/')[1].split('?')[0];
+        if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      }
+    } catch {
+      // fallback
+    }
+    return imageUrls[0] || '';
+  };
+
+  const getEmbedUrl = (url: string) => {
+    let embedUrl = '';
+    try {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let videoId = '';
+        if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+        else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+        else if (url.includes('/shorts/')) videoId = url.split('/shorts/')[1].split('?')[0];
+        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&loop=1&playlist=${videoId}&playsinline=1`;
+      } else if (url.includes('facebook.com') || url.includes('fb.watch')) {
+        embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&autoplay=1`;
+      } else if (url.includes('instagram.com')) {
+        let baseUrl = url.split('?')[0];
+        if (!baseUrl.endsWith('/')) baseUrl += '/';
+        embedUrl = `${baseUrl}embed`;
+      }
+    } catch (e) {
+      console.error('Error parsing video URL', e);
+    }
+    return embedUrl;
+  };
+
   // Submit Handler
   const handleSubmitProperty = async () => {
     setSubmitting(true);
@@ -570,14 +654,16 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         amenityIds: validAmenityIds,
         customAmenities: customAmenities,
         videoUrl: videoUrl.trim() ? videoUrl.trim() : null,
+        contactPhone: contactPhone.replace(/\D/g, ''),
+        contactWhatsapp: contactWhatsapp && contactWhatsapp.trim() ? contactWhatsapp.replace(/\D/g, '') : null,
         imageUrls: imageUrls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0),
         imageStorageKeys: imageStorageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0),
-        residentialDetails: category === 'RESIDENTIAL' ? cleanDetailObj(resDetails) : undefined,
+        residentialDetails: (category === 'RESIDENTIAL' && propertyType !== 'PG' && propertyType !== 'HOSTEL') ? cleanDetailObj(resDetails) : undefined,
         commercialDetails: category === 'COMMERCIAL' ? cleanDetailObj(commDetails) : undefined,
         landDetails: category === 'LAND' ? cleanDetailObj(landDetails) : undefined,
-        pgDetails: purpose === 'PG' ? cleanDetailObj(pgDetails) : undefined,
-        leaseDetails: (purpose === 'LEASE' || purpose === 'COMMERCIAL_LEASE') ? cleanDetailObj(leaseDetails) : undefined,
-        commercialLeaseDetails: purpose === 'COMMERCIAL_LEASE' ? cleanDetailObj(leaseDetails) : undefined,
+        pgDetails: (propertyType === 'PG' || propertyType === 'HOSTEL') ? cleanDetailObj(pgDetails) : undefined,
+        leaseDetails: (purpose === 'LEASE' || (purpose === 'RENT' && leaseDetails.securityDeposit)) ? cleanDetailObj(leaseDetails) : undefined,
+        commercialLeaseDetails: (purpose === 'LEASE' && category === 'COMMERCIAL') ? cleanDetailObj(leaseDetails) : undefined,
         hallDetails: category === 'SPECIAL' ? cleanDetailObj(hallDetails) : undefined,
       };
 
@@ -1011,7 +1097,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             </Typography>
 
             {/* Residential House/Apartment/Villa Fields */}
-            {category === 'RESIDENTIAL' && purpose !== 'PG' && (
+            {category === 'RESIDENTIAL' && propertyType !== 'PG' && propertyType !== 'HOSTEL' && (
               <Grid container spacing={{ xs: 1, sm: 2 }}>
                 <Grid item xs={12} sm={4}>
                   <TextField fullWidth size="small" type="number" label="Bedrooms (BHK)" value={resDetails.bedrooms} onChange={(e) => setResDetails({ ...resDetails, bedrooms: toNumVal(e.target.value) })} placeholder="e.g. 2" />
@@ -1053,6 +1139,29 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                     </Select>
                   </FormControl>
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Possession Status</InputLabel>
+                    <Select label="Possession Status" value={resDetails.possessionStatus || 'Ready to Move'} onChange={(e) => setResDetails({ ...resDetails, possessionStatus: e.target.value })}>
+                      <MenuItem value="Ready to Move">Ready to Move (तुरंत तैयार)</MenuItem>
+                      <MenuItem value="Under Construction">Under Construction (निर्माणाधीन)</MenuItem>
+                      <MenuItem value="Within 3 Months">Within 3 Months (3 महीने के अंदर)</MenuItem>
+                      <MenuItem value="Within 6 Months">Within 6 Months (6 महीने के अंदर)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Floor Number (मंजिल)" value={resDetails.floor} onChange={(e) => setResDetails({ ...resDetails, floor: toNumVal(e.target.value) as any })} placeholder="e.g. 1 (Ground = 0)" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Total Floors in Building (कुल मंजिलें)" value={resDetails.totalFloors} onChange={(e) => setResDetails({ ...resDetails, totalFloors: toNumVal(e.target.value) as any })} placeholder="e.g. 3" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" label="Parking (पार्किंग व्यवस्था)" value={resDetails.parking} onChange={(e) => setResDetails({ ...resDetails, parking: e.target.value })} placeholder="e.g. 1 Covered Car & Bike Parking" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" label="Water Supply (पानी की सुविधा)" value={resDetails.waterSupply} onChange={(e) => setResDetails({ ...resDetails, waterSupply: e.target.value })} placeholder="e.g. 24 Hours Corporation & Borewell" />
+                </Grid>
                 {purpose === 'RENT' && (
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small">
@@ -1069,38 +1178,49 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               </Grid>
             )}
 
-            
-              {/* Commercial Fields */}
-              {category === 'COMMERCIAL' && (
-                <Grid container spacing={{ xs: 1, sm: 2 }}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Carpet Area (कारपेट एरिया) Sq Ft" value={commDetails.carpetArea} onChange={(e) => setCommDetails({ ...commDetails, carpetArea: toNumVal(e.target.value) as any })} placeholder="e.g. 500" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Built-up Area (बिल्ट-अप एरिया) Sq Ft" value={commDetails.builtUpArea} onChange={(e) => setCommDetails({ ...commDetails, builtUpArea: toNumVal(e.target.value) as any })} placeholder="e.g. 650" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Length / Depth (ft)" value={commDetails.depth} onChange={(e) => setCommDetails({ ...commDetails, depth: toNumVal(e.target.value) as any })} placeholder="e.g. 40" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Width / Frontage (ft)" value={commDetails.frontage} onChange={(e) => setCommDetails({ ...commDetails, frontage: toNumVal(e.target.value) as any })} placeholder="e.g. 15" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Floor Number" value={commDetails.floor} onChange={(e) => setCommDetails({ ...commDetails, floor: toNumVal(e.target.value) as any })} placeholder="e.g. 0 (Ground), 1" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth size="small" type="number" label="Washrooms" value={commDetails.washrooms} onChange={(e) => setCommDetails({ ...commDetails, washrooms: toNumVal(e.target.value) as any })} placeholder="e.g. 1" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControlLabel control={<Switch checked={commDetails.mainRoadFacing} onChange={(e) => setCommDetails({ ...commDetails, mainRoadFacing: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Main Road Facing?</Typography>} />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControlLabel control={<Switch checked={commDetails.cornerProperty} onChange={(e) => setCommDetails({ ...commDetails, cornerProperty: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Corner Property?</Typography>} />
-                  </Grid>
+            {/* Commercial Fields */}
+            {category === 'COMMERCIAL' && (
+              <Grid container spacing={{ xs: 1, sm: 2 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Carpet Area (कारपेट एरिया) Sq Ft" value={commDetails.carpetArea} onChange={(e) => setCommDetails({ ...commDetails, carpetArea: toNumVal(e.target.value) as any })} placeholder="e.g. 500" />
                 </Grid>
-              )}
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Built-up Area (बिल्ट-अप एरिया) Sq Ft" value={commDetails.builtUpArea} onChange={(e) => setCommDetails({ ...commDetails, builtUpArea: toNumVal(e.target.value) as any })} placeholder="e.g. 650" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Length / Depth (ft)" value={commDetails.depth} onChange={(e) => setCommDetails({ ...commDetails, depth: toNumVal(e.target.value) as any })} placeholder="e.g. 40" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Width / Frontage (ft)" value={commDetails.frontage} onChange={(e) => setCommDetails({ ...commDetails, frontage: toNumVal(e.target.value) as any })} placeholder="e.g. 15" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Floor Number" value={commDetails.floor} onChange={(e) => setCommDetails({ ...commDetails, floor: toNumVal(e.target.value) as any })} placeholder="e.g. 0 (Ground), 1" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Total Floors in Building" value={commDetails.totalFloors} onChange={(e) => setCommDetails({ ...commDetails, totalFloors: toNumVal(e.target.value) as any })} placeholder="e.g. 4" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Washrooms" value={commDetails.washrooms} onChange={(e) => setCommDetails({ ...commDetails, washrooms: toNumVal(e.target.value) as any })} placeholder="e.g. 1" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" label="Parking (पार्किंग)" value={commDetails.parking} onChange={(e) => setCommDetails({ ...commDetails, parking: e.target.value })} placeholder="e.g. Dedicated Basement Parking" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={commDetails.mainRoadFacing} onChange={(e) => setCommDetails({ ...commDetails, mainRoadFacing: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Main Road Facing?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={commDetails.cornerProperty} onChange={(e) => setCommDetails({ ...commDetails, cornerProperty: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Corner Property?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={commDetails.lift} onChange={(e) => setCommDetails({ ...commDetails, lift: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Lift Facility Available?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={commDetails.powerBackup} onChange={(e) => setCommDetails({ ...commDetails, powerBackup: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Power Backup Facility?</Typography>} />
+                </Grid>
+              </Grid>
+            )}
 
-              {/* Land & Agricultural Fields */}
+            {/* Land & Agricultural Fields */}
             {category === 'LAND' && (
               <Grid container spacing={{ xs: 1, sm: 2 }}>
                 <Grid item xs={12} sm={6}>
@@ -1129,10 +1249,19 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       <TextField fullWidth size="small" label="Current Crop (वर्तमान फसल)" value={landDetails.currentCrop} onChange={(e) => setLandDetails({ ...landDetails, currentCrop: e.target.value })} placeholder="Wheat, Rice, Pulses (गेहूं, धान, दलहन)" />
                     </Grid>
                     <Grid item xs={12} sm={6}>
+                      <TextField fullWidth size="small" label="Nearest Road Distance (सड़क से दूरी)" value={landDetails.nearestRoadDistance} onChange={(e) => setLandDetails({ ...landDetails, nearestRoadDistance: e.target.value })} placeholder="e.g. Main Road par, ya 100 Metres" />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
                       <FormControlLabel control={<Switch checked={landDetails.irrigationAvailable} onChange={(e) => setLandDetails({ ...landDetails, irrigationAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Pani ki vyawastha hai? (Sinchai / Water Facility)</Typography>} />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <FormControlLabel control={<Switch checked={landDetails.borewell} onChange={(e) => setLandDetails({ ...landDetails, borewell: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Borewell ya Nal / Tube well ki suvidha hai?</Typography>} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControlLabel control={<Switch checked={landDetails.fencing} onChange={(e) => setLandDetails({ ...landDetails, fencing: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Boundary / Tar Fencing Hai?</Typography>} />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControlLabel control={<Switch checked={landDetails.electricityConnection} onChange={(e) => setLandDetails({ ...landDetails, electricityConnection: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Bijli Connection (Electricity) Hai?</Typography>} />
                     </Grid>
                   </>
                 )}
@@ -1140,7 +1269,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
             )}
 
             {/* PG Specific Fields */}
-            {purpose === 'PG' && (
+            {(propertyType === 'PG' || propertyType === 'HOSTEL') && (
               <Grid container spacing={{ xs: 1, sm: 2 }}>
                 <Grid item xs={12} sm={6}>
                   <TextField fullWidth size="small" label="PG / Hostel Name" value={pgDetails.pgName} onChange={(e) => setPgDetails({ ...pgDetails, pgName: e.target.value })} />
@@ -1168,7 +1297,62 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" label="Gate Closing / Curfew Time" value={pgDetails.curfewTime} onChange={(e) => setPgDetails({ ...pgDetails, curfewTime: e.target.value })} placeholder="e.g. 10:00 PM" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <FormControlLabel control={<Switch checked={pgDetails.foodAvailable} onChange={(e) => setPgDetails({ ...pgDetails, foodAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Food / Meals Available?</Typography>} />
+                </Grid>
+                {pgDetails.foodAvailable && (
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Meal Plan (खाने का प्रकार)</InputLabel>
+                      <Select label="Meal Plan (खाने का प्रकार)" value={pgDetails.mealPlan || 'ALL_MEALS'} onChange={(e) => setPgDetails({ ...pgDetails, mealPlan: e.target.value })}>
+                        <MenuItem value="ALL_MEALS">Breakfast, Lunch & Dinner (तीनों समय)</MenuItem>
+                        <MenuItem value="BREAKFAST_DINNER">Breakfast & Dinner (सुबह-शाम)</MenuItem>
+                        <MenuItem value="LUNCH_DINNER">Lunch & Dinner (दोपहर-शाम)</MenuItem>
+                        <MenuItem value="ONLY_BREAKFAST">Only Breakfast (सिर्फ नाश्ता)</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+
+            {/* Special Purpose / Venue Fields */}
+            {category === 'SPECIAL' && (
+              <Grid container spacing={{ xs: 1, sm: 2 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Guest / People Capacity (लोगों की क्षमता)" value={hallDetails.capacityPeople} onChange={(e) => setHallDetails({ ...hallDetails, capacityPeople: toNumVal(e.target.value) as any })} placeholder="e.g. 500" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Seating Capacity (बैठने की क्षमता)" value={hallDetails.seatingCapacity} onChange={(e) => setHallDetails({ ...hallDetails, seatingCapacity: toNumVal(e.target.value) as any })} placeholder="e.g. 350" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Total Hall / Area (कारपेट या हॉल एरिया) Sq Ft" value={hallDetails.hallAreaSqFt} onChange={(e) => setHallDetails({ ...hallDetails, hallAreaSqFt: toNumVal(e.target.value) as any })} placeholder="e.g. 4000" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Parking Capacity (गाड़ियों की पार्किंग क्षमता)" value={hallDetails.parkingCapacityVehicles} onChange={(e) => setHallDetails({ ...hallDetails, parkingCapacityVehicles: toNumVal(e.target.value) as any })} placeholder="e.g. 50" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField fullWidth size="small" type="number" label="Washrooms (शौचालय)" value={hallDetails.washroomsCount} onChange={(e) => setHallDetails({ ...hallDetails, washroomsCount: toNumVal(e.target.value) as any })} placeholder="e.g. 4" />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={hallDetails.acAvailable} onChange={(e) => setHallDetails({ ...hallDetails, acAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>AC Suvidha Hai? (Air Conditioned)</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={hallDetails.kitchenAvailable} onChange={(e) => setHallDetails({ ...hallDetails, kitchenAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Kitchen / Rasoi Ki Suvidha Hai?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={hallDetails.diningAreaAvailable} onChange={(e) => setHallDetails({ ...hallDetails, diningAreaAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Dining Area Alag Se Hai?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={hallDetails.stageAvailable} onChange={(e) => setHallDetails({ ...hallDetails, stageAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Stage / Manch Ki Suvidha Hai?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={hallDetails.generatorBackupAvailable} onChange={(e) => setHallDetails({ ...hallDetails, generatorBackupAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Generator / Power Backup Hai?</Typography>} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel control={<Switch checked={hallDetails.soundSystemAvailable} onChange={(e) => setHallDetails({ ...hallDetails, soundSystemAvailable: e.target.checked })} />} label={<Typography variant="body2" sx={{ fontSize: { xs: '0.82rem', sm: '0.875rem' } }}>Sound System / DJ Facility Hai?</Typography>} />
                 </Grid>
               </Grid>
             )}
@@ -1186,7 +1370,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth size="small" type="number"
-                  label={purpose === 'SALE' ? 'Expected Sale Price (₹)' : purpose === 'PG' ? 'Monthly PG Rent (₹)' : 'Rent / Lease Amount (₹)'}
+                  label={purpose === 'SALE' ? 'Expected Sale Price (₹)' : (propertyType === 'PG' || propertyType === 'HOSTEL') ? 'Monthly PG / Room Rent (₹)' : 'Rent / Lease Amount (₹)'}
                   value={priceAmount}
                   onChange={(e) => setPriceAmount(toNumVal(e.target.value))}
                   placeholder="e.g. 2500000"
@@ -1201,7 +1385,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 />
               </Grid>
 
-              {(purpose === 'RENT' || purpose === 'LEASE' || purpose === 'COMMERCIAL_LEASE' || purpose === 'PG') && (
+              {(purpose === 'RENT' || purpose === 'LEASE') && (
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth size="small" type="number" label="Security Deposit (₹)"
@@ -1212,7 +1396,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 </Grid>
               )}
 
-              {(purpose === 'LEASE' || purpose === 'COMMERCIAL_LEASE') && (
+              {purpose === 'LEASE' && (
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Minimum Lease Period (कम से कम लीज की अवधि)</InputLabel>
@@ -1237,7 +1421,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 </Grid>
               )}
 
-              {purpose === 'COMMERCIAL_LEASE' && (
+              {(purpose === 'LEASE' && category === 'COMMERCIAL') && (
                 <>
                   <Grid item xs={12} sm={6}>
                     <TextField fullWidth size="small" type="number" label="Lock-in Period (Months)" value={leaseDetails.lockInPeriodMonths} onChange={(e) => setLeaseDetails({ ...leaseDetails, lockInPeriodMonths: toNumVal(e.target.value) as any })} placeholder="e.g. 12" />
@@ -1474,6 +1658,142 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
           </Paper>
         )}
 
+        {/* ─── STEP: CONTACT INFORMATION (Phone mandatory, WhatsApp optional) ─── */}
+        {((activeStep === 1)) && (
+          <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 3 }, mb: { xs: 1.5, sm: 3 }, borderRadius: { xs: 2, sm: 2.5 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} mb={0.4}>
+              <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '0.95rem', sm: '1.25rem' } }}>
+                Contact Information (संपर्क विवरण)
+              </Typography>
+              <Chip
+                icon={<LockOutlinedIcon sx={{ fontSize: '14px !important', color: '#92400E !important' }} />}
+                label="🔒 100% Private (Admin Only)"
+                size="small"
+                sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: { xs: '0.65rem', sm: '0.72rem' } }}
+              />
+            </Box>
+            <Typography variant="body2" color="text.secondary" mb={1.5} sx={{ fontSize: { xs: '0.72rem', sm: '0.85rem' } }}>
+              Apna mobile number darj karein taaki platform verification aur inquiry ke liye admin aapse sampark kar sake.
+            </Typography>
+
+            {/* Privacy Alert Box */}
+            <Alert
+              severity="info"
+              icon={<VerifiedUserIcon sx={{ fontSize: 20, color: '#1B4FD8' }} />}
+              sx={{
+                mb: 2.5,
+                borderRadius: 2,
+                bgcolor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                color: '#1E3A8A',
+                '& .MuiAlert-message': { fontSize: { xs: '0.72rem', sm: '0.82rem' }, lineHeight: 1.5 },
+              }}
+            >
+              <strong>🔒 गोपनीयता सूचना (Privacy Notice):</strong> आपका मोबाइल नंबर और व्हाट्सएप नंबर सामान्य यूज़र्स या वेबसाइट पर सार्वजनिक रूप से <strong>नहीं दिखेगा</strong>। यह केवल एडमिन सत्यापन (Admin Verification) के लिए सुरक्षित रहेगा।
+            </Alert>
+
+            <Grid container spacing={{ xs: 1.5, sm: 2.5 }}>
+              {/* Mandatory Mobile Number */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Mobile Number (फ़ोन नंबर) *"
+                  required
+                  placeholder="9876543210"
+                  value={contactPhone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setContactPhone(val);
+                    if (sameAsPhone) {
+                      setContactWhatsapp(val);
+                    }
+                  }}
+                  onBlur={() => setPhoneTouched(true)}
+                  error={phoneTouched && (!contactPhone || !/^[6-9]\d{9}$/.test(contactPhone))}
+                  helperText={
+                    phoneTouched && (!contactPhone
+                      ? 'Mobile number is mandatory'
+                      : !/^[6-9]\d{9}$/.test(contactPhone)
+                      ? 'Kripya 10-digit valid mobile number darj karein (6-9 se shuru)'
+                      : '✓ Valid mobile number')
+                  }
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PhoneIcon sx={{ fontSize: 18, color: '#1B4FD8' }} />
+                          <Typography variant="body2" fontWeight={700} color="#334155">+91</Typography>
+                        </Box>
+                      </InputAdornment>
+                    ),
+                  }}
+                  inputProps={{ maxLength: 10, inputMode: 'numeric' }}
+                />
+              </Grid>
+
+              {/* WhatsApp Number (Optional) */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="WhatsApp Number (वैकल्पिक / Optional)"
+                  placeholder="9876543210"
+                  value={contactWhatsapp}
+                  disabled={sameAsPhone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setContactWhatsapp(val);
+                  }}
+                  error={Boolean(contactWhatsapp && !/^[6-9]\d{9}$/.test(contactWhatsapp))}
+                  helperText={
+                    contactWhatsapp && !/^[6-9]\d{9}$/.test(contactWhatsapp)
+                      ? 'Yadi darj karein toh 10-digit valid number hona chahiye'
+                      : sameAsPhone
+                      ? 'Same as mobile number'
+                      : 'Optional - agar alag WhatsApp number hai'
+                  }
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <WhatsAppIcon sx={{ fontSize: 18, color: '#16A34A' }} />
+                          <Typography variant="body2" fontWeight={700} color="#334155">+91</Typography>
+                        </Box>
+                      </InputAdornment>
+                    ),
+                  }}
+                  inputProps={{ maxLength: 10, inputMode: 'numeric' }}
+                />
+              </Grid>
+
+              {/* Same as Mobile Number Checkbox */}
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={sameAsPhone}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSameAsPhone(checked);
+                        if (checked) {
+                          setContactWhatsapp(contactPhone);
+                        }
+                      }}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontSize: { xs: '0.78rem', sm: '0.85rem' }, fontWeight: 600, color: '#334155' }}>
+                      व्हाट्सएप नंबर भी यही मोबाइल नंबर है (WhatsApp number is same as Mobile number)
+                    </Typography>
+                  }
+                />
+              </Grid>
+            </Grid>
+          </Paper>
+        )}
+
         {/* ─── STEP 8: DESCRIPTION ─── */}
         {((activeStep === 0)) && progressLevel >= 3 && propertyType !== null && (
           <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 3 }, mb: { xs: 1.5, sm: 3 }, borderRadius: { xs: 2, sm: 2.5 }, border: '1px solid #E2E8F0', bgcolor: '#fff' }}>
@@ -1540,9 +1860,51 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 : ' Property submit karne ke baad admin approval ke baad hi ye listing public hogi. Koi bhi galti ho toh neeche "Back" karke fix kar lo.'}
             </Alert>
 
-            {/* Property Images Preview Gallery */}
-            {imageUrls.length > 0 && (() => {
-              const currentImgIndex = Math.min(previewImageIndex, Math.max(0, imageUrls.length - 1));
+            {/* Combined Media Preview Gallery (Video + Images) */}
+            {(() => {
+              const previewMediaList: Array<{ type: 'video' | 'image'; url: string; id: string }> = [
+                ...(videoUrl && videoUrl.trim() ? [{ type: 'video' as const, url: videoUrl.trim(), id: 'preview-video-0' }] : []),
+                ...imageUrls.map((url, i) => ({ type: 'image' as const, url, id: `preview-img-${i}` })),
+              ];
+
+              if (previewMediaList.length === 0) {
+                return (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      borderRadius: 2.5,
+                      p: { xs: 2.5, sm: 3.5 },
+                      mb: { xs: 1.5, sm: 3 },
+                      textAlign: 'center',
+                      border: '1px dashed #CBD5E1',
+                      bgcolor: '#F8FAFC',
+                    }}
+                  >
+                    <Box sx={{ fontSize: 36, mb: 0.8 }}>📷</Box>
+                    <Typography variant="subtitle1" fontWeight={700} color="#334155" mb={0.4} sx={{ fontSize: { xs: '0.88rem', sm: '1.05rem' } }}>
+                      Koi Photo ya Video Add Nahi Hua Hai
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" mb={1.8} sx={{ fontSize: { xs: '0.72rem', sm: '0.85rem' } }}>
+                      Photos aur video add karne se aapki listing ko 3 guna zyada verified buyers milte hain!
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloudUploadIcon />}
+                      onClick={() => setActiveStep(1)}
+                      sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.78rem' }}
+                    >
+                      Photos / Video Add Karein
+                    </Button>
+                  </Paper>
+                );
+              }
+
+              const currentMediaIndex = Math.min(previewImageIndex, Math.max(0, previewMediaList.length - 1));
+              const activeMedia = previewMediaList[currentMediaIndex];
+              const isVertical = activeMedia.type === 'video' && (activeMedia.url.includes('/shorts/') || activeMedia.url.includes('/reel/') || activeMedia.url.includes('instagram.com'));
+              const embedUrl = activeMedia.type === 'video' ? getEmbedUrl(activeMedia.url) : '';
+
               return (
                 <Paper
                   elevation={0}
@@ -1554,11 +1916,11 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                     boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
                   }}
                 >
-                  {/* Main Active Preview Image Display */}
+                  {/* Main Active Media Viewer */}
                   <Box
                     sx={{
                       position: 'relative',
-                      height: { xs: 180, sm: 320, md: 400 },
+                      height: { xs: 210, sm: 340, md: 420 },
                       bgcolor: '#0F172A',
                       display: 'flex',
                       alignItems: 'center',
@@ -1566,27 +1928,165 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       overflow: 'hidden',
                     }}
                   >
-                    <Box
-                      component="img"
-                      src={imageUrls[currentImgIndex] || imageUrls[0]}
-                      alt={`Property Photo ${currentImgIndex + 1}`}
+                    {activeMedia.type === 'video' ? (
+                      !isPreviewVideoPlaying ? (
+                        <Box
+                          onClick={() => setIsPreviewVideoPlaying(true)}
+                          sx={{
+                            position: 'relative',
+                            width: isVertical ? { xs: '180px', sm: '230px', md: '260px' } : '100%',
+                            height: '100%',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: '#000',
+                            mx: 'auto',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {getVideoPoster(activeMedia.url) ? (
+                            <Box
+                              component="img"
+                              src={getVideoPoster(activeMedia.url)}
+                              alt="Video Poster Preview"
+                              sx={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: isVertical ? 'contain' : 'cover',
+                                opacity: 0.85,
+                              }}
+                            />
+                          ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94A3B8', gap: 1 }}>
+                              <VideocamIcon sx={{ fontSize: 56, color: '#EF4444' }} />
+                              <Typography variant="caption" sx={{ color: '#E2E8F0' }}>Video Attached</Typography>
+                            </Box>
+                          )}
+
+                          {/* Center Play Button Overlay */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 1,
+                              zIndex: 2,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: { xs: 52, sm: 64 },
+                                height: { xs: 52, sm: 64 },
+                                borderRadius: '50%',
+                                bgcolor: 'rgba(239, 68, 68, 0.95)',
+                                color: '#FFFFFF',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                                transition: 'transform 0.2s ease',
+                                '&:hover': { transform: 'scale(1.1)', bgcolor: '#DC2626' },
+                              }}
+                            >
+                              <PlayArrowIcon sx={{ fontSize: { xs: 32, sm: 40 }, ml: 0.4 }} />
+                            </Box>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: '#FFFFFF',
+                                fontWeight: 700,
+                                bgcolor: 'rgba(15, 23, 42, 0.85)',
+                                px: 1.2,
+                                py: 0.4,
+                                borderRadius: '20px',
+                                fontSize: '0.72rem',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                              }}
+                            >
+                              ▶ Video Play Karke Dekhein
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Box sx={{ position: 'relative', width: isVertical ? { xs: '200px', sm: '260px', md: '300px' } : '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#000', mx: 'auto' }}>
+                          {embedUrl ? (
+                            <iframe
+                              src={embedUrl}
+                              title="Property video preview"
+                              style={{ width: '100%', height: '100%', border: 0 }}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <Box sx={{ p: 3, textAlign: 'center', color: '#fff' }}>
+                              <Typography variant="body2" mb={1.5}>Video Link Preview Available</Typography>
+                              <Button variant="contained" color="error" size="small" href={activeMedia.url} target="_blank" rel="noopener noreferrer" startIcon={<VideocamIcon />}>
+                                Open Video Link
+                              </Button>
+                            </Box>
+                          )}
+                          <IconButton
+                            size="small"
+                            onClick={(e) => { e.stopPropagation(); setIsPreviewVideoPlaying(false); }}
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              bgcolor: 'rgba(15, 23, 42, 0.85)',
+                              color: '#fff',
+                              zIndex: 10,
+                              '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.9)' },
+                            }}
+                            title="Close Video Preview"
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      )
+                    ) : (
+                      <Box
+                        component="img"
+                        src={activeMedia.url}
+                        alt={`Property Media ${currentMediaIndex + 1}`}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          bgcolor: '#0B1120',
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                      />
+                    )}
+
+                    {/* Top Left Media Type Indicator */}
+                    <Chip
+                      icon={activeMedia.type === 'video' ? <VideocamIcon sx={{ fontSize: '15px !important', color: '#fff !important' }} /> : undefined}
+                      label={activeMedia.type === 'video' ? 'Video' : 'Photo'}
+                      size="small"
                       sx={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        bgcolor: '#0B1120',
-                        transition: 'all 0.2s ease-in-out',
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        bgcolor: activeMedia.type === 'video' ? 'rgba(239, 68, 68, 0.95)' : 'rgba(15, 23, 42, 0.85)',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '0.68rem',
+                        height: 22,
+                        backdropFilter: 'blur(4px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        zIndex: 3,
                       }}
                     />
 
                     {/* Left Previous Arrow */}
-                    {imageUrls.length > 1 && (
+                    {previewMediaList.length > 1 && (
                       <IconButton
-                        onClick={() =>
-                          setPreviewImageIndex((prev) =>
-                            prev === 0 ? imageUrls.length - 1 : prev - 1
-                          )
-                        }
+                        onClick={() => {
+                          setIsPreviewVideoPlaying(false);
+                          setPreviewImageIndex((prev) => (prev === 0 ? previewMediaList.length - 1 : prev - 1));
+                        }}
                         sx={{
                           position: 'absolute',
                           left: 8,
@@ -1595,6 +2095,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                           bgcolor: 'rgba(15, 23, 42, 0.75)',
                           color: '#FFFFFF',
                           p: 0.5,
+                          zIndex: 3,
                           backdropFilter: 'blur(4px)',
                           '&:hover': {
                             bgcolor: 'rgba(15, 23, 42, 0.95)',
@@ -1603,20 +2104,19 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                           boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                         }}
                         size="small"
-                        aria-label="Previous Image"
+                        aria-label="Previous Media"
                       >
                         <NavigateBeforeIcon fontSize="small" />
                       </IconButton>
                     )}
 
                     {/* Right Next Arrow */}
-                    {imageUrls.length > 1 && (
+                    {previewMediaList.length > 1 && (
                       <IconButton
-                        onClick={() =>
-                          setPreviewImageIndex((prev) =>
-                            prev === imageUrls.length - 1 ? 0 : prev + 1
-                          )
-                        }
+                        onClick={() => {
+                          setIsPreviewVideoPlaying(false);
+                          setPreviewImageIndex((prev) => (prev === previewMediaList.length - 1 ? 0 : prev + 1));
+                        }}
                         sx={{
                           position: 'absolute',
                           right: 8,
@@ -1625,6 +2125,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                           bgcolor: 'rgba(15, 23, 42, 0.75)',
                           color: '#FFFFFF',
                           p: 0.5,
+                          zIndex: 3,
                           backdropFilter: 'blur(4px)',
                           '&:hover': {
                             bgcolor: 'rgba(15, 23, 42, 0.95)',
@@ -1633,15 +2134,15 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                           boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                         }}
                         size="small"
-                        aria-label="Next Image"
+                        aria-label="Next Media"
                       >
                         <NavigateNextIcon fontSize="small" />
                       </IconButton>
                     )}
 
-                    {/* Photo Counter Badge */}
+                    {/* Media Counter Badge */}
                     <Chip
-                      label={`${currentImgIndex + 1} / ${imageUrls.length} Photos`}
+                      label={`${currentMediaIndex + 1} / ${previewMediaList.length} ${activeMedia.type === 'video' ? 'Media (Video)' : 'Photos'}`}
                       size="small"
                       sx={{
                         position: 'absolute',
@@ -1654,12 +2155,13 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                         height: 22,
                         backdropFilter: 'blur(4px)',
                         border: '1px solid rgba(255,255,255,0.2)',
+                        zIndex: 3,
                       }}
                     />
                   </Box>
 
-                  {/* Thumbnails Row (All Uploaded Images) */}
-                  {imageUrls.length > 1 && (
+                  {/* Thumbnails Row (Video + All Uploaded Images) */}
+                  {previewMediaList.length > 1 && (
                     <Box
                       display="flex"
                       gap={1}
@@ -1672,34 +2174,96 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                         '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: 2 },
                       }}
                     >
-                      {imageUrls.map((url, i) => {
-                        const isSelected = currentImgIndex === i;
+                      {previewMediaList.map((item, i) => {
+                        const isSelected = currentMediaIndex === i;
                         return (
                           <Box
-                            key={i}
-                            component="img"
-                            src={url}
-                            alt={`Thumbnail ${i + 1}`}
-                            onClick={() => setPreviewImageIndex(i)}
+                            key={item.id}
+                            onClick={() => {
+                              setIsPreviewVideoPlaying(false);
+                              setPreviewImageIndex(i);
+                            }}
                             sx={{
-                              width: { xs: 54, sm: 80 },
-                              height: { xs: 40, sm: 60 },
-                              objectFit: 'cover',
+                              width: { xs: 58, sm: 84 },
+                              height: { xs: 44, sm: 60 },
                               borderRadius: 1.5,
                               flexShrink: 0,
                               cursor: 'pointer',
                               border: isSelected ? '2px solid #1B4FD8' : '1.5px solid #E2E8F0',
-                              opacity: isSelected ? 1 : 0.65,
+                              opacity: isSelected ? 1 : 0.68,
                               transform: isSelected ? 'scale(1.04)' : 'scale(1)',
                               transition: 'all 0.15s ease',
                               boxShadow: isSelected ? '0 2px 8px rgba(27, 79, 216, 0.3)' : 'none',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              bgcolor: '#0F172A',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               '&:hover': {
                                 opacity: 1,
                                 borderColor: isSelected ? '#1B4FD8' : '#94A3B8',
                                 transform: 'scale(1.04)',
                               },
                             }}
-                          />
+                          >
+                            {item.type === 'video' ? (
+                              <>
+                                <Box
+                                  component="img"
+                                  src={getVideoPoster(item.url) || undefined}
+                                  alt="Video Thumbnail"
+                                  sx={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    opacity: 0.75,
+                                  }}
+                                />
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    width: 22,
+                                    height: 22,
+                                    borderRadius: '50%',
+                                    bgcolor: 'rgba(239, 68, 68, 0.95)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                                  }}
+                                >
+                                  <PlayArrowIcon sx={{ fontSize: 14, color: '#fff', ml: 0.2 }} />
+                                </Box>
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    bottom: 2,
+                                    bgcolor: 'rgba(0,0,0,0.7)',
+                                    color: '#fff',
+                                    fontSize: '0.55rem',
+                                    fontWeight: 700,
+                                    px: 0.5,
+                                    borderRadius: 0.5,
+                                    letterSpacing: 0.5,
+                                  }}
+                                >
+                                  VIDEO
+                                </Box>
+                              </>
+                            ) : (
+                              <Box
+                                component="img"
+                                src={item.url}
+                                alt={`Thumbnail ${i + 1}`}
+                                sx={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                            )}
+                          </Box>
                         );
                       })}
                     </Box>
@@ -1751,90 +2315,177 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
 
               <Divider sx={{ mb: { xs: 1.5, sm: 3 } }} />
 
-              {/* Key Details Grid */}
-              {category === 'RESIDENTIAL' && purpose !== 'PG' && (resDetails.bedrooms || resDetails.bathrooms || resDetails.carpetArea || resDetails.builtUpArea) && (
-                <Box mb={{ xs: 1.5, sm: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1} sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' } }}>🏠 Property Details</Typography>
-                  <Grid container spacing={{ xs: 1, sm: 2 }}>
-                    {resDetails.bedrooms && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{resDetails.bedrooms}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Bedrooms</Typography></Box></Grid>}
-                    {resDetails.bathrooms && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{resDetails.bathrooms}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Bathrooms</Typography></Box></Grid>}
-                    {resDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{resDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Carpet Area sqft</Typography></Box></Grid>}
-                    {resDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{resDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Built-up Area sqft</Typography></Box></Grid>}
-                    {resDetails.furnishedStatus && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Furnished</Typography><Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{resDetails.furnishedStatus.replace('_', ' ')}</Typography></Box></Grid>}
-                    {resDetails.facing && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Facing (दिशा)</Typography><Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{resDetails.facing}</Typography></Box></Grid>}
-                    {resDetails.possessionStatus && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Possession</Typography><Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{resDetails.possessionStatus}</Typography></Box></Grid>}
-                    {resDetails.tenantPreference && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Tenant Preference</Typography><Typography variant="body2" fontWeight={700} color="#0F172A" sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{resDetails.tenantPreference === 'ANY' ? 'Any (कोई भी)' : resDetails.tenantPreference === 'BOTH' ? 'Both (दोनों)' : resDetails.tenantPreference === 'BACHELORS' ? 'Bachelors' : 'Family'}</Typography></Box></Grid>}
-                  </Grid>
-                </Box>
-              )}
-
-              
-                {category === 'COMMERCIAL' && (commDetails.carpetArea || commDetails.builtUpArea) && (
-                  <Box mb={{ xs: 1.5, sm: 3 }}>
-                    <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1} sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' } }}>🏢 Commercial Details</Typography>
-                    <Grid container spacing={{ xs: 1, sm: 2 }}>
-                      {commDetails.carpetArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{commDetails.carpetArea}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Carpet Area sqft</Typography></Box></Grid>}
-                      {commDetails.builtUpArea && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{commDetails.builtUpArea}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Built-up Area sqft</Typography></Box></Grid>}
-                      {commDetails.depth && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{commDetails.depth}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Length (ft)</Typography></Box></Grid>}
-                      {commDetails.frontage && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{commDetails.frontage}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Width (ft)</Typography></Box></Grid>}
-                      {commDetails.floor && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{commDetails.floor}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Floor</Typography></Box></Grid>}
+              {/* Key Details Grid - Dynamically formatted by Category and Property Type */}
+              {(() => {
+                const renderPreviewItem = (label: string, value: React.ReactNode, icon?: React.ReactNode) => {
+                  if (value === undefined || value === null || value === '') return null;
+                  return (
+                    <Grid item xs={6} sm={4} md={3}>
+                      <Box
+                        sx={{
+                          bgcolor: '#F8FAFC',
+                          borderRadius: 2,
+                          p: { xs: 1, sm: 1.5 },
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          border: '1px solid #E2E8F0',
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            bgcolor: '#F1F5F9',
+                            borderColor: '#CBD5E1',
+                          }
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={0.6} mb={0.3}>
+                          {icon && <Box sx={{ color: '#64748B', display: 'flex', alignItems: 'center' }}>{icon}</Box>}
+                          <Typography variant="caption" color="#64748B" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' }, fontWeight: 600 }}>
+                            {label}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" fontWeight={750} color="#0F172A" sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' }, wordBreak: 'break-word' }}>
+                          {value}
+                        </Typography>
+                      </Box>
                     </Grid>
-                  </Box>
-                )}
+                  );
+                };
 
-                {category === 'LAND' && landDetails.totalLandArea && (
-                <Box mb={{ xs: 1.5, sm: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1} sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' } }}>🌾 Land Details</Typography>
-                  <Grid container spacing={{ xs: 1, sm: 2 }}>
-                    <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{landDetails.totalLandArea}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Area ({AREA_UNITS.find(u => u.key === landDetails.areaUnit)?.label || landDetails.areaUnit})</Typography></Box></Grid>
-                    {landDetails.plotLength && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{landDetails.plotLength}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Length (ft)</Typography></Box></Grid>}
-                    {landDetails.plotWidth && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{landDetails.plotWidth}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Width (ft)</Typography></Box></Grid>}
-                    {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
-                      <>
-                        {landDetails.soilType && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Soil Type</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{landDetails.soilType}</Typography></Box></Grid>}
-                        {landDetails.currentCrop && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Crop</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{landDetails.currentCrop}</Typography></Box></Grid>}
-                        <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Irrigation</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{landDetails.irrigationAvailable ? '✅ Yes' : '❌ NA'}</Typography></Box></Grid>
-                        {landDetails.nearestRoadDistance && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Road (km)</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{landDetails.nearestRoadDistance}</Typography></Box></Grid>}
-                      </>
+                return (
+                  <Box>
+                    {/* 🏠 Residential House/Apartment Details */}
+                    {category === 'RESIDENTIAL' && propertyType !== 'PG' && propertyType !== 'HOSTEL' && (
+                      <Box mb={{ xs: 1.5, sm: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color="#334155" mb={1.2} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          🏠 Residential Details
+                        </Typography>
+                        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                          {renderPreviewItem('Bedrooms (BHK)', resDetails.bedrooms ? `${resDetails.bedrooms} BHK` : null, <HomeIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Bathrooms', resDetails.bathrooms ? `${resDetails.bathrooms} Bathrooms` : null, <BathtubIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Balconies', resDetails.balconies ? `${resDetails.balconies} Balconies` : null, <DeckIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Carpet Area', resDetails.carpetArea ? `${resDetails.carpetArea} sqft` : null, <AspectRatioIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Built-up Area', resDetails.builtUpArea ? `${resDetails.builtUpArea} sqft` : null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Furnished Status', resDetails.furnishedStatus ? resDetails.furnishedStatus.replace(/_/g, ' ') : null, <LayersIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Facing Direction', resDetails.facing || null, <ExploreIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Possession', resDetails.possessionStatus || null, <EventAvailableIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Floor', resDetails.floor !== '' && resDetails.floor !== undefined ? `${resDetails.floor}${resDetails.totalFloors ? ` (of ${resDetails.totalFloors})` : ''}` : null, <LayersIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Parking', resDetails.parking || null, <DirectionsCarIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Water Supply', resDetails.waterSupply || null, <WaterDropIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Road Width', resDetails.roadWidth ? `${resDetails.roadWidth} ft` : null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                          {purpose === 'RENT' && renderPreviewItem('Tenant Preference', resDetails.tenantPreference ? (resDetails.tenantPreference === 'ANY' ? 'Any (कोई भी)' : resDetails.tenantPreference === 'BOTH' ? 'Both (दोनों)' : resDetails.tenantPreference === 'BACHELORS' ? 'Bachelors Allowed' : 'Family Only') : null, <GroupIcon sx={{ fontSize: 16 }} />)}
+                        </Grid>
+                      </Box>
                     )}
-                  </Grid>
-                </Box>
-              )}
 
-              {purpose === 'PG' && (
-                <Box mb={{ xs: 1.5, sm: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1} sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' } }}>🏨 PG Details</Typography>
-                  <Grid container spacing={{ xs: 1, sm: 2 }}>
-                    {pgDetails.pgName && <Grid item xs={6} sm={4}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>PG Name</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{pgDetails.pgName}</Typography></Grid>}
-                    <Grid item xs={6} sm={4}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Room Type</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{pgDetails.roomType.replace('_', ' ')}</Typography></Grid>
-                    <Grid item xs={6} sm={4}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Gender</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{pgDetails.genderPreference}</Typography></Grid>
-                    {pgDetails.securityDeposit && <Grid item xs={6} sm={4}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Security Deposit</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>₹{Number(pgDetails.securityDeposit).toLocaleString('en-IN')}</Typography></Grid>}
-                    <Grid item xs={6} sm={4}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Khana Available</Typography><Typography variant="body2" fontWeight={700} sx={{ fontSize: { xs: '0.78rem', sm: '0.875rem' } }}>{pgDetails.foodAvailable ? '✅ Yes' : '❌ No'}</Typography></Grid>
-                  </Grid>
-                </Box>
-              )}
+                    {/* 🏢 Commercial Details */}
+                    {category === 'COMMERCIAL' && (
+                      <Box mb={{ xs: 1.5, sm: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color="#334155" mb={1.2} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          🏢 Commercial Details
+                        </Typography>
+                        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                          {renderPreviewItem('Carpet Area', commDetails.carpetArea ? `${commDetails.carpetArea} sqft` : null, <AspectRatioIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Built-up Area', commDetails.builtUpArea ? `${commDetails.builtUpArea} sqft` : null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Dimensions (L × W)', (commDetails.depth || commDetails.frontage) ? `${commDetails.depth ? `${commDetails.depth} ft (L)` : ''}${commDetails.depth && commDetails.frontage ? ' × ' : ''}${commDetails.frontage ? `${commDetails.frontage} ft (W)` : ''}` : null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Floor', commDetails.floor !== '' && commDetails.floor !== undefined ? `${commDetails.floor}${commDetails.totalFloors ? ` (of ${commDetails.totalFloors})` : ''}` : null, <LayersIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Washrooms', commDetails.washrooms ? `${commDetails.washrooms} Washrooms` : null, <BathtubIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Main Road Facing', commDetails.mainRoadFacing ? '✅ Yes' : '❌ No', <CheckCircleIcon sx={{ fontSize: 16, color: commDetails.mainRoadFacing ? '#16A34A' : '#DC2626' }} />)}
+                          {renderPreviewItem('Corner Property', commDetails.cornerProperty ? '✅ Yes' : '❌ No', <CheckCircleIcon sx={{ fontSize: 16, color: commDetails.cornerProperty ? '#16A34A' : '#64748B' }} />)}
+                          {renderPreviewItem('Parking', commDetails.parking || null, <DirectionsCarIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Lift Facility', commDetails.lift ? '✅ Available' : '❌ Not Available', <LayersIcon sx={{ fontSize: 16, color: commDetails.lift ? '#16A34A' : '#DC2626' }} />)}
+                          {renderPreviewItem('Power Backup', commDetails.powerBackup ? '✅ Available' : '❌ Not Available', <CheckCircleIcon sx={{ fontSize: 16, color: commDetails.powerBackup ? '#16A34A' : '#64748B' }} />)}
+                          {commDetails.airConditioning && renderPreviewItem('Air Conditioning', '✅ AC Available', <AcUnitIcon sx={{ fontSize: 16, color: '#0284C7' }} />)}
+                          {renderPreviewItem('Road Width', commDetails.roadWidth ? `${commDetails.roadWidth} ft` : null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                        </Grid>
+                      </Box>
+                    )}
 
-              {(purpose === 'LEASE' || purpose === 'RENT') && (leaseDetails.securityDeposit || leaseDetails.leaseDurationYears) && (
-                <Box mb={{ xs: 1.5, sm: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1} sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' } }}>📄 Lease / Rent Details</Typography>
-                  <Grid container spacing={{ xs: 1, sm: 2 }}>
-                    {leaseDetails.securityDeposit && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>₹{Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Security Deposit</Typography></Box></Grid>}
-                    {leaseDetails.leaseDurationYears && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{leaseDetails.leaseDurationYears} {leaseDetails.leaseDurationYears === 1 ? 'Year' : 'Years'}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Min Lease (अवधि)</Typography></Box></Grid>}
-                  </Grid>
-                </Box>
-              )}
+                    {/* 🌾 Land Details */}
+                    {category === 'LAND' && (
+                      <Box mb={{ xs: 1.5, sm: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color="#334155" mb={1.2} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          🌾 Land & Plot Details
+                        </Typography>
+                        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                          {renderPreviewItem('Total Area', landDetails.totalLandArea ? `${landDetails.totalLandArea} ${AREA_UNITS.find(u => u.key === landDetails.areaUnit)?.label || landDetails.areaUnit}` : null, <LandscapeIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Plot Dimensions', (landDetails.plotLength || landDetails.plotWidth) ? `${landDetails.plotLength ? `${landDetails.plotLength} ft (L)` : ''}${landDetails.plotLength && landDetails.plotWidth ? ' × ' : ''}${landDetails.plotWidth ? `${landDetails.plotWidth} ft (W)` : ''}` : null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                          {['FARM_LAND', 'INDUSTRIAL_LAND', 'LAND_PARCEL'].includes(propertyType || '') && (
+                            <>
+                              {renderPreviewItem('Soil Type', landDetails.soilType || null, <GrassIcon sx={{ fontSize: 16 }} />)}
+                              {renderPreviewItem('Current Crop', landDetails.currentCrop || null, <GrassIcon sx={{ fontSize: 16 }} />)}
+                              {renderPreviewItem('Irrigation Facility', landDetails.irrigationAvailable ? '✅ Available (सिंचाई सुविधा है)' : '❌ Not Available', <WaterDropIcon sx={{ fontSize: 16, color: landDetails.irrigationAvailable ? '#16A34A' : '#DC2626' }} />)}
+                              {renderPreviewItem('Borewell / Tube Well', landDetails.borewell ? '✅ Available' : '❌ Not Available', <WaterDropIcon sx={{ fontSize: 16, color: landDetails.borewell ? '#16A34A' : '#DC2626' }} />)}
+                              {renderPreviewItem('Water Source', landDetails.waterSource || null, <WaterDropIcon sx={{ fontSize: 16 }} />)}
+                              {renderPreviewItem('Nearest Road', landDetails.nearestRoadDistance || null, <StraightenIcon sx={{ fontSize: 16 }} />)}
+                              {renderPreviewItem('Electricity Connection', landDetails.electricityConnection ? '✅ Available' : '❌ Not Available', <CheckCircleIcon sx={{ fontSize: 16, color: landDetails.electricityConnection ? '#16A34A' : '#DC2626' }} />)}
+                              {renderPreviewItem('Boundary / Fencing', landDetails.fencing ? '✅ Fenced (तार फेंसिंग है)' : '❌ Open Plot', <CheckCircleIcon sx={{ fontSize: 16, color: landDetails.fencing ? '#16A34A' : '#64748B' }} />)}
+                              {landDetails.farmHouse && renderPreviewItem('Farm House', '✅ Farm House Available', <HomeIcon sx={{ fontSize: 16 }} />)}
+                            </>
+                          )}
+                        </Grid>
+                      </Box>
+                    )}
 
-              {purpose === 'COMMERCIAL_LEASE' && (
-                <Box mb={{ xs: 1.5, sm: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={700} color="#475569" mb={1} sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' } }}>🏢 Commercial Lease Details</Typography>
-                  <Grid container spacing={{ xs: 1, sm: 2 }}>
-                    {leaseDetails.securityDeposit && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>₹{Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Security Deposit</Typography></Box></Grid>}
-                    {leaseDetails.leaseDurationYears && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{leaseDetails.leaseDurationYears} {leaseDetails.leaseDurationYears === 1 ? 'Year' : 'Years'}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Min Lease (अवधि)</Typography></Box></Grid>}
-                    {leaseDetails.lockInPeriodMonths && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{leaseDetails.lockInPeriodMonths}</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Lock-in (Months)</Typography></Box></Grid>}
-                    {leaseDetails.rentEscalationPercentage && <Grid item xs={6} sm={3}><Box sx={{ bgcolor: '#F8FAFC', borderRadius: 1.5, p: { xs: 1, sm: 1.5 }, textAlign: 'center' }}><Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ fontSize: { xs: '0.88rem', sm: '1.15rem' } }}>{leaseDetails.rentEscalationPercentage}%</Typography><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.62rem', sm: '0.75rem' } }}>Rent Escalation</Typography></Box></Grid>}
-                  </Grid>
-                </Box>
-              )}
+                    {/* 🏨 PG / Hostel Details */}
+                    {(propertyType === 'PG' || propertyType === 'HOSTEL') && (
+                      <Box mb={{ xs: 1.5, sm: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color="#334155" mb={1.2} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          🏨 PG & Hostel Details
+                        </Typography>
+                        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                          {renderPreviewItem('PG / Hostel Name', pgDetails.pgName || null, <HotelIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Room Type', pgDetails.roomType ? pgDetails.roomType.replace(/_/g, ' ') : null, <HotelIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Gender Preference', pgDetails.genderPreference ? (pgDetails.genderPreference === 'MALE' ? 'Male Only (केवल छात्र/पुरुष)' : pgDetails.genderPreference === 'FEMALE' ? 'Female Only (केवल छात्राएं/महिलाएं)' : 'Any / Unisex (कोई भी)') : null, <GroupIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Food / Meals', pgDetails.foodAvailable ? '✅ Food Available' : '❌ No Food', <RestaurantIcon sx={{ fontSize: 16, color: pgDetails.foodAvailable ? '#16A34A' : '#DC2626' }} />)}
+                          {pgDetails.foodAvailable && renderPreviewItem('Meal Plan', pgDetails.mealPlan ? pgDetails.mealPlan.replace(/_/g, ' ') : null, <RestaurantIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Curfew Time', pgDetails.curfewTime || null, <AccessTimeIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Security Deposit', (pgDetails.securityDeposit || leaseDetails.securityDeposit) ? `₹${Number(pgDetails.securityDeposit || leaseDetails.securityDeposit).toLocaleString('en-IN')}` : null, <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />)}
+                        </Grid>
+                      </Box>
+                    )}
+
+                    {/* 🎪 Special Purpose / Venue Details */}
+                    {category === 'SPECIAL' && (
+                      <Box mb={{ xs: 1.5, sm: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color="#334155" mb={1.2} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          🎪 Special Purpose / Venue Details
+                        </Typography>
+                        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                          {renderPreviewItem('Venue / Hall Type', hallDetails.hallType || (propertyType || '').replace(/_/g, ' '), <MeetingRoomIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Guest Capacity', hallDetails.capacityPeople ? `${hallDetails.capacityPeople} People (लोग)` : null, <GroupIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Seating Capacity', hallDetails.seatingCapacity ? `${hallDetails.seatingCapacity} Seats (बैठक)` : null, <GroupIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Total Area', hallDetails.hallAreaSqFt ? `${hallDetails.hallAreaSqFt} sqft` : null, <AspectRatioIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Parking Capacity', hallDetails.parkingCapacityVehicles ? `${hallDetails.parkingCapacityVehicles} Vehicles` : null, <DirectionsCarIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('AC Facility', hallDetails.acAvailable ? '✅ Air Conditioned' : '❌ Non-AC', <AcUnitIcon sx={{ fontSize: 16, color: hallDetails.acAvailable ? '#0284C7' : '#64748B' }} />)}
+                          {renderPreviewItem('Kitchen / Rasoi', hallDetails.kitchenAvailable ? '✅ Kitchen Available' : '❌ Not Available', <RestaurantIcon sx={{ fontSize: 16, color: hallDetails.kitchenAvailable ? '#16A34A' : '#64748B' }} />)}
+                          {renderPreviewItem('Dining Area', hallDetails.diningAreaAvailable ? '✅ Dedicated Dining' : '❌ Not Available', <RestaurantIcon sx={{ fontSize: 16, color: hallDetails.diningAreaAvailable ? '#16A34A' : '#64748B' }} />)}
+                          {renderPreviewItem('Stage / Manch', hallDetails.stageAvailable ? '✅ Stage Available' : '❌ Not Available', <CheckCircleIcon sx={{ fontSize: 16, color: hallDetails.stageAvailable ? '#16A34A' : '#64748B' }} />)}
+                          {renderPreviewItem('Washrooms', hallDetails.washroomsCount ? `${hallDetails.washroomsCount} Washrooms` : null, <BathtubIcon sx={{ fontSize: 16 }} />)}
+                          {renderPreviewItem('Generator Backup', hallDetails.generatorBackupAvailable ? '✅ Available' : '❌ Not Available', <CheckCircleIcon sx={{ fontSize: 16, color: hallDetails.generatorBackupAvailable ? '#16A34A' : '#64748B' }} />)}
+                          {renderPreviewItem('Sound System', hallDetails.soundSystemAvailable ? '✅ Sound System Available' : '❌ Not Available', <CheckCircleIcon sx={{ fontSize: 16, color: hallDetails.soundSystemAvailable ? '#16A34A' : '#64748B' }} />)}
+                        </Grid>
+                      </Box>
+                    )}
+
+                    {/* 📄 Lease Terms */}
+                    {(purpose === 'LEASE' || (purpose === 'RENT' && leaseDetails.securityDeposit)) && (leaseDetails.securityDeposit || leaseDetails.leaseDurationYears || leaseDetails.lockInPeriodMonths || leaseDetails.rentEscalationPercentage) && (
+                      <Box mb={{ xs: 1.5, sm: 3 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color="#334155" mb={1.2} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          📄 Lease & Rental Terms
+                        </Typography>
+                        <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                          {renderPreviewItem('Security Deposit', leaseDetails.securityDeposit ? `₹${Number(leaseDetails.securityDeposit).toLocaleString('en-IN')}` : null, <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />)}
+                          {purpose === 'LEASE' && renderPreviewItem('Minimum Lease Duration', leaseDetails.leaseDurationYears ? `${leaseDetails.leaseDurationYears} ${leaseDetails.leaseDurationYears === 1 ? 'Year' : 'Years'}` : null, <AccessTimeIcon sx={{ fontSize: 16 }} />)}
+                          {purpose === 'LEASE' && renderPreviewItem('Lock-in Period', leaseDetails.lockInPeriodMonths ? `${leaseDetails.lockInPeriodMonths} Months` : null, <AccessTimeIcon sx={{ fontSize: 16 }} />)}
+                          {purpose === 'LEASE' && renderPreviewItem('Rent Escalation', leaseDetails.rentEscalationPercentage ? `${leaseDetails.rentEscalationPercentage}%` : null, <TrendingUpIcon sx={{ fontSize: 16 }} />)}
+                          {purpose === 'LEASE' && renderPreviewItem('Notice Period', leaseDetails.noticePeriodDays ? `${leaseDetails.noticePeriodDays} Days` : null, <AccessTimeIcon sx={{ fontSize: 16 }} />)}
+                        </Grid>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })()}
 
               {/* Description */}
               {description && (
@@ -1863,6 +2514,54 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   </Box>
                 </Box>
               )}
+
+              {/* Contact Information in Preview */}
+              <Box mb={{ xs: 1.5, sm: 2 }} sx={{ p: { xs: 1.2, sm: 2 }, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0' }}>
+                <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                  <Typography variant="subtitle2" fontWeight={750} color="#0F172A" sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                    📞 Contact Information (संपर्क विवरण)
+                  </Typography>
+                  <Chip
+                    icon={<LockOutlinedIcon sx={{ fontSize: '13px !important', color: '#92400E !important' }} />}
+                    label="🔒 केवल Admin को दिखेगा"
+                    size="small"
+                    sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: '0.65rem', height: 20 }}
+                  />
+                </Box>
+                <Grid container spacing={1.5}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PhoneIcon sx={{ fontSize: 18, color: '#1B4FD8' }} />
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                          Mobile Number (अनिवार्य / Mandatory)
+                        </Typography>
+                        <Typography variant="body2" fontWeight={700} color="#0F172A">
+                          +91 {contactPhone || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  {contactWhatsapp && (
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <WhatsAppIcon sx={{ fontSize: 18, color: '#16A34A' }} />
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                            WhatsApp Number (व्हाट्सएप नंबर)
+                          </Typography>
+                          <Typography variant="body2" fontWeight={700} color="#0F172A">
+                            +91 {contactWhatsapp}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+                <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mt: 1, fontSize: '0.7rem' }}>
+                  🔒 यह नंबर केवल व्यवस्थापक (Admin) को प्रॉपर्टी सत्यापन के लिए दिखेगा। सामान्य ग्राहकों को यह नंबर नहीं दिखेगा।
+                </Typography>
+              </Box>
 
               {/* Location Link */}
               {location.googleMapsLink && (
@@ -1940,9 +2639,28 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                 size="small"
                 disabled={
                   (activeStep === 0 && progressLevel < 3) || 
-                  (activeStep === 1 && (title.length < 10 || description.length < 10))
+                  (activeStep === 1 && (
+                    title.length < 10 || 
+                    description.length < 10 ||
+                    !contactPhone ||
+                    !/^[6-9]\d{9}$/.test(contactPhone.replace(/\D/g, ''))
+                  ))
                 }
-                onClick={() => setActiveStep(prev => prev + 1)}
+                onClick={() => {
+                  if (activeStep === 1) {
+                    setPhoneTouched(true);
+                    const cleanPhone = contactPhone.replace(/\D/g, '');
+                    if (!cleanPhone || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+                      toast.error('Kripya ek maanya 10-digit mobile number darj karein (Please enter a valid 10-digit mobile number)');
+                      return;
+                    }
+                    if (contactWhatsapp && !/^[6-9]\d{9}$/.test(contactWhatsapp.replace(/\D/g, ''))) {
+                      toast.error('Kripya ek maanya 10-digit WhatsApp number darj karein ya khali chhod dein');
+                      return;
+                    }
+                  }
+                  setActiveStep(prev => prev + 1);
+                }}
                 endIcon={<ArrowForwardIcon fontSize="small" />}
                 sx={{ textTransform: 'none', px: { xs: 2.5, sm: 4 }, py: { xs: 0.6, sm: 0.8 }, fontSize: { xs: '0.82rem', sm: '0.875rem' } }}
               >

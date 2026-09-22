@@ -24,7 +24,7 @@ export interface AuthTokenPayload {
 
 // ─── Property ──────────────────────────────────────────────────────────────────
 
-export type ListingPurpose = 'SALE' | 'RENT' | 'LEASE' | 'PG' | 'COMMERCIAL_LEASE';
+export type ListingPurpose = 'SALE' | 'RENT' | 'LEASE';
 
 export type PropertyCategoryType = 'RESIDENTIAL' | 'COMMERCIAL' | 'LAND' | 'SPECIAL';
 
@@ -265,6 +265,12 @@ export interface Property {
   videos?: string[];
 
   owner?: Pick<User, 'id' | 'name' | 'avatar_url'>;
+  contactPhone?: string;
+  contactWhatsapp?: string;
+  contact_phone?: string;
+  contact_whatsapp?: string;
+  owner_phone?: string;
+  ownerPhone?: string;
   isPopular: boolean;
   popularRank?: number;
   rejectionReason?: string;

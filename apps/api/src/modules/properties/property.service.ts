@@ -273,6 +273,22 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
     query(`SELECT pa.id, pa.name, pa.icon FROM property_amenities pa JOIN property_amenity_mapping pam ON pam.amenity_id = pa.id WHERE pam.property_id = $1`, [propId]),
   ]);
 
+  // Privacy filtering: ONLY Admin and the property Owner can see contact phone / WhatsApp.
+  // Public visitors and regular users MUST NOT receive these numbers under any circumstances.
+  const isOwner = requestingUserId && requestingUserId === property.owner_id;
+  if (!isAdmin && !isOwner) {
+    delete (property as any).owner_phone;
+    delete (property as any).contact_phone;
+    delete (property as any).contact_whatsapp;
+    delete (property as any).ownerPhone;
+    delete (property as any).contactPhone;
+    delete (property as any).contactWhatsapp;
+  } else {
+    (property as any).contactPhone = (property as any).contact_phone || (property as any).owner_phone;
+    (property as any).contactWhatsapp = (property as any).contact_whatsapp;
+    (property as any).ownerPhone = (property as any).owner_phone;
+  }
+
   return {
     ...property,
     location: location || {
@@ -361,9 +377,9 @@ export async function createProperty(
         listing_type, owner_id, created_by, created_by_role,
         city, state, country, address, pincode, latitude, longitude,
         status, videos, video_url, category_id, custom_amenities,
-        area, area_unit, bedrooms, bathrooms
+        area, area_unit, bedrooms, bathrooms, contact_phone, contact_whatsapp
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34
       ) RETURNING id, slug`,
       [
         slug, input.title, input.description, input.priceAmount, input.priceAmount, input.priceType ?? 'TOTAL_PRICE', input.billingPeriod ?? null,
@@ -373,7 +389,9 @@ export async function createProperty(
         input.location.city, input.location.state, input.location.country ?? 'India', input.location.address ?? null,
         input.location.pincode ?? null, input.location.latitude ?? null, input.location.longitude ?? null,
         status, input.videos ?? [], (input.videoUrl && input.videoUrl.trim() !== '') ? input.videoUrl.trim() : null, categoryId, input.customAmenities ?? [],
-        area, areaUnit, bedrooms, bathrooms
+        area, areaUnit, bedrooms, bathrooms,
+        input.contactPhone ?? (input as any).contact_phone ?? null,
+        input.contactWhatsapp ?? (input as any).contact_whatsapp ?? null,
       ],
     );
 
@@ -583,6 +601,12 @@ export async function updateProperty(
   if (input.videoUrl !== undefined) {
     const cleanVideoUrl = input.videoUrl && input.videoUrl.trim() !== '' ? input.videoUrl.trim() : null;
     fields.push(['video_url', cleanVideoUrl]);
+  }
+  if (input.contactPhone !== undefined || (input as any).contact_phone !== undefined) {
+    fields.push(['contact_phone', input.contactPhone ?? (input as any).contact_phone ?? null]);
+  }
+  if (input.contactWhatsapp !== undefined || (input as any).contact_whatsapp !== undefined) {
+    fields.push(['contact_whatsapp', input.contactWhatsapp ?? (input as any).contact_whatsapp ?? null]);
   }
 
   if (input.location) {

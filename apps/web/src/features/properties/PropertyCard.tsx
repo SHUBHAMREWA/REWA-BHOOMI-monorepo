@@ -279,7 +279,7 @@ export default function PropertyCard({ property, viewMode = 'list', showStatusBa
     property.title?.toLowerCase().includes('plot') ||
     property.title?.toLowerCase().includes('land');
   const isCommercial = property.category_name?.toLowerCase().includes('commercial') || property.title?.toLowerCase().includes('shop') || property.title?.toLowerCase().includes('office');
-  const isPG = property.listing_type === 'PG' || property.title?.toLowerCase().includes('pg') || property.title?.toLowerCase().includes('hostel');
+  const isPG = property.property_type === 'PG' || property.property_type === 'HOSTEL' || property.listing_type === 'PG' || property.title?.toLowerCase().includes('pg') || property.title?.toLowerCase().includes('hostel');
 
   // Specs Columns calculation
   const col1Title = isLand ? 'PLOT AREA' : isCommercial ? 'CARPET AREA' : isPG ? 'RENT TYPE' : 'AREA';

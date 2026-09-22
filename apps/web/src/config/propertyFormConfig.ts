@@ -40,23 +40,9 @@ export const LISTING_PURPOSES: ListingPurposeOption[] = [
   {
     key: 'LEASE',
     title: 'Lease',
-    subtitle: 'Zameen, ghar, ya building ko lambe samay (Contractual Lease) par dene ke liye select karein',
+    subtitle: 'Zameen, ghar, ya commercial building ko lambe samay (Contractual Lease) par dene ke liye select karein',
     iconName: 'Description',
     allowedCategories: ['RESIDENTIAL', 'COMMERCIAL', 'LAND', 'SPECIAL'],
-  },
-  {
-    key: 'PG',
-    title: 'PG / Paying Guest',
-    subtitle: 'Students aur working professionals ke liye Single/Shared Room ya PG list karne ke liye',
-    iconName: 'Hotel',
-    allowedCategories: ['RESIDENTIAL'],
-  },
-  {
-    key: 'COMMERCIAL_LEASE',
-    title: 'Commercial Lease',
-    subtitle: 'Shop, Office, Showroom, Godown, Warehouse ya Commercial Land ko lease par dene ke liye',
-    iconName: 'Store',
-    allowedCategories: ['COMMERCIAL', 'LAND'],
   },
 ];
 
@@ -73,26 +59,26 @@ export const PROPERTY_TYPES: PropertyTypeOption[] = [
   { key: 'APARTMENT', label: 'Apartment / Flat', category: 'RESIDENTIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
   { key: 'VILLA', label: 'Villa', category: 'RESIDENTIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
   { key: 'FARMHOUSE', label: 'Farmhouse', category: 'RESIDENTIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
-  { key: 'ROOM', label: 'Single / Independent Room', category: 'RESIDENTIAL', allowedPurposes: ['RENT', 'PG'] },
-  { key: 'PG', label: 'PG Accommodation', category: 'RESIDENTIAL', allowedPurposes: ['PG'] },
-  { key: 'HOSTEL', label: 'Hostel Room', category: 'RESIDENTIAL', allowedPurposes: ['PG', 'RENT'] },
+  { key: 'ROOM', label: 'Single / Independent Room', category: 'RESIDENTIAL', allowedPurposes: ['RENT'] },
+  { key: 'PG', label: 'PG Accommodation', category: 'RESIDENTIAL', allowedPurposes: ['RENT'] },
+  { key: 'HOSTEL', label: 'Hostel Room', category: 'RESIDENTIAL', allowedPurposes: ['RENT'] },
   { key: 'BUILDER_FLOOR', label: 'Builder Floor', category: 'RESIDENTIAL', allowedPurposes: ['SALE', 'RENT'] },
   { key: 'STUDIO', label: 'Studio Apartment', category: 'RESIDENTIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
 
   // Commercial Types
-  { key: 'SHOP', label: 'Dukaan / Shop Space', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'OFFICE', label: 'Commercial Office Space', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'SHOWROOM', label: 'Showroom Space', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'WAREHOUSE', label: 'Warehouse / Godown', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'COMMERCIAL_BUILDING', label: 'Entire Commercial Building', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'CO_WORKING', label: 'Co-Working Desk / Space', category: 'COMMERCIAL', allowedPurposes: ['RENT', 'LEASE', 'COMMERCIAL_LEASE'] },
-  { key: 'INDUSTRIAL_PROPERTY', label: 'Industrial Shed / Property', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
+  { key: 'SHOP', label: 'Dukaan / Shop Space', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
+  { key: 'OFFICE', label: 'Commercial Office Space', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
+  { key: 'SHOWROOM', label: 'Showroom Space', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
+  { key: 'WAREHOUSE', label: 'Warehouse / Godown', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
+  { key: 'COMMERCIAL_BUILDING', label: 'Entire Commercial Building', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'RENT', 'LEASE'] },
+  { key: 'CO_WORKING', label: 'Co-Working Desk / Space', category: 'COMMERCIAL', allowedPurposes: ['RENT', 'LEASE'] },
+  { key: 'INDUSTRIAL_PROPERTY', label: 'Industrial Shed / Property', category: 'COMMERCIAL', allowedPurposes: ['SALE', 'LEASE'] },
 
   // Land Types
   { key: 'RESIDENTIAL_PLOT', label: 'Residential Plot / Basti Plot (रिहायशी जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
-  { key: 'COMMERCIAL_PLOT', label: 'Commercial Plot (व्यावसायिक जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
+  { key: 'COMMERCIAL_PLOT', label: 'Commercial Plot (व्यावसायिक जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
   { key: 'FARM_LAND', label: 'Farm Land (खेती की ज़मीन, Agricultural Land)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
-  { key: 'INDUSTRIAL_LAND', label: 'Industrial Land (औद्योगिक जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE', 'COMMERCIAL_LEASE'] },
+  { key: 'INDUSTRIAL_LAND', label: 'Industrial Land (औद्योगिक जमीन)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
   { key: 'LAND_PARCEL', label: 'Badi Zameen (Large Land Parcel)', category: 'LAND', allowedPurposes: ['SALE', 'LEASE'] },
 
   // Special Types
