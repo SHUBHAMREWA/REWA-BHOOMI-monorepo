@@ -144,6 +144,8 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         published_at        TIMESTAMPTZ,
         custom_amenities    TEXT[] DEFAULT '{}',
         video_url           VARCHAR(500),
+        contact_phone       VARCHAR(20),
+        contact_whatsapp    VARCHAR(20),
         created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         deleted_at          TIMESTAMPTZ
@@ -1251,6 +1253,47 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     name: '034_anonymous_push_subscriptions',
     sql: `
       ALTER TABLE push_subscriptions ALTER COLUMN user_id DROP NOT NULL;
+    `
+  },
+  {
+    name: '035_consolidate_listing_purposes',
+    sql: `
+      -- 1. Safely migrate existing 'PG' listings to 'RENT' with 'RESIDENTIAL' category and 'PG' property type
+      UPDATE properties
+      SET
+        listing_purpose = 'RENT',
+        category_type = COALESCE(category_type, 'RESIDENTIAL'),
+        property_type = CASE
+          WHEN property_type IN ('PG', 'ROOM', 'HOSTEL') THEN property_type
+          ELSE 'PG'::property_type_enum
+        END,
+        price_type = CASE
+          WHEN price_type = 'PG_RENT' THEN 'RENT'::price_type_enum
+          ELSE price_type
+        END
+      WHERE listing_purpose::text = 'PG';
+
+      -- 2. Safely migrate existing 'COMMERCIAL_LEASE' listings to 'LEASE' with 'COMMERCIAL' category
+      UPDATE properties
+      SET
+        listing_purpose = 'LEASE',
+        category_type = CASE
+          WHEN category_type IN ('COMMERCIAL', 'LAND') THEN category_type
+          ELSE 'COMMERCIAL'::property_category_enum
+        END,
+        price_type = CASE
+          WHEN price_type = 'COMMERCIAL_LEASE_RENT' THEN 'LEASE_RENT'::price_type_enum
+          ELSE price_type
+        END
+      WHERE listing_purpose::text = 'COMMERCIAL_LEASE';
+    `
+  },
+  {
+    name: '036_property_contact_numbers',
+    sql: `
+      ALTER TABLE properties
+        ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS contact_whatsapp VARCHAR(20);
     `
   }
 ];

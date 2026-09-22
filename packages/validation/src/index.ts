@@ -47,7 +47,7 @@ export const ResetPasswordSchema = z.object({
 
 // ─── Property Schemas ───────────────────────────────────────────────────────────
 
-export const ListingPurposeSchema = z.enum(['SALE', 'RENT', 'LEASE', 'PG', 'COMMERCIAL_LEASE']);
+export const ListingPurposeSchema = z.enum(['SALE', 'RENT', 'LEASE']);
 export const CategoryTypeSchema = z.enum(['RESIDENTIAL', 'COMMERCIAL', 'LAND', 'SPECIAL']);
 export const PropertyTypeEnumSchema = z.enum([
   'HOUSE', 'APARTMENT', 'VILLA', 'FARMHOUSE', 'ROOM', 'PG', 'HOSTEL', 'BUILDER_FLOOR', 'STUDIO',
@@ -108,6 +108,15 @@ export const CreatePropertySchema = z.object({
   imageStorageKeys: z.array(z.string().nullable()).optional(),
   videos: z.array(z.string()).optional(),
   videoUrl: z.string().nullable().optional(),
+  contactPhone: z
+    .string({ required_error: 'Contact phone number is mandatory' })
+    .regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number'),
+  contactWhatsapp: z
+    .string()
+    .regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit WhatsApp number')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
 
   // Dynamic Extension Payloads
   residentialDetails: z.record(z.unknown()).optional(),
@@ -125,7 +134,11 @@ export const PropertyFiltersSchema = z.object({
   keyword: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  listingPurpose: ListingPurposeSchema.optional(),
+  listingPurpose: z.preprocess((val) => {
+    if (val === 'PG') return 'RENT';
+    if (val === 'COMMERCIAL_LEASE') return 'LEASE';
+    return val;
+  }, ListingPurposeSchema.optional()),
   categoryType: CategoryTypeSchema.optional(),
   propertyType: PropertyTypeEnumSchema.optional(),
   listingType: ListingTypeSchema.optional(),

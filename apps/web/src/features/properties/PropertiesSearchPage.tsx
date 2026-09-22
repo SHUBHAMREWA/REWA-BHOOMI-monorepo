@@ -257,6 +257,15 @@ export default function PropertiesSearchPage() {
         if (lt) params.set('listingPurpose', lt);
       }
 
+      // Legacy PG & COMMERCIAL_LEASE normalization
+      if (params.get('listingPurpose') === 'PG') {
+        params.set('listingPurpose', 'RENT');
+        if (!params.has('propertyType')) params.set('propertyType', 'PG');
+      } else if (params.get('listingPurpose') === 'COMMERCIAL_LEASE') {
+        params.set('listingPurpose', 'LEASE');
+        if (!params.has('categoryType')) params.set('categoryType', 'COMMERCIAL');
+      }
+
       const cacheKey = getSearchCacheKey(params);
 
       // On initial load or filter reset, check IndexedDB first unless hard refresh / reload
@@ -439,7 +448,7 @@ export default function PropertiesSearchPage() {
       key: 'purpose' as const,
       label: 'Purpose',
       hasValue: Boolean(listingPurpose),
-      preview: listingPurpose === 'SALE' ? 'Buy / Sell' : listingPurpose === 'RENT' ? 'Rent' : listingPurpose === 'LEASE' ? 'Lease' : listingPurpose === 'PG' ? 'PG' : listingPurpose === 'COMMERCIAL_LEASE' ? 'Commercial Lease' : undefined,
+      preview: listingPurpose === 'SALE' ? 'Buy / Sell' : listingPurpose === 'RENT' ? 'Rent' : listingPurpose === 'LEASE' ? 'Lease' : undefined,
     },
     {
       key: 'budget' as const,
@@ -517,8 +526,6 @@ export default function PropertiesSearchPage() {
             { label: 'Buy / Sell', value: 'SALE' },
             { label: 'Rent', value: 'RENT' },
             { label: 'Lease', value: 'LEASE' },
-            { label: 'PG Accommodation', value: 'PG' },
-            { label: 'Commercial Lease', value: 'COMMERCIAL_LEASE' },
           ].map(p => {
             const isSelected = listingPurpose === p.value;
             return (
@@ -884,7 +891,7 @@ export default function PropertiesSearchPage() {
             
             {listingPurpose && (
               <Chip 
-                label={listingPurpose === 'SALE' ? 'Buy / Sell' : listingPurpose === 'RENT' ? 'Rent' : listingPurpose === 'LEASE' ? 'Lease' : listingPurpose === 'PG' ? 'PG' : listingPurpose === 'COMMERCIAL_LEASE' ? 'Commercial Lease' : listingPurpose} 
+                label={listingPurpose === 'SALE' ? 'Buy / Sell' : listingPurpose === 'RENT' ? 'Rent' : listingPurpose === 'LEASE' ? 'Lease' : listingPurpose} 
                 size="small" 
                 onDelete={() => { setListingPurpose(''); handleApplyFilters({ listingPurpose: '' }); }} 
                 sx={{ bgcolor: '#E0E7FF', color: '#1B4FD8', fontWeight: 650, '& .MuiChip-deleteIcon': { color: '#1B4FD8' } }}
@@ -1391,8 +1398,6 @@ export default function PropertiesSearchPage() {
                     { label: 'Buy / Sell', value: 'SALE', desc: 'Properties available for sale or purchase' },
                     { label: 'Rent', value: 'RENT', desc: 'Properties available for monthly rent' },
                     { label: 'Lease', value: 'LEASE', desc: 'Long-term contractual lease properties' },
-                    { label: 'PG Accommodation', value: 'PG', desc: 'Paying guest & room sharing listings' },
-                    { label: 'Commercial Lease', value: 'COMMERCIAL_LEASE', desc: 'Commercial shops, offices, warehouses' },
                   ].map((p) => {
                     const isPurSelected = listingPurpose === p.value;
                     return (

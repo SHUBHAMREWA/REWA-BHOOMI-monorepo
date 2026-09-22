@@ -209,7 +209,7 @@ export default function ProjectDetailsPage() {
         />
       )}
       {/* ─── 1. COMPACT HEADER BANNER ─── */}
-      <Box sx={{ bgcolor: '#0F172A', color: 'white', pt: { xs: 5.5, md: 6.8 }, pb: 1, px: { xs: 1.5, md: 4 } }}>
+      <Box sx={{ bgcolor: '#0F172A', color: 'white', pt: { xs: 1.2, md: 1.8 }, pb: { xs: 1.2, md: 1.8 }, px: { xs: 1.5, md: 4 } }}>
         <Container maxWidth="xl">
           {/* Breadcrumbs Navigation */}
           <Breadcrumbs

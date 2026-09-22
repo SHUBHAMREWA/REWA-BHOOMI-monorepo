@@ -148,7 +148,46 @@ export default function Navbar() {
           <CloseIcon />
         </IconButton>
       </Box>
-      <List>
+      <List sx={{ pt: 0.5 }}>
+        {/* 🌟 Top Quick Options: Saved Properties & My Listings */}
+        <ListItem disablePadding sx={{ mb: 1 }}>
+          <ListItemButton
+            component={Link}
+            href="/profile?tab=favorites"
+            onClick={handleDrawerToggle}
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'rgba(239, 68, 68, 0.08)',
+              color: '#EF4444',
+              '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.16)' },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32, color: '#EF4444' }}>
+              <FavoriteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Saved Properties" primaryTypographyProps={{ fontWeight: 700, fontSize: '0.88rem' }} />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding sx={{ mb: 1 }}>
+          <ListItemButton
+            component={Link}
+            href="/profile?tab=properties"
+            onClick={handleDrawerToggle}
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'rgba(27, 79, 216, 0.08)',
+              color: '#1B4FD8',
+              '&:hover': { bgcolor: 'rgba(27, 79, 216, 0.16)' },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32, color: '#1B4FD8' }}>
+              <MapsHomeWorkIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="My Listings" primaryTypographyProps={{ fontWeight: 700, fontSize: '0.88rem' }} />
+          </ListItemButton>
+        </ListItem>
+
         {navLinks.map((link) => (
           <ListItem key={link.name} disablePadding sx={{ mb: 1 }}>
             <ListItemButton
@@ -268,37 +307,6 @@ export default function Navbar() {
           </ListItem>
         )}
       </List>
-
-      {user && (
-        <List sx={{ borderTop: '1px solid #E2E8F0', pt: 1, mt: 1 }}>
-          <ListItem disablePadding sx={{ mb: 1 }}>
-            <ListItemButton
-              component={Link}
-              href="/profile?tab=favorites"
-              onClick={handleDrawerToggle}
-              sx={{ borderRadius: 2, color: '#EF4444' }}
-            >
-              <ListItemIcon sx={{ minWidth: 36, color: '#EF4444' }}>
-                <FavoriteIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText primary="Saved Properties" primaryTypographyProps={{ fontWeight: 600 }} />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding sx={{ mb: 1 }}>
-            <ListItemButton
-              component={Link}
-              href="/profile?tab=properties"
-              onClick={handleDrawerToggle}
-              sx={{ borderRadius: 2, color: '#475569' }}
-            >
-              <ListItemIcon sx={{ minWidth: 36, color: '#1B4FD8' }}>
-                <MapsHomeWorkIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText primary="My Listings" primaryTypographyProps={{ fontWeight: 600 }} />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      )}
 
       {isSupported && (
         <Box sx={{ px: 2, mt: 1, mb: 1 }}>

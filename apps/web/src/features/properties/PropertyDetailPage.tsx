@@ -39,6 +39,7 @@ import GrassIcon from '@mui/icons-material/Grass';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import EditIcon from '@mui/icons-material/Edit';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import toast from 'react-hot-toast';
@@ -123,6 +124,10 @@ interface PropertyData {
   price_per_sqft?: number;
   owner_name: string;
   owner_phone: string | null;
+  contact_phone?: string | null;
+  contact_whatsapp?: string | null;
+  contactPhone?: string | null;
+  contactWhatsapp?: string | null;
   owner_avatar: string | null;
   owner_username?: string | null;
   is_favorited: boolean;
@@ -941,6 +946,119 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
     );
   };
 
+  const renderAdminContactCard = (displayProps?: any) => {
+    if (!isAdmin || !property) return null;
+
+    const posterPhone = property.contact_phone || property.contactPhone || property.owner_phone;
+    const posterWhatsapp = property.contact_whatsapp || property.contactWhatsapp;
+
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          borderRadius: '8px',
+          border: '1.5px solid #F59E0B',
+          bgcolor: '#FFFBEB',
+          ...displayProps,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+            <AdminPanelSettingsIcon sx={{ color: '#D97706', fontSize: 20 }} />
+            <Typography variant="subtitle2" fontWeight={800} color="#92400E" sx={{ fontSize: { xs: '0.82rem', sm: '0.9rem' } }}>
+              Admin: Poster Contact Info
+            </Typography>
+          </Box>
+          <Chip
+            label="Admin Only"
+            size="small"
+            sx={{ bgcolor: '#FEF3C7', color: '#B45309', fontWeight: 700, fontSize: '0.65rem', height: 20 }}
+          />
+        </Box>
+        <Typography variant="caption" sx={{ color: '#B45309', display: 'block', mb: 1.2, fontSize: '0.72rem', lineHeight: 1.4 }}>
+          🔒 <strong>Strict Privacy:</strong> ये कांटेक्ट डिटेल्स आम यूज़र्स को नहीं दिखती हैं। केवल व्यवस्थापक (Admin) को सेलर सत्यापन के लिए प्रदर्शित हैं।
+        </Typography>
+
+        <Stack spacing={1}>
+          {/* Mobile Number */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#FFFFFF', p: 1, borderRadius: '6px', border: '1px solid #FDE68A' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PhoneIcon sx={{ color: '#1B4FD8', fontSize: 18 }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.68rem', fontWeight: 600 }}>
+                  Contact Phone (फ़ोन नंबर)
+                </Typography>
+                <Typography variant="body2" fontWeight={700} color="#0F172A">
+                  {posterPhone ? `+91 ${posterPhone}` : 'Not provided'}
+                </Typography>
+              </Box>
+            </Box>
+            {posterPhone && (
+              <Button
+                size="small"
+                variant="contained"
+                component="a"
+                href={`tel:${posterPhone}`}
+                sx={{
+                  minWidth: 'auto',
+                  px: 1.5,
+                  py: 0.3,
+                  fontSize: '0.72rem',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  bgcolor: '#1B4FD8',
+                  color: '#FFFFFF',
+                  '&:hover': { bgcolor: '#1640B0' },
+                }}
+              >
+                Call
+              </Button>
+            )}
+          </Box>
+
+          {/* WhatsApp Number */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#FFFFFF', p: 1, borderRadius: '6px', border: '1px solid #FDE68A' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <WhatsAppIcon sx={{ color: '#16A34A', fontSize: 18 }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.68rem', fontWeight: 600 }}>
+                  WhatsApp Number (व्हाट्सएप नंबर)
+                </Typography>
+                <Typography variant="body2" fontWeight={700} color="#0F172A">
+                  {posterWhatsapp ? `+91 ${posterWhatsapp}` : 'Not provided'}
+                </Typography>
+              </Box>
+            </Box>
+            {posterWhatsapp && (
+              <Button
+                size="small"
+                variant="contained"
+                component="a"
+                href={`https://wa.me/91${posterWhatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  minWidth: 'auto',
+                  px: 1.5,
+                  py: 0.3,
+                  fontSize: '0.72rem',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  bgcolor: '#16A34A',
+                  color: '#FFFFFF',
+                  '&:hover': { bgcolor: '#15803D' },
+                }}
+              >
+                WhatsApp
+              </Button>
+            )}
+          </Box>
+        </Stack>
+      </Paper>
+    );
+  };
+
   const renderFutureValueProjection = (displayProps: any) => {
     if (!(property.price && Number(property.price) > 0 && (property.listing_type?.toUpperCase() === 'SELL' || property.listing_type?.toUpperCase() === 'SALE' || property.listing_purpose?.toUpperCase() === 'SELL' || property.listing_purpose?.toUpperCase() === 'SALE'))) {
       return null;
@@ -1197,6 +1315,9 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
           <Grid item xs={12} md={8}>
             {/* Mobile-only Price & Title Card (Top) */}
             {renderPriceAndTitleCard({ display: { xs: 'block', md: 'none' }, mb: { xs: 1, sm: 1.5 } })}
+
+            {/* Mobile-only Admin Contact Card */}
+            {renderAdminContactCard({ display: { xs: 'block', md: 'none' }, mb: { xs: 1, sm: 1.5 } })}
             
             {/* 1. Large Image Viewer Box (Click opens Zoom Modal) */}
             <Paper
@@ -1446,7 +1567,7 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                 )}
 
                 {/* 🏠 Residential Details */}
-                {res && property.listing_purpose !== 'PG' && (
+                {res && property.property_type !== 'PG' && property.property_type !== 'HOSTEL' && (
                   <>
                     {res.bedrooms && (
                       <Grid item xs={6} sm={4}>
@@ -1810,6 +1931,9 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
                   );
                 })()}
               </Paper>
+
+              {/* CARD: Admin Only Poster Contact Details */}
+              {renderAdminContactCard({ display: { xs: 'none', md: 'block' } })}
 
               {/* Embedded Google Map */}
               {(property.location?.latitude && property.location?.longitude) && (

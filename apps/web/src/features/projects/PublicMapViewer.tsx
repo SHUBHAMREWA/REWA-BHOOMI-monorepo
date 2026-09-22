@@ -750,64 +750,40 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
   return (
     <Box sx={{ minHeight: { xs: 'auto', md: 620 }, width: '100%', display: 'flex', flexDirection: 'column' }}>
       
-      {/* ─── TOP FILTER BAR (Compact on mobile) ─── */}
-      <Box sx={{ p: { xs: 1, sm: 1.5 }, bgcolor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: { xs: 0.8, sm: 1.5 }, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
-        {/* Left: Filter Status Chips */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 0.8 }, flexWrap: 'wrap' }}>
-          {statuses.map((s) => {
-            const isSelected = filterStatus.includes(s.key);
-            const count = plots.filter((p: any) => p.status === s.key).length;
-            return (
-              <Chip
-                key={s.key}
-                label={`${s.label}: ${count}`}
-                size="small"
-                onClick={() => toggleStatus(s.key)}
-                sx={{
-                  bgcolor: isSelected ? '#1B4FD8' : '#F1F5F9',
-                  color: isSelected ? '#FFFFFF' : '#64748B',
-                  border: isSelected ? '1.5px solid #1B4FD8' : '1px solid #CBD5E1',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  fontSize: { xs: '0.67rem', sm: '0.74rem' },
-                  height: { xs: 23, sm: 27 },
-                  px: { xs: 0.2, sm: 0.5 },
-                  transition: 'all 0.15s ease',
-                  '&:hover': { bgcolor: isSelected ? '#1541B5' : '#E2E8F0' },
-                }}
-              />
-            );
-          })}
-        </Box>
+      {/* ─── TOP FILTER & SEARCH BAR ─── */}
+      <Box sx={{ p: { xs: 1, sm: 1.25 }, bgcolor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: { xs: 0.8, sm: 1 }, zIndex: 10 }}>
+        {/* Row 1: Status Chips (Left) & Quick Action Buttons (Right) */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: { xs: 0.8, sm: 1.2 } }}>
+          {/* Left: Filter Status Chips */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 0.8 }, flexWrap: 'wrap' }}>
+            {statuses.map((s) => {
+              const isSelected = filterStatus.includes(s.key);
+              const count = plots.filter((p: any) => p.status === s.key).length;
+              return (
+                <Chip
+                  key={s.key}
+                  label={`${s.label}: ${count}`}
+                  size="small"
+                  onClick={() => toggleStatus(s.key)}
+                  sx={{
+                    bgcolor: isSelected ? '#1B4FD8' : '#F1F5F9',
+                    color: isSelected ? '#FFFFFF' : '#64748B',
+                    border: isSelected ? '1.5px solid #1B4FD8' : '1px solid #CBD5E1',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: { xs: '0.67rem', sm: '0.74rem' },
+                    height: { xs: 24, sm: 27 },
+                    px: { xs: 0.2, sm: 0.5 },
+                    transition: 'all 0.15s ease',
+                    '&:hover': { bgcolor: isSelected ? '#1541B5' : '#E2E8F0' },
+                  }}
+                />
+              );
+            })}
+          </Box>
 
-        {/* Right: Search Plot # Input and Action Buttons */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
-          <TextField
-            size="small"
-            placeholder="Plot number likhkar search karein..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 0.6, color: '#1B4FD8', fontSize: { xs: 17, sm: 20 } }} />,
-            }}
-            sx={{
-              flex: { xs: 1, sm: 'none' },
-              width: { xs: 'auto', sm: 220, md: 280 },
-              minWidth: { xs: '150px', sm: 'auto' },
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                height: { xs: 32, sm: 36 },
-                fontSize: { xs: '0.78rem', sm: '0.86rem' },
-                fontWeight: 500,
-                bgcolor: '#F8FAFC',
-                '&:hover': { bgcolor: '#FFFFFF' },
-                '&.Mui-focused': { bgcolor: '#FFFFFF' },
-              },
-            }}
-          />
-
-          {/* Quick Action Buttons in Top Bar */}
-          <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
+          {/* Right: Quick Action Buttons (Fullscreen, PDF) */}
+          <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center', ml: 'auto' }}>
             <Button
               size="small"
               variant="contained"
@@ -816,7 +792,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               sx={{
                 bgcolor: isFullscreen ? '#EF4444' : '#0F172A',
                 color: '#FFFFFF',
-                height: { xs: 32, sm: 36 },
+                height: { xs: 28, sm: 32 },
                 fontSize: { xs: '0.72rem', sm: '0.78rem' },
                 fontWeight: 700,
                 borderRadius: 2,
@@ -838,7 +814,7 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               sx={{
                 bgcolor: '#1B4FD8',
                 color: '#FFFFFF',
-                height: { xs: 32, sm: 36 },
+                height: { xs: 28, sm: 32 },
                 fontSize: { xs: '0.72rem', sm: '0.78rem' },
                 fontWeight: 700,
                 borderRadius: 2,
@@ -851,6 +827,31 @@ export default function PublicMapViewer({ project, plots: rawPlots, mapObjects: 
               {isExportingPdf ? 'Exporting...' : 'PDF'}
             </Button>
           </Box>
+        </Box>
+
+        {/* Row 2: Search Plot # Input below status chips */}
+        <Box sx={{ width: '100%' }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Plot number likhkar search karein..."
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 0.8, color: '#1B4FD8', fontSize: { xs: 18, sm: 20 } }} />,
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                height: { xs: 34, sm: 38 },
+                fontSize: { xs: '0.8rem', sm: '0.86rem' },
+                fontWeight: 500,
+                bgcolor: '#F8FAFC',
+                '&:hover': { bgcolor: '#FFFFFF' },
+                '&.Mui-focused': { bgcolor: '#FFFFFF' },
+              },
+            }}
+          />
         </Box>
       </Box>
 
