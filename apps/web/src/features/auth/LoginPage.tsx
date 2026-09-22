@@ -22,8 +22,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Auth view mode: 'none' (options only), 'password', 'otp'
+  const [activeForm, setActiveForm] = useState<'none' | 'password' | 'otp'>('none');
+  
   // OTP state
-  const [isOtpMode, setIsOtpMode] = useState(false);
   const [otpStep, setOtpStep] = useState<'email' | 'verify'>('email');
   const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -97,8 +99,10 @@ export default function LoginPage() {
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         background: 'linear-gradient(135deg, #0F172A 0%, #1B4FD8 50%, #1338A8 100%)',
-        py: 4,
+        py: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 1.5, sm: 2 },
       }}
     >
       {/* Background pattern */}
@@ -108,43 +112,43 @@ export default function LoginPage() {
         backgroundSize: '40px 40px',
       }} />
 
-      <Container maxWidth="sm" sx={{ position: 'relative' }}>
+      <Container maxWidth="sm" sx={{ position: 'relative', px: { xs: 1, sm: 2 } }}>
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
-            borderRadius: 4,
+            p: { xs: 2.25, sm: 3.5, md: 4 },
+            borderRadius: { xs: 3, sm: 4 },
             boxShadow: '0 24px 64px rgba(15,23,42,0.3)',
             border: '1px solid rgba(255,255,255,0.08)',
           }}
         >
           {/* Logo */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: { xs: 1.5, sm: 2.5 } }}>
             <Box sx={{
               background: 'linear-gradient(135deg, #1B4FD8, #1338A8)',
-              borderRadius: 2, p: 1, display: 'flex',
+              borderRadius: 1.5, p: 0.75, display: 'flex',
             }}>
-              <HomeWork sx={{ color: 'white', fontSize: 28 }} />
+              <HomeWork sx={{ color: 'white', fontSize: { xs: 22, sm: 26 } }} />
             </Box>
             <Box>
-              <Typography variant="h6" fontWeight={800} color="text.primary" lineHeight={1}>
+              <Typography variant="h6" fontWeight={800} color="text.primary" lineHeight={1} sx={{ fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
                 Rewa Bhoomi
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                 Real Estate Platform
               </Typography>
             </Box>
           </Box>
 
-          <Typography variant="h4" fontWeight={800} gutterBottom>
+          <Typography fontWeight={800} sx={{ fontSize: { xs: '1.35rem', sm: '1.75rem' }, mb: 0.2 }}>
             Welcome back
           </Typography>
-          <Typography color="text.secondary" sx={{ mb: 4 }}>
+          <Typography color="text.secondary" sx={{ mb: { xs: 1.5, sm: 2.5 }, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
             Sign in to your account to continue
           </Typography>
 
           {/* Google Sign In */}
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ mb: { xs: 2, sm: 2.5 }, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
             <GoogleLogin
               onSuccess={async (credentialResponse) => {
                 if (credentialResponse.credential) {
@@ -167,30 +171,73 @@ export default function LoginPage() {
               }}
               shape="rectangular"
               size="large"
-              width="350"
-              text="continue_with"
+              width="340"
+              text="signin_with"
             />
           </Box>
 
-          <Divider sx={{ mb: 3 }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={500}>
-              OR SIGN IN WITH EMAIL
+          <Divider sx={{ mb: { xs: 2, sm: 2.5 } }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ fontSize: '0.7rem', letterSpacing: 0.5 }}>
+              OR OTHER LOGIN OPTIONS
             </Typography>
           </Divider>
 
-          {!isOtpMode ? (
+          {activeForm === 'none' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="medium"
+                onClick={() => setActiveForm('otp')}
+                sx={{
+                  py: { xs: 1, sm: 1.1 },
+                  fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                  borderRadius: 2,
+                  color: '#334155',
+                  borderColor: '#CBD5E1',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': { borderColor: '#94A3B8', bgcolor: '#F8FAFC' },
+                }}
+              >
+                Login with OTP
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                size="medium"
+                onClick={() => setActiveForm('password')}
+                sx={{
+                  py: { xs: 1, sm: 1.1 },
+                  fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                  borderRadius: 2,
+                  color: '#64748B',
+                  borderColor: '#E2E8F0',
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' },
+                }}
+              >
+                Login with Email & Password
+              </Button>
+            </Box>
+          )}
+
+          {activeForm === 'password' && (
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <TextField
                 id="login-email"
                 label="Email address"
                 type="email"
                 fullWidth
+                size="small"
                 autoComplete="email"
                 autoFocus
                 {...register('email')}
                 error={!!errors.email}
                 helperText={errors.email?.message}
-                sx={{ mb: 2.5 }}
+                sx={{ mb: { xs: 1.25, sm: 2 } }}
               />
 
               <TextField
@@ -198,6 +245,7 @@ export default function LoginPage() {
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 fullWidth
+                size="small"
                 autoComplete="current-password"
                 {...register('password')}
                 error={!!errors.password}
@@ -206,21 +254,21 @@ export default function LoginPage() {
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton onClick={() => setShowPassword((p) => !p)} edge="end" size="small">
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                sx={{ mb: 1 }}
+                sx={{ mb: 0.5 }}
               />
 
-              <Box sx={{ textAlign: 'right', mb: 3 }}>
+              <Box sx={{ textAlign: 'right', mb: { xs: 1.5, sm: 2 } }}>
                 <Typography
                   component={Link}
                   href="/auth/forgot-password"
                   variant="body2"
                   color="primary"
-                  sx={{ fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                  sx={{ fontWeight: 600, fontSize: { xs: '0.78rem', sm: '0.85rem' }, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                 >
                   Forgot password?
                 </Typography>
@@ -231,35 +279,49 @@ export default function LoginPage() {
                 type="submit"
                 fullWidth
                 variant="contained"
-                size="large"
+                size="medium"
                 disabled={isLoading}
-                sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5, mb: 2 }}
+                sx={{ py: { xs: 1, sm: 1.25 }, fontSize: { xs: '0.88rem', sm: '0.95rem' }, borderRadius: 2, mb: 1 }}
               >
-                {isLoading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+                {isLoading ? <CircularProgress size={20} color="inherit" /> : 'Sign In'}
               </Button>
-              
-              <Button
-                fullWidth
-                variant="outlined"
-                size="large"
-                onClick={() => setIsOtpMode(true)}
-                sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5 }}
-              >
-                Login with OTP
-              </Button>
+
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setActiveForm('otp')}
+                  sx={{ py: 0.75, fontSize: '0.8rem', borderRadius: 2 }}
+                >
+                  Login with OTP
+                </Button>
+                <Button
+                  fullWidth
+                  variant="text"
+                  size="small"
+                  onClick={() => setActiveForm('none')}
+                  sx={{ py: 0.75, fontSize: '0.8rem', color: 'text.secondary' }}
+                >
+                  Back
+                </Button>
+              </Box>
             </form>
-          ) : (
+          )}
+
+          {activeForm === 'otp' && (
             <form onSubmit={otpStep === 'email' ? handleSendOtp : handleVerifyOtp} noValidate>
               <TextField
                 id="otp-email"
                 label="Email address"
                 type="email"
                 fullWidth
+                size="small"
                 autoFocus
                 value={otpEmail}
                 onChange={(e) => setOtpEmail(e.target.value)}
                 disabled={otpStep === 'verify'}
-                sx={{ mb: 2.5 }}
+                sx={{ mb: { xs: 1.25, sm: 2 } }}
               />
 
               {otpStep === 'verify' && (
@@ -268,10 +330,11 @@ export default function LoginPage() {
                   label="6-digit OTP"
                   type="text"
                   fullWidth
+                  size="small"
                   autoFocus
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\\D/g, '').slice(0, 6))}
-                  sx={{ mb: 3 }}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  sx={{ mb: { xs: 1.5, sm: 2 } }}
                 />
               )}
 
@@ -279,28 +342,40 @@ export default function LoginPage() {
                 type="submit"
                 fullWidth
                 variant="contained"
-                size="large"
+                size="medium"
                 disabled={isLoading || (otpStep === 'verify' && otpCode.length !== 6)}
-                sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5, mb: 2 }}
+                sx={{ py: { xs: 1, sm: 1.25 }, fontSize: { xs: '0.88rem', sm: '0.95rem' }, borderRadius: 2, mb: 1 }}
               >
-                {isLoading ? <CircularProgress size={22} color="inherit" /> : otpStep === 'email' ? 'Send OTP' : 'Verify & Sign In'}
+                {isLoading ? <CircularProgress size={20} color="inherit" /> : otpStep === 'email' ? 'Send OTP' : 'Verify & Sign In'}
               </Button>
 
-              <Button
-                fullWidth
-                variant="text"
-                onClick={() => {
-                  setIsOtpMode(false);
-                  setOtpStep('email');
-                }}
-                sx={{ py: 1.5 }}
-              >
-                Back to Password Login
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setActiveForm('password')}
+                  sx={{ py: 0.75, fontSize: '0.8rem', borderRadius: 2 }}
+                >
+                  Login with Email & Password
+                </Button>
+                <Button
+                  fullWidth
+                  variant="text"
+                  size="small"
+                  onClick={() => {
+                    setActiveForm('none');
+                    setOtpStep('email');
+                  }}
+                  sx={{ py: 0.75, fontSize: '0.8rem', color: 'text.secondary' }}
+                >
+                  Back
+                </Button>
+              </Box>
             </form>
           )}
 
-          <Typography variant="body2" textAlign="center" sx={{ mt: 3 }} color="text.secondary">
+          <Typography variant="body2" textAlign="center" sx={{ mt: { xs: 1.5, sm: 2.5 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }} color="text.secondary">
             Don&apos;t have an account?{' '}
             <Typography
               component={Link}

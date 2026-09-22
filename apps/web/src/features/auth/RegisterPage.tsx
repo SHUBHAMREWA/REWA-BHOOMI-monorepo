@@ -57,8 +57,10 @@ export default function RegisterPage() {
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         background: 'linear-gradient(135deg, #0F172A 0%, #1B4FD8 50%, #1338A8 100%)',
-        py: 4,
+        py: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 1.5, sm: 2 },
       }}
     >
       <Box sx={{
@@ -67,41 +69,41 @@ export default function RegisterPage() {
         backgroundSize: '40px 40px',
       }} />
 
-      <Container maxWidth="sm" sx={{ position: 'relative' }}>
+      <Container maxWidth="sm" sx={{ position: 'relative', px: { xs: 1, sm: 2 } }}>
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
-            borderRadius: 4,
+            p: { xs: 2.25, sm: 3.5, md: 4 },
+            borderRadius: { xs: 3, sm: 4 },
             boxShadow: '0 24px 64px rgba(15,23,42,0.3)',
             border: '1px solid rgba(255,255,255,0.08)',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: { xs: 1.5, sm: 2.5 } }}>
             <Box sx={{
               background: 'linear-gradient(135deg, #1B4FD8, #1338A8)',
-              borderRadius: 2, p: 1, display: 'flex',
+              borderRadius: 1.5, p: 0.75, display: 'flex',
             }}>
-              <HomeWork sx={{ color: 'white', fontSize: 28 }} />
+              <HomeWork sx={{ color: 'white', fontSize: { xs: 22, sm: 26 } }} />
             </Box>
             <Box>
-              <Typography variant="h6" fontWeight={800} color="text.primary" lineHeight={1}>
+              <Typography variant="h6" fontWeight={800} color="text.primary" lineHeight={1} sx={{ fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
                 Rewa Bhoomi
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                 Real Estate Platform
               </Typography>
             </Box>
           </Box>
 
-          <Typography variant="h4" fontWeight={800} gutterBottom>
+          <Typography fontWeight={800} sx={{ fontSize: { xs: '1.35rem', sm: '1.75rem' }, mb: 0.2 }}>
             Create an account
           </Typography>
-          <Typography color="text.secondary" sx={{ mb: 4 }}>
+          <Typography color="text.secondary" sx={{ mb: { xs: 1.5, sm: 2.5 }, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
             Join thousands of users finding their dream property
           </Typography>
 
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ mb: { xs: 1.5, sm: 2.5 }, display: 'flex', justifyContent: 'center' }}>
             <GoogleLogin
               onSuccess={async (credentialResponse) => {
                 if (credentialResponse.credential) {
@@ -122,25 +124,26 @@ export default function RegisterPage() {
                 toast.error('Google Sign Up failed');
               }}
               shape="rectangular"
-              size="large"
-              width="350"
-              text="continue_with"
+              size="medium"
+              width="320"
+              text="signup_with"
             />
           </Box>
 
-          <Divider sx={{ mb: 3 }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={500}>
+          <Divider sx={{ mb: { xs: 1.5, sm: 2.5 } }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ fontSize: '0.7rem' }}>
               OR REGISTER WITH EMAIL
             </Typography>
           </Divider>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid container spacing={{ xs: 1.25, sm: 2 }} sx={{ mb: { xs: 1.25, sm: 2 } }}>
               <Grid item xs={12}>
                 <TextField
                   id="register-name"
                   label="Full Name"
                   fullWidth
+                  size="small"
                   autoComplete="name"
                   {...register('name')}
                   error={!!errors.name}
@@ -153,6 +156,7 @@ export default function RegisterPage() {
                   label="Email address"
                   type="email"
                   fullWidth
+                  size="small"
                   autoComplete="email"
                   {...register('email')}
                   error={!!errors.email}
@@ -165,18 +169,20 @@ export default function RegisterPage() {
                   label="Phone Number"
                   type="tel"
                   fullWidth
+                  size="small"
                   autoComplete="tel"
                   {...register('phone')}
                   error={!!errors.phone}
                   helperText={errors.phone?.message}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   id="register-password"
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
                   fullWidth
+                  size="small"
                   autoComplete="new-password"
                   {...register('password')}
                   error={!!errors.password}
@@ -188,20 +194,22 @@ export default function RegisterPage() {
                           aria-label="toggle password visibility"
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
+                          size="small"
                         >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                          {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                         </IconButton>
                       </InputAdornment>
                     ),
                   }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   id="register-confirm-password"
                   label="Confirm Password"
                   type={showPassword ? 'text' : 'password'}
                   fullWidth
+                  size="small"
                   autoComplete="new-password"
                   {...register('confirmPassword')}
                   error={!!errors.confirmPassword}
@@ -215,15 +223,15 @@ export default function RegisterPage() {
               type="submit"
               fullWidth
               variant="contained"
-              size="large"
+              size="medium"
               disabled={isLoading}
-              sx={{ py: 1.75, fontSize: '1rem', borderRadius: 2.5, mt: 2 }}
+              sx={{ py: { xs: 1, sm: 1.25 }, fontSize: { xs: '0.88rem', sm: '0.95rem' }, borderRadius: 2, mt: { xs: 0.5, sm: 1 } }}
             >
-              {isLoading ? <CircularProgress size={22} color="inherit" /> : 'Create Account'}
+              {isLoading ? <CircularProgress size={20} color="inherit" /> : 'Create Account'}
             </Button>
           </form>
 
-          <Typography variant="body2" textAlign="center" sx={{ mt: 3 }} color="text.secondary">
+          <Typography variant="body2" textAlign="center" sx={{ mt: { xs: 1.5, sm: 2.5 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }} color="text.secondary">
             Already have an account?{' '}
             <Typography
               component={Link}
