@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { query, queryOne } from '../../database/connection';
 import { BadRequestError, NotFoundError } from '../../errors/AppError';
+import { getPropertyById } from '../properties/property.service';
 
 // ─── Dashboard Stats ────────────────────────────────────────────────────────
 export const getDashboardStats = async (req: Request, res: Response) => {
@@ -332,7 +333,9 @@ export const listPropertiesAdmin = async (req: Request, res: Response) => {
   const offset = (parseInt(page as string, 10) - 1) * parseInt(limit as string, 10);
 
   let propertiesQuery = `
-    SELECT p.id, p.title, p.slug, p.status, p.price, p.listing_type, p.is_popular, p.created_at, u.name as owner_name, u.email as owner_email, u.avatar_url as owner_avatar
+    SELECT p.id, p.title, p.slug, p.status, p.price, p.listing_type, p.is_popular, p.created_at,
+           u.name as owner_name, u.email as owner_email, u.avatar_url as owner_avatar,
+           p.contact_phone, p.contact_whatsapp, u.phone as owner_phone
     FROM properties p
     LEFT JOIN users u ON u.id = p.owner_id
     WHERE p.deleted_at IS NULL
@@ -531,3 +534,43 @@ export const bulkDeletePropertiesAdmin = async (req: Request, res: Response) => 
     message: `${ids.length} properties and related data deleted successfully`,
   });
 };
+
+// ─── Broadcast Property Notification (Admin) ────────────────────────────────
+export const broadcastPropertyNotificationAdmin = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const property = await getPropertyById(id);
+  if (!property) {
+    throw new NotFoundError('Property not found');
+  }
+
+  const { broadcastNewPropertyPublished } = await import('../notifications/push.service');
+
+  await broadcastNewPropertyPublished({
+    propertyId: property.id,
+    slug: property.slug,
+    title: property.title,
+    city: property.city,
+    price: property.price ? Number(property.price) : null,
+    thumbnail: property.thumbnail,
+    ownerId: property.owner_id,
+  });
+
+  // Log audit
+  await query(
+    'INSERT INTO audit_logs (id, actor_id, action, resource_type, resource_id, after_data) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)',
+    [
+      req.user?.userId,
+      'PROPERTY_NOTIFICATION_MANUALLY_BROADCASTED',
+      'property',
+      id,
+      JSON.stringify({ propertyTitle: property.title, slug: property.slug }),
+    ]
+  );
+
+  res.json({
+    success: true,
+    message: `Push notification broadcasted to all users for "${property.title}"`,
+  });
+};
+

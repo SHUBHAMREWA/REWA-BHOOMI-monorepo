@@ -11,6 +11,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import Link from 'next/link';
 import { apiGet, apiPatch, apiDelete, apiPost } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -27,6 +28,9 @@ interface PropertyAdmin {
   owner_name: string;
   owner_email: string;
   owner_avatar: string | null;
+  contact_phone?: string | null;
+  contact_whatsapp?: string | null;
+  owner_phone?: string | null;
 }
 
 export default function AdminProperties() {
@@ -53,6 +57,31 @@ export default function AdminProperties() {
   // Bulk Deletion State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+
+  // Notification Broadcast State
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
+  const [propertyToNotify, setPropertyToNotify] = useState<PropertyAdmin | null>(null);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const handleNotifyClick = (property: PropertyAdmin) => {
+    setPropertyToNotify(property);
+    setNotifyDialogOpen(true);
+  };
+
+  const confirmBroadcastNotification = async () => {
+    if (!propertyToNotify) return;
+    setIsBroadcasting(true);
+    try {
+      await apiPost(`/admin/properties/${propertyToNotify.id}/notify`, {});
+      toast.success(`Notification broadcasted to all users for "${propertyToNotify.title}"!`);
+      setNotifyDialogOpen(false);
+      setPropertyToNotify(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to broadcast notification');
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
   
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -333,8 +362,13 @@ export default function AdminProperties() {
                         {property.owner_name?.charAt(0).toUpperCase()}
                       </Avatar>
                       <Box sx={{ overflow: 'hidden' }}>
-                        <Typography variant="body2" className="owner-name" sx={{ fontWeight: 600, transition: 'color 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }} title={property.owner_name}>{property.owner_name}</Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }} title={property.owner_email}>{property.owner_email}</Typography>
+                        <Typography variant="body2" className="owner-name" sx={{ fontWeight: 600, transition: 'color 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }} title={property.owner_name}>{property.owner_name}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }} title={property.owner_email}>{property.owner_email}</Typography>
+                        {(property.contact_phone || property.owner_phone) && (
+                          <Typography variant="caption" sx={{ display: 'block', color: '#1B4FD8', fontWeight: 650, fontSize: '0.68rem', whiteSpace: 'nowrap' }}>
+                            📞 +91 {property.contact_phone || property.owner_phone}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
                   </TableCell>
@@ -418,6 +452,17 @@ export default function AdminProperties() {
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Broadcast Push Notification to Users">
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleNotifyClick(property)}
+                            sx={{ color: '#8B5CF6', '&:hover': { bgcolor: '#F5F3FF' } }}
+                          >
+                            <NotificationsActiveIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title={property.is_popular ? "Remove Popular" : "Make Popular"}>
                         <span>
@@ -513,11 +558,49 @@ export default function AdminProperties() {
           <Button onClick={() => setBulkDeleteDialogOpen(false)} color="inherit" disabled={isDeleting}>Cancel</Button>
           <Button 
             onClick={confirmBulkDelete} 
-            color="error"
+            color="error" 
             variant="contained" 
             disabled={isDeleting}
           >
             {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Delete Permanently'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Broadcast Notification Confirmation Dialog */}
+      <Dialog open={notifyDialogOpen} onClose={() => !isBroadcasting && setNotifyDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
+          <NotificationsActiveIcon sx={{ color: '#8B5CF6' }} />
+          Broadcast Notification
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText mb={2} sx={{ fontSize: '0.85rem' }}>
+            Kya aap sabhi users aur subscribers ko is property ke liye <strong>Push Notification</strong> bhejna chahte hain?
+          </DialogContentText>
+          <Box sx={{ p: 1.5, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0' }}>
+            <Typography variant="subtitle2" fontWeight={750} color="#0F172A" sx={{ fontSize: '0.88rem' }}>
+              {propertyToNotify?.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              Status: <strong>{propertyToNotify?.status}</strong> • Price: <strong>₹{Number(propertyToNotify?.price || 0).toLocaleString('en-IN')}</strong>
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#8B5CF6', display: 'block', mt: 0.75, fontWeight: 650 }}>
+              📢 Service Worker ke jariye sabhi connected mobile & desktop devices par alert jayega.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setNotifyDialogOpen(false)} color="inherit" disabled={isBroadcasting} sx={{ textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmBroadcastNotification} 
+            variant="contained" 
+            disabled={isBroadcasting}
+            startIcon={isBroadcasting ? <CircularProgress size={16} color="inherit" /> : <NotificationsActiveIcon />}
+            sx={{ bgcolor: '#8B5CF6', '&:hover': { bgcolor: '#7C3AED' }, textTransform: 'none', fontWeight: 700 }}
+          >
+            {isBroadcasting ? 'Broadcasting...' : 'Send Notification 📢'}
           </Button>
         </DialogActions>
       </Dialog>

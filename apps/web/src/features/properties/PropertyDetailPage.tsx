@@ -165,10 +165,11 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const isOwner = Boolean(user?.id && (property?.owner_id === user.id || (property as any)?.ownerId === user.id));
   const canEdit = Boolean(isAdmin || isOwner);
 
+  const authEnrichedSlugRef = useRef<string | null>(null);
+
   useEffect(() => {
+    // 1. If property is completely missing from SSR (e.g. admin previewing pending/draft listing)
     if (!initialProperty && !isAuthLoading) {
-      // Fetch property client-side if missing from SSR (e.g. admin previewing PENDING).
-      // We wait for isAuthLoading=false (set only after refreshAuth resolves & token is ready).
       setLoading(true);
       setError(false);
       import('@/lib/api').then(({ apiClient }) => {
@@ -182,9 +183,26 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
             setLoading(false);
           });
       });
+      return;
     }
-  // accessToken is in deps so if the token arrives late we still retry
-  }, [initialProperty, slug, isAuthLoading, accessToken]);
+
+    // 2. If property was delivered by SSR (SSR is unauthenticated, so contact info was stripped for privacy).
+    // When the browser user is an Admin or the Owner, re-fetch with auth so they receive the complete contact phone & WhatsApp!
+    if (!isAuthLoading && accessToken && (isAdmin || isOwner) && authEnrichedSlugRef.current !== slug) {
+      authEnrichedSlugRef.current = slug;
+      import('@/lib/api').then(({ apiClient }) => {
+        apiClient.get(`/properties/${slug}`)
+          .then(res => {
+            if (res.data?.data) {
+              setProperty(res.data.data);
+            }
+          })
+          .catch(err => {
+            console.error('Failed to load privileged contact info:', err);
+          });
+      });
+    }
+  }, [initialProperty, slug, isAuthLoading, accessToken, isAdmin, isOwner]);
 
   const [isFavorited, setIsFavorited] = useState(property?.is_favorited || false);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
@@ -949,8 +967,8 @@ export default function PropertyDetailPage({ initialProperty, slug }: { initialP
   const renderAdminContactCard = (displayProps?: any) => {
     if (!isAdmin || !property) return null;
 
-    const posterPhone = property.contact_phone || property.contactPhone || property.owner_phone;
-    const posterWhatsapp = property.contact_whatsapp || property.contactWhatsapp;
+    const posterPhone = property.contact_phone || property.contactPhone || property.owner_phone || (property as any)?.ownerPhone;
+    const posterWhatsapp = property.contact_whatsapp || property.contactWhatsapp || (property as any)?.contactWhatsapp || posterPhone;
 
     return (
       <Paper
