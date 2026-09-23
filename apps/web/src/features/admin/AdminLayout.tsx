@@ -204,7 +204,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 5 }, width: { xs: '100%', sm: `calc(100% - ${DRAWER_WIDTH}px)` }, maxWidth: '100vw', mt: 8, overflowX: 'hidden' }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 3, md: 4 }, width: { xs: '100%', sm: `calc(100% - ${DRAWER_WIDTH}px)` }, maxWidth: '100vw', mt: { xs: 7, sm: 8 }, overflowX: 'hidden' }}>
         {children}
       </Box>
     </Box>

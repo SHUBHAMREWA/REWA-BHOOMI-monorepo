@@ -23,8 +23,8 @@ export const listPropertiesHandler = asyncHandler(async (req: Request, res: Resp
 });
 
 export const getPropertyHandler = asyncHandler(async (req: Request, res: Response) => {
-  const isAdmin = req.user?.roles?.includes('ADMIN') || req.user?.roles?.includes('SUPER_ADMIN');
-  const property = await getPropertyBySlug(req.params.slug, req.user?.userId, !!isAdmin);
+  const isAdmin = Boolean(req.user?.roles?.some(r => r.toUpperCase() === 'ADMIN' || r.toUpperCase() === 'SUPER_ADMIN'));
+  const property = await getPropertyBySlug(req.params.slug, req.user?.userId, isAdmin);
   return successResponse(res, property);
 });
 

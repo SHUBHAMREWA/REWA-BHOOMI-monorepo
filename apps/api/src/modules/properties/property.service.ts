@@ -275,7 +275,7 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
 
   // Privacy filtering: ONLY Admin and the property Owner can see contact phone / WhatsApp.
   // Public visitors and regular users MUST NOT receive these numbers under any circumstances.
-  const isOwner = requestingUserId && requestingUserId === property.owner_id;
+  const isOwner = Boolean(requestingUserId && String(requestingUserId) === String(property.owner_id));
   if (!isAdmin && !isOwner) {
     delete (property as any).owner_phone;
     delete (property as any).contact_phone;
@@ -284,9 +284,13 @@ export async function getPropertyBySlug(slug: string, requestingUserId?: string,
     delete (property as any).contactPhone;
     delete (property as any).contactWhatsapp;
   } else {
-    (property as any).contactPhone = (property as any).contact_phone || (property as any).owner_phone;
-    (property as any).contactWhatsapp = (property as any).contact_whatsapp;
-    (property as any).ownerPhone = (property as any).owner_phone;
+    const resolvedPhone = (property as any).contact_phone || (property as any).owner_phone || null;
+    const resolvedWhatsapp = (property as any).contact_whatsapp || (property as any).contact_phone || (property as any).owner_phone || null;
+    (property as any).contact_phone = resolvedPhone;
+    (property as any).contact_whatsapp = resolvedWhatsapp;
+    (property as any).contactPhone = resolvedPhone;
+    (property as any).contactWhatsapp = resolvedWhatsapp;
+    (property as any).ownerPhone = (property as any).owner_phone || resolvedPhone;
   }
 
   return {

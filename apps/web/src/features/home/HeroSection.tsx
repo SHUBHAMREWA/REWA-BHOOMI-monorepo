@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Container, Typography, InputBase, Button, Paper, Chip, Stack } from '@mui/material';
+import { Box, Container, Typography, InputBase, Button, Paper, Stack } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import HomeIcon from '@mui/icons-material/Home';
 import StorefrontIcon from '@mui/icons-material/Storefront';
@@ -55,14 +55,6 @@ const quickCategories = [
     isProject: true,
     hideOnMobile: true,
   },
-];
-
-const quickFilterChips = [
-  { label: 'Plot', query: 'categoryType=LAND' },
-  { label: 'House', query: 'categoryType=RESIDENTIAL&propertyType=HOUSE' },
-  { label: 'Land', query: 'categoryType=LAND' },
-  { label: 'Commercial', query: 'categoryType=COMMERCIAL' },
-  { label: 'Villa', query: 'categoryType=RESIDENTIAL&propertyType=VILLA' },
 ];
 
 export default function HeroSection() {
@@ -188,57 +180,6 @@ export default function HeroSection() {
             </Button>
           </Paper>
 
-          {/* Quick Filter Chips */}
-          <Stack
-            direction="row"
-            spacing={0.8}
-            sx={{
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              rowGap: 1,
-              mb: { xs: 3, sm: 4 },
-            }}
-          >
-            <Typography
-              component="span"
-              sx={{
-                fontSize: { xs: '0.74rem', sm: '0.82rem' },
-                fontWeight: 700,
-                color: '#64748B',
-                alignSelf: 'center',
-                mr: 0.5,
-              }}
-            >
-              Quick Search:
-            </Typography>
-
-            {quickFilterChips.map((chip, idx) => (
-              <Chip
-                key={idx}
-                label={chip.label}
-                onClick={() => router.push(`/properties?${chip.query}`)}
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  color: '#1E293B',
-                  border: '1px solid #E2E8F0',
-                  fontWeight: 600,
-                  fontSize: { xs: '0.74rem', sm: '0.82rem' },
-                  px: 0.5,
-                  height: { xs: 28, sm: 32 },
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: '#1B4FD8',
-                    color: '#FFFFFF',
-                    borderColor: '#1B4FD8',
-                    transform: 'translateY(-1px)',
-                  },
-                }}
-              />
-            ))}
-          </Stack>
-
           {/* Section Heading: आप क्या देखना चाहते हैं? */}
           <Typography
             sx={{
@@ -246,6 +187,7 @@ export default function HeroSection() {
               fontWeight: 750,
               color: '#334155',
               fontSize: { xs: '0.86rem', sm: '0.96rem' },
+              mt: { xs: 2.5, sm: 3.5 },
               mb: { xs: 1.5, sm: 2 },
               letterSpacing: 0.2,
             }}

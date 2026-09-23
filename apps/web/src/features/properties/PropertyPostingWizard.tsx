@@ -46,8 +46,6 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DeckIcon from '@mui/icons-material/Deck';
 import PhoneIcon from '@mui/icons-material/Phone';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { useAuth } from '@/features/auth/AuthContext';
 
 import { ListingPurpose, PropertyCategoryType, PropertyTypeEnum, AreaUnit } from '@rewa-bhoomi/types';
@@ -655,7 +653,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
         customAmenities: customAmenities,
         videoUrl: videoUrl.trim() ? videoUrl.trim() : null,
         contactPhone: contactPhone.replace(/\D/g, ''),
-        contactWhatsapp: contactWhatsapp && contactWhatsapp.trim() ? contactWhatsapp.replace(/\D/g, '') : null,
+        contactWhatsapp: (sameAsPhone ? contactPhone.replace(/\D/g, '') : (contactWhatsapp?.replace(/\D/g, '') || contactPhone.replace(/\D/g, ''))) || null,
         imageUrls: imageUrls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0),
         imageStorageKeys: imageStorageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0),
         residentialDetails: (category === 'RESIDENTIAL' && propertyType !== 'PG' && propertyType !== 'HOSTEL') ? cleanDetailObj(resDetails) : undefined,
@@ -1665,32 +1663,10 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
               <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '0.95rem', sm: '1.25rem' } }}>
                 Contact Information (संपर्क विवरण)
               </Typography>
-              <Chip
-                icon={<LockOutlinedIcon sx={{ fontSize: '14px !important', color: '#92400E !important' }} />}
-                label="🔒 100% Private (Admin Only)"
-                size="small"
-                sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: { xs: '0.65rem', sm: '0.72rem' } }}
-              />
             </Box>
-            <Typography variant="body2" color="text.secondary" mb={1.5} sx={{ fontSize: { xs: '0.72rem', sm: '0.85rem' } }}>
-              Apna mobile number darj karein taaki platform verification aur inquiry ke liye admin aapse sampark kar sake.
+            <Typography variant="body2" color="text.secondary" mb={2} sx={{ fontSize: { xs: '0.72rem', sm: '0.85rem' } }}>
+              Apna contact number darj karein.
             </Typography>
-
-            {/* Privacy Alert Box */}
-            <Alert
-              severity="info"
-              icon={<VerifiedUserIcon sx={{ fontSize: 20, color: '#1B4FD8' }} />}
-              sx={{
-                mb: 2.5,
-                borderRadius: 2,
-                bgcolor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                color: '#1E3A8A',
-                '& .MuiAlert-message': { fontSize: { xs: '0.72rem', sm: '0.82rem' }, lineHeight: 1.5 },
-              }}
-            >
-              <strong>🔒 गोपनीयता सूचना (Privacy Notice):</strong> आपका मोबाइल नंबर और व्हाट्सएप नंबर सामान्य यूज़र्स या वेबसाइट पर सार्वजनिक रूप से <strong>नहीं दिखेगा</strong>। यह केवल एडमिन सत्यापन (Admin Verification) के लिए सुरक्षित रहेगा।
-            </Alert>
 
             <Grid container spacing={{ xs: 1.5, sm: 2.5 }}>
               {/* Mandatory Mobile Number */}
@@ -2521,12 +2497,6 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                   <Typography variant="subtitle2" fontWeight={750} color="#0F172A" sx={{ fontSize: { xs: '0.82rem', sm: '0.95rem' }, display: 'flex', alignItems: 'center', gap: 0.8 }}>
                     📞 Contact Information (संपर्क विवरण)
                   </Typography>
-                  <Chip
-                    icon={<LockOutlinedIcon sx={{ fontSize: '13px !important', color: '#92400E !important' }} />}
-                    label="🔒 केवल Admin को दिखेगा"
-                    size="small"
-                    sx={{ bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: '0.65rem', height: 20 }}
-                  />
                 </Box>
                 <Grid container spacing={1.5}>
                   <Grid item xs={12} sm={6}>
@@ -2534,7 +2504,7 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                       <PhoneIcon sx={{ fontSize: 18, color: '#1B4FD8' }} />
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
-                          Mobile Number (अनिवार्य / Mandatory)
+                          Mobile Number (फ़ोन नंबर)
                         </Typography>
                         <Typography variant="body2" fontWeight={700} color="#0F172A">
                           +91 {contactPhone || 'N/A'}
@@ -2558,9 +2528,6 @@ export default function PropertyPostingWizard({ propertyId }: { propertyId?: str
                     </Grid>
                   )}
                 </Grid>
-                <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mt: 1, fontSize: '0.7rem' }}>
-                  🔒 यह नंबर केवल व्यवस्थापक (Admin) को प्रॉपर्टी सत्यापन के लिए दिखेगा। सामान्य ग्राहकों को यह नंबर नहीं दिखेगा।
-                </Typography>
               </Box>
 
               {/* Location Link */}

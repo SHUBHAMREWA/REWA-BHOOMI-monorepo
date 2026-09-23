@@ -1295,6 +1295,18 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(20),
         ADD COLUMN IF NOT EXISTS contact_whatsapp VARCHAR(20);
     `
+  },
+  {
+    name: '037_backfill_property_contact_numbers',
+    sql: `
+      UPDATE properties p
+      SET contact_phone = COALESCE(p.contact_phone, u.phone),
+          contact_whatsapp = COALESCE(p.contact_whatsapp, p.contact_phone, u.phone)
+      FROM users u
+      WHERE p.owner_id = u.id
+        AND (p.contact_phone IS NULL OR p.contact_whatsapp IS NULL)
+        AND u.phone IS NOT NULL;
+    `
   }
 ];
 
